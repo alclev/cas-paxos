@@ -1,28 +1,40 @@
 
-#include "paxos.h"
 
-#include <absl/flags/flag.h>
-#include <absl/flags/parse.h>
+#include <romulus/romulus.h>
+#include <romulus/common.h>
+#include <romulus/connection_manager.h>
+#include <romulus/registry.h>
 
-#include <algorithm>
-#include <memory>
-#include <random>
-#include <string>
-#include <vector>
-
-#ifdef USEMU
-#include "mu_impl.h"
-#else
 #include "cas_paxos_impl.h"
-#endif
+#include "state.h"
 
-#include "common/common.h"
-#include "common/rome.h"
-#include "connection_manager/connection_manager.h"
-#include "registry/registry.h"
+#define PAXOS_NS paxos_st
+constexpr uint32_t kNumProposals = 8092;
 
 int main(int argc, char* argv[]) {
-  DYNO_INIT_LOG();
+  romulus::INIT();
+  auto args = std::make_shared<romulus::ArgMap>();
+  args->import(romulus::ARGS);
+  args->parse(argc, argv);
+
+  // Command line arguments
+  int id = args->uget(romulus::NODE_ID);
+  std::string outfile = args->sget(romulus::OUTPUT_FILE);
+  std::string registry_ip = args->sget(romulus::REGISTRY_IP);
+
+  const std::string remote_str = args->sget(romulus::REMOTES);
+  std::stringstream ss(remote_str);
+  std::string remote;
+  std::string hostname = args->sget(romulus::HOSTNAME);
+  std::vector<std::string> remotes;
+  while (std::getline(ss, remote, ',')) {
+    if (remote == hostname) continue;
+    remotes.push_back(remote);
+  }
+
+  if (std::filesystem::exists(outfile)) std::filesystem::remove(outfile);
+
+  // TODO --------------------------------------------
   ROME_STOPWATCH_DECLARE();
   absl::ParseCommandLine(argc, argv);
 
@@ -32,7 +44,6 @@ int main(int argc, char* argv[]) {
   int host_id = absl::GetFlag(FLAGS_host_id);
   std::vector<std::string> remotes = absl::GetFlag(FLAGS_remotes);
   std::string registry_ip = absl::GetFlag(FLAGS_registry_ip);
-  [[maybe_unused]] int reset_barrier = absl::GetFlag(FLAGS_reset_barrier);
   auto testtime = absl::GetFlag(FLAGS_testtime);
   auto dev_name = absl::GetFlag(FLAGS_dev_name);
   auto dev_port = absl::GetFlag(FLAGS_dev_port);
@@ -180,5 +191,5 @@ int main(int argc, char* argv[]) {
   for (auto& p : proposals) {
     delete[] p.second;
   }
-  return 0;
+  return 0
 }
