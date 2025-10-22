@@ -16,12 +16,7 @@ int main(int argc, char* argv[]) {
   auto args = std::make_shared<romulus::ArgMap>();
   args->import(romulus::ARGS);
   args->parse(argc, argv);
-
-  // Command line arguments
-  int id = args->uget(romulus::NODE_ID);
-  std::string outfile = args->sget(romulus::OUTPUT_FILE);
-  std::string registry_ip = args->sget(romulus::REGISTRY_IP);
-
+  // Configure remotes vector
   const std::string remote_str = args->sget(romulus::REMOTES);
   std::stringstream ss(remote_str);
   std::string remote;
@@ -31,34 +26,25 @@ int main(int argc, char* argv[]) {
     if (remote == hostname) continue;
     remotes.push_back(remote);
   }
-
+  // Clear any stale output file
   if (std::filesystem::exists(outfile)) std::filesystem::remove(outfile);
 
-  // TODO --------------------------------------------
-  ROME_STOPWATCH_DECLARE();
-  absl::ParseCommandLine(argc, argv);
-
   // Command line arguments
-  std::string exp_name = absl::GetFlag(FLAGS_exp_name);
-  std::string hostname = absl::GetFlag(FLAGS_hostname);
-  int host_id = absl::GetFlag(FLAGS_host_id);
-  std::vector<std::string> remotes = absl::GetFlag(FLAGS_remotes);
-  std::string registry_ip = absl::GetFlag(FLAGS_registry_ip);
-  auto testtime = absl::GetFlag(FLAGS_testtime);
-  auto dev_name = absl::GetFlag(FLAGS_dev_name);
-  auto dev_port = absl::GetFlag(FLAGS_dev_port);
-  [[maybe_unused]] auto loop = absl::GetFlag(FLAGS_loop);
-  auto capacity = absl::GetFlag(FLAGS_capacity);
-  auto buf_size = absl::GetFlag(FLAGS_buf_size);
-  auto sleep = absl::GetFlag(FLAGS_sleep);
-  auto leader_fixed = absl::GetFlag(FLAGS_leader_fixed);
-  auto policy = absl::GetFlag(FLAGS_policy);
-  auto duration = absl::GetFlag(FLAGS_duration);
-
-  // More connfig
+  int host_id = args->uget(romulus::NODE_ID);
+  std::string registry_ip = args->sget(romulus::REGISTRY_IP);
+  std::string outfile = args->sget(romulus::OUTPUT_FILE);
+  auto testtime = std::chrono::seconds(args->uget(romulus::TESTTIME)); // in seconds
+  auto dev_name = args->sget(romulus::DEV_NAME);
+  auto dev_port = args->uget(romulus::DEV_PORT);
+  auto loop = args->uget(romulus::LOOP);
+  auto capacity = args->uget(romulus::CAPACITY);
+  auto buf_size = args->uget(romulus::BUF_SIZE);
+  auto sleep = std::chrono::milliseconds(args->uget(romulus::SLEEP)); // in milliseconds
+  auto leader_fixed = args->bget(romulus::LEADER_FIXED);
+  auto policy = args->sget(romulus::POLICY);
+  auto duration = std::chrono::milliseconds(args->uget(romulus::DURATION)); // in milliseconds
+  // More config
   int system_size = remotes.size() + 1;
-  auto testtime_us = absl::ToDoubleMicroseconds(testtime);
-  auto duration_us = absl::ToDoubleMicroseconds(duration);
 
   // Random number generator.
   std::random_device rand_device;
@@ -67,15 +53,23 @@ int main(int argc, char* argv[]) {
       0, std::numeric_limits<uint32_t>::max());
 
   // Print configuration.
-  DYNO_INFO("!> [CONF] exp_name={}", exp_name);
-  DYNO_INFO("!> [CONF] sys_size={}", system_size);
-  DYNO_INFO("!> [CONF] host={}", hostname);
-  DYNO_INFO("!> [CONF] dev_name={}", dev_name);
-  DYNO_INFO("!> [CONF] dev_port={}", dev_port);
-  DYNO_INFO("!> [CONF] capacity={}", capacity);
-  DYNO_INFO("!> [CONF] buf_size={}", buf_size);
-  DYNO_INFO("!> [CONF] leader_fixed={}", leader_fixed);
-  DYNO_INFO("!> [CONF] policy={}", policy);
+  ROMULUS_INFO("Experimental Configuration:");
+  ROMULUS_INFO("!> [CONF] hostname={}", hostname);
+  ROMULUS_INFO("!> [CONF] host id={}", host_id);
+  ROMULUS_INFO("!> [CONF] registry ip={}", registry_ip);
+  ROMULUS_INFO("!> [CONF] output file={}", outfile);
+  ROMULUS_INFO("!> [CONF] testtime={} s", testtime.count());
+  ROMULUS_INFO("!> [CONF] device name={}", dev_name);
+  ROMULUS_INFO("!> [CONF] device port={}", dev_port);
+  ROMULUS_INFO("!> [CONF] loop={}", loop);
+  ROMULUS_INFO("!> [CONF] capacity={}", capacity);
+  ROMULUS_INFO("!> [CONF] buf_size={}", buf_size);
+  ROMULUS_INFO("!> [CONF] sleep={} ms", sleep.count());
+  ROMULUS_INFO("!> [CONF] leader_fixed={}", leader_fixed);
+  ROMULUS_INFO("!> [CONF] policy={}", policy);
+  ROMULUS_INFO("!> [CONF] duration={} ms", duration.count());
+  ROMULUS_INFO("!> [CONF] system_size={}", system_size);
+  
   if (policy == "rotating") {
     if (duration >= testtime) {
       DYNO_WARN(

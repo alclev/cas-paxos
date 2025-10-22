@@ -3,7 +3,7 @@
 #include "cli.h"
 
 namespace romulus {
-constexpr const char* NODE_ID = "--host-id";
+constexpr const char* NODE_ID = "--node-id";
 constexpr const char* HOSTNAME = "--hostname";
 constexpr const char* REMOTES = "--remotes";
 constexpr const char* REGISTRY_IP = "--registry-ip";
@@ -29,20 +29,17 @@ inline auto ARGS = {
                 "10.10.1.1"),
     ENUM_ARG_OPT(TRANSPORT_TYPE, "RDMA transport type.", "IB", {"IB", "ROCE"}),
     STR_ARG_OPT(DEV_NAME, "Name of the RDMA device to use.", ""),
-    U64_ARG_OPT(DEV_PORT, "Port number of the RDMA device.", 1),
-    STR_ARG_OPT(TESTTIME, "Experiment duration (e.g., 10s, 2m, 1h).", "10s"),
+    U64_ARG_OPT(DEV_PORT, "Port number of the RDMA device.", 33330),
+    U64_ARG_OPT(TESTTIME, "Experiment duration in seconds", 10),
     U64_ARG_OPT(LOOP, "Number of iterations between runtime checks.", 1000),
     U64_ARG_OPT(CAPACITY, "Capacity of the replicated log.", 10000000),
     U64_ARG_OPT(BUF_SIZE, "Buffer size for remote writes.", 64),
-    STR_ARG_OPT(SLEEP, "Sleep interval between proposals (e.g., 100ms).",
-                "100ms"),
+    U64_ARG_OPT(SLEEP, "Sleep interval between proposals in ms", 100),
     BOOL_ARG_OPT(LEADER_FIXED,
                  "If true, only a single node proposes commands."),
     ENUM_ARG_OPT(POLICY, "Leader rotation policy when not fixed.", "rotating",
                  {"rotating", "all"}),
-    STR_ARG_OPT(DURATION,
-                "Duration of leadership in rotating policy (e.g., 100ms).",
-                "100ms"),
+    U64_ARG_OPT(DURATION, "Duration of leadership in rotating policy in ms.", 100),
     STR_ARG_OPT(OUTPUT_FILE, "File to output results to.", "stats.csv"),
     BOOL_ARG_OPT(HELP, "Print usage information.")};
 }  // namespace romulus
