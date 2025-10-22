@@ -1,9 +1,9 @@
 
 
-#include <romulus/romulus.h>
 #include <romulus/common.h>
 #include <romulus/connection_manager.h>
 #include <romulus/registry.h>
+#include <romulus/romulus.h>
 
 #include "cas_paxos_impl.h"
 #include "state.h"
@@ -11,7 +11,15 @@
 #define PAXOS_NS paxos_st
 constexpr uint32_t kNumProposals = 8092;
 
+template <typename Rep, typename Period>
+void busy_wait(std::chrono::duration<Rep, Period> d) {
+  auto start = std::chrono::steady_clock::now();
+  while (std::chrono::steady_clock::now() - start < d)
+    ;
+}
+
 int main(int argc, char* argv[]) {
+  ROMULUS_STOPWATCH_DECLARE();
   romulus::INIT();
   auto args = std::make_shared<romulus::ArgMap>();
   args->import(romulus::ARGS);
@@ -33,16 +41,19 @@ int main(int argc, char* argv[]) {
   int host_id = args->uget(romulus::NODE_ID);
   std::string registry_ip = args->sget(romulus::REGISTRY_IP);
   std::string outfile = args->sget(romulus::OUTPUT_FILE);
-  auto testtime = std::chrono::seconds(args->uget(romulus::TESTTIME)); // in seconds
+  auto testtime =
+      std::chrono::seconds(args->uget(romulus::TESTTIME));  // in seconds
   auto dev_name = args->sget(romulus::DEV_NAME);
   auto dev_port = args->uget(romulus::DEV_PORT);
   auto loop = args->uget(romulus::LOOP);
   auto capacity = args->uget(romulus::CAPACITY);
   auto buf_size = args->uget(romulus::BUF_SIZE);
-  auto sleep = std::chrono::milliseconds(args->uget(romulus::SLEEP)); // in milliseconds
+  auto sleep =
+      std::chrono::milliseconds(args->uget(romulus::SLEEP));  // in milliseconds
   auto leader_fixed = args->bget(romulus::LEADER_FIXED);
   auto policy = args->sget(romulus::POLICY);
-  auto duration = std::chrono::milliseconds(args->uget(romulus::DURATION)); // in milliseconds
+  auto duration = std::chrono::milliseconds(
+      args->uget(romulus::DURATION));  // in milliseconds
   // More config
   int system_size = remotes.size() + 1;
 
@@ -69,23 +80,17 @@ int main(int argc, char* argv[]) {
   ROMULUS_INFO("!> [CONF] policy={}", policy);
   ROMULUS_INFO("!> [CONF] duration={} ms", duration.count());
   ROMULUS_INFO("!> [CONF] system_size={}", system_size);
-  
+
   if (policy == "rotating") {
     if (duration >= testtime) {
-      DYNO_WARN(
-          "Configured to rotate leaders but duration is not short enough. "
-          "duration={:4.2f}ms, testtime={:4.2f}ms",
-          absl::ToDoubleMilliseconds(duration),
-          absl::ToDoubleMilliseconds(testtime));
+      ROMULUS_FATAL(
+          "Configured to rotate leaders but duration is not short enough "
+          "duration={}ms, testtime={}ms",
+          duration.count(), testtime.count());
     }
-    DYNO_INFO("!> [CONF] duration={:4.2f}ms",
-              absl::ToDoubleMilliseconds(duration));
   }
-  DYNO_INFO("!> [CONF] testtime={:4.2f}ms",
-            absl::ToDoubleMilliseconds(testtime));
 
   INIT_CONSENSUS();
-
   // Populate some proposals.
   std::vector<std::pair<uint32_t, uint8_t*>> proposals;
   proposals.reserve(kNumProposals);
@@ -105,9 +110,9 @@ int main(int argc, char* argv[]) {
   std::function<void(void)> reset = RESET;
 
   init();
-  DYNO_INFO("Starting latency test");
-  ROME_STOPWATCH_BEGIN();
-  while (ROME_STOPWATCH_RUNTIME(ROME_MICROSECONDS) < testtime_us) {
+  ROMULUS_INFO("Starting latency test");
+  ROMULUS_STOPWATCH_BEGIN();
+  while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) < testtime_us) {
     for (uint32_t i = 0; i < loop; ++i) {
       if (leader_fixed && host_id == 0) {
         exec();
@@ -116,7 +121,7 @@ int main(int argc, char* argv[]) {
         exec();
       } else if (!leader_fixed && policy == "rotating") {
         // Each host leads a portion of the overall execution.
-        auto curr_us = ROME_STOPWATCH_RUNTIME(ROME_MICROSECONDS);
+        auto curr_us = ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS);
         if ((static_cast<uint32_t>(curr_us) /
              static_cast<uint32_t>(duration_us)) %
                 system_size ==
@@ -126,12 +131,7 @@ int main(int argc, char* argv[]) {
           done();
         }
       }
-
-      if (sleep > absl::ZeroDuration()) {
-        auto start = absl::Now();
-        while (absl::Now() - start < sleep)
-          ;
-      }
+      busy_wait(sleep);
     }
   }
   done();
@@ -145,10 +145,10 @@ int main(int argc, char* argv[]) {
   int x = 0;
   bool first = true;
   init();
-  DYNO_INFO("Starting throughput test");
-  ROME_STOPWATCH_BEGIN();
-  ROME_STOPWATCH_START();
-  while (ROME_STOPWATCH_RUNTIME(ROME_MICROSECONDS) < testtime_us) {
+  ROMULUS_INFO("Starting throughput test");
+  ROMULUS_STOPWATCH_BEGIN();
+  ROMULUS_STOPWATCH_START();
+  while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) < testtime_us) {
     for (uint32_t i = 0; i < loop; ++i) {
       if (leader_fixed && host_id == 0) {
         exec();
@@ -157,7 +157,7 @@ int main(int argc, char* argv[]) {
         exec();
       } else if (!leader_fixed && policy == "rotating") {
         // Each host leads a portion of the overall execution.
-        auto curr_us = ROME_STOPWATCH_RUNTIME(ROME_MICROSECONDS);
+        auto curr_us = ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS);
         if ((static_cast<uint32_t>(curr_us) /
              static_cast<uint32_t>(duration_us)) %
                 system_size ==
@@ -170,20 +170,15 @@ int main(int argc, char* argv[]) {
           done();
         }
       }
-
-      if (sleep > absl::ZeroDuration()) {
-        auto start = absl::Now();
-        while (absl::Now() - start < sleep)
-          ;
-      }
+      busy_wait(sleep);
     }
   }
   done();
   calc();
-  DYNO_WARN("times_leader={}", x);
+  ROMULUS_WARN("times_leader={}", x);
 
   for (auto& p : proposals) {
     delete[] p.second;
   }
-  return 0
+  return 0;
 }

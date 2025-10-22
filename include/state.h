@@ -93,7 +93,11 @@ struct State {
    * @param type
    */
   State() : raw(0) {}
-  State(Ballot max, Ballot accepted, Value value);
+  State(uint16_t max, uint16_t accepted, Value value) {
+    raw = (static_cast<uint64_t>(max) << (kTotalBits - kMaxBallotBits)) |
+          (static_cast<uint64_t>(accepted) << kValueBits) |
+          static_cast<uint64_t>(value.raw());
+  }
 
   // Getters
   inline Ballot GetMaxBallot() const {
