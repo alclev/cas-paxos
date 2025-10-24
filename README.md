@@ -63,6 +63,7 @@ Collaboration is encouraged, and for any external contributions please open a PR
 ## License
 
 Copyright (c) 2025 Alex Clevenger
+
 This code is made available under a [MIT License](./LICENSE) intended for **academic research**.  
 
 
