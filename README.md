@@ -56,6 +56,7 @@ bash cl.sh run-debug "experiments/simple" "catch throw"
 ### Algorithm
 
 #### Normal Execution (Leader Fixed)
+```text
 - Background thread listening for failures
   - In the event of a failure detection --> [Failure case](#failure-case)
 - Leader remains fixed throghout execution and delivers all proposals
@@ -63,7 +64,9 @@ bash cl.sh run-debug "experiments/simple" "catch throw"
   - Prepare
   - Promise
   - Commit
+```
 #### Normal Execution (All)
+```pseudocode
 - Background thread listening for failures
   - In the event of a failure detection --> [Failure case](#failure-case)
 - All hosts propose a value, and leadership is **earned** through successful commit
@@ -76,7 +79,9 @@ All hosts execute:
     - [Leader Change](#leader-change)
   - From here, we employ Multi-Paxos optimization by assuming stable leader for subsequent rounds
   - Repeat
+  ```
 #### Normal Execution (Rotating)
+```text
 - Background thread listening for failures
   - In the event of a failure detection --> [Failure case](#failure-case)
 - Each host leads a **portion** of the overall execution
@@ -89,13 +94,15 @@ A subset of the hosts execute:
     - [Leader Change](#leader-change)
   - From here, we employ Multi-Paxos optimization by assuming stable leader for subsequent rounds
   - Repeat
-
+```
 #### Failure Case
+```text
 1. [Leader Relection](#leader-change)
 2. CatchUp() :
    - Sync committed slots starting at log offset
-
+```
 #### Leader change
+```text
 1. New leader is chosen by simple rule
 2. New leader updates its thread-local state to reflect leadership
 3. New leader CAS's <leader> slot with it's STATE metadata
@@ -105,6 +112,7 @@ A subset of the hosts execute:
        1. <Leader's ballot number>
        2. <Last accepted (ballot, value)>
 5. Continue normal execution
+```
 
 ## Citations
 
