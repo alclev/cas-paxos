@@ -321,6 +321,30 @@ class CasPaxos : public Paxos {
   }
 
  private:
+  void Failure() {
+    ROMULUS_INFO("Failure detected. Undergoing leader election...")
+    conn_manager_->arrive_strict_barrier();
+    LeaderChange();
+    conn_manager_->arrive_strict_barrier();
+    // Catch up on previously committed values.
+    CatchUp();
+    conn_manager_->arrive_strict_barrier();
+  }
+
+  void LeaderChange() {
+    // First, we scan proposal region at log_offset_ to determine the
+    // highest-ballot that does NOT belong to the leader that just failed
+    // This node assumes leadership.
+
+    // New leader updates its state to reflect leader change
+    // Also, toggle the is_leader_ in old leader to false
+
+    // Then, **EVERYONE** read from <leader> slot
+    // If empty, no leader has been elected yet
+    // Else, update:
+    //    <max ballot number>
+    //    <Last accepted (ballot, value)>
+  }
   //+ Prepare work request then post with first request.
   uint32_t PrepareWrite(uint32_t len, uint8_t* buf) {
     ROMULUS_ASSERT(buf_offset_ < buf_chunk_size_,
@@ -378,12 +402,11 @@ class CasPaxos : public Paxos {
     bool ok, done = false;
     while (!done) {
       ROMULUS_COUNTER_INC("attempts");
-      // Catch up on previously committed values.
-      CatchUp();
-
-      // Run Paxos on the next free slot.
-      UpdateBallot();
-      ok = Prepare();
+      // Skip preparation if we are the leader -- key multi-paxos optimization
+      if (is_leader_)
+        ok = true;
+      else
+        ok = Prepare();
       if (ok) {
         ok = Promise(v);
         if (ok) {
@@ -420,6 +443,7 @@ class CasPaxos : public Paxos {
     }
     ROMULUS_COUNTER_INC("proposed");
   }
+
   bool TryCatchUp() {
     ROMULUS_DEBUG("<TryCatchUp> Catching up slot: {}", log_offset_);
 
@@ -543,9 +567,6 @@ class CasPaxos : public Paxos {
     ++wr_id_;
   }
   bool Prepare() {
-    // Skip preparation if we are the leader.
-    if (is_leader_) return true;
-
     State* curr_proposal = &proposed_state_[log_offset_];
     std::vector<State> expected, swap;
     std::vector<bool> ok, done;
@@ -563,21 +584,12 @@ class CasPaxos : public Paxos {
       done[i] = false;
     }
 
-// Post CAS ops.
-#ifndef ROMULUS_NO_SENDALL
-    // Issue CAS to all nodes.
-    uint32_t send_to = system_size_;
-#else
-    // Issue CAS only to quorum assuming they are available.
-    uint32_t send_to = quorum_;
-#endif
-
     // Retry until a quroum succeeds.
     while (done_count < quorum_) {
       uint32_t ok_count = 0;
 
       // Post CAS ops.
-      for (uint32_t i = 0; i < send_to; ++i) {
+      for (uint32_t i = 0; i < system_size_; ++i) {
         if (done[i]) {
           ++ok_count;
         } else {
@@ -594,8 +606,8 @@ class CasPaxos : public Paxos {
       }
 
       // Poll for completions
-      while (ok_count < send_to) {
-        for (uint32_t i = 0; i < send_to; ++i) {
+      while (ok_count < system_size_) {
+        for (uint32_t i = 0; i < system_size_; ++i) {
           if (done[i] || ok[i]) continue;
           c = contexts_[i];
           ok[i] = PollCompletionsOnce(c, wr_id_);
@@ -605,7 +617,7 @@ class CasPaxos : public Paxos {
 
       // Check return value of CAS.
       auto* curr_proposal = &proposed_state_[log_offset_];
-      for (uint32_t i = 0; i < send_to; ++i) {
+      for (uint32_t i = 0; i < system_size_; ++i) {
         if (done[i] || !ok[i]) continue;
         c = contexts_[i];
         if (c->scratch_state->raw == expected[i].raw) {
@@ -630,7 +642,7 @@ class CasPaxos : public Paxos {
     }
 
     // Update current proposal to reflect the highest balloted proposal.
-    for (uint32_t i = 0; i < send_to; ++i) {
+    for (uint32_t i = 0; i < system_size_; ++i) {
       if (swap[i].GetBallot() > curr_proposal->GetBallot()) {
         curr_proposal->SetProposal(swap[i].GetBallot(), swap[i].GetValue());
       }
@@ -665,22 +677,13 @@ class CasPaxos : public Paxos {
     ROMULUS_DEBUG("<Promise> slot={}, state={}", log_offset_,
                   proposed_state_[log_offset_].ToString());
 
-// Post CAS ops.
-#ifndef ROMULUS_NO_SENDALL
-    // Issue CAS to all nodes.
-    uint32_t send_to = system_size_;
-#else
-    // Issue CAS only to quorum assuming they are available.
-    uint32_t send_to = quorum_;
-#endif
-
     // Retry until a quroum succeeds and the local log is written to. Making
     // sure that we write to the local log allows a follower to be certain that
     // if the slot is filled that the value is committed.
     while (done_count < quorum_) {
       // Post CAS ops.
       uint32_t ok_count = 0;
-      for (uint32_t i = 0; i < send_to; ++i) {
+      for (uint32_t i = 0; i < system_size_; ++i) {
         if (done[i]) {
           // Already succeeded.
           ++ok_count;
@@ -698,8 +701,8 @@ class CasPaxos : public Paxos {
       }
 
       // Poll for completions
-      while (ok_count < send_to) {
-        for (uint32_t i = 0; i < send_to; ++i) {
+      while (ok_count < system_size_) {
+        for (uint32_t i = 0; i < system_size_; ++i) {
           if (done[i] || ok[i]) continue;
           c = contexts_[i];
           ok[i] = PollCompletionsOnce(c, wr_id_);
@@ -707,7 +710,7 @@ class CasPaxos : public Paxos {
         }
       }
 
-      for (uint32_t i = 0; i < send_to; ++i) {
+      for (uint32_t i = 0; i < system_size_; ++i) {
         if (done[i] || !ok[i]) continue;
         c = contexts_[i];
         if (expected[i].raw == c->scratch_state->raw) {
