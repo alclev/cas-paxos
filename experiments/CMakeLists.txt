@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
 
-file(GLOB BENCH_SOURCES *.cc)
+file(GLOB SRC_SOURCES *.cc)
 
-foreach(BENCH_SRC ${BENCH_SOURCES})
-  get_filename_component(BENCH_NAME ${BENCH_SRC} NAME_WE)
-  add_executable(${BENCH_NAME} ${BENCH_SRC})
+foreach(SRC ${SRC_SOURCES})
+  get_filename_component(SRC_NAME ${SRC} NAME_WE)
+  add_executable(${SRC_NAME} ${SRC})
 
-  target_link_libraries(${BENCH_NAME}
+  target_link_libraries(${SRC_NAME}
     PRIVATE
-      romulus             
+      ${PROJECT_NAME}             
       rdmacm           
       ibverbs
       pthread

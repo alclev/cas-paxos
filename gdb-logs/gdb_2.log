@@ -1,0 +1,81 @@
+GNU gdb (Ubuntu 15.0.50.20240403-0ubuntu1) 15.0.50.20240403-git
+Copyright (C) 2024 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<https://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from ./simple...
+Starting program: /users/alclev/simple --hostname apt104 --node-id 2 --leader-fixed --remotes apt114,apt109,apt104,apt097,apt095,apt093,apt119,apt112,apt103,apt118
+warning: could not find '.gnu_debugaltlink' file for /lib/x86_64-linux-gnu/librdmacm.so.1
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+romulus::DEBUG is true
+[INFO] Remote apt114
+[INFO] Remote apt109
+[INFO] Remote apt097
+[INFO] Remote apt095
+[INFO] Remote apt093
+[INFO] Remote apt119
+[INFO] Remote apt112
+[INFO] Remote apt103
+[INFO] Remote apt118
+[INFO] FRESH remotes size : 9
+[INFO] Experimental Configuration:
+[INFO] !> [CONF] hostname=apt104
+[INFO] !> [CONF] host id=2
+[INFO] !> [CONF] registry ip=10.10.1.1
+[INFO] !> [CONF] output file=stats.csv
+[INFO] !> [CONF] testtime=10 s
+[INFO] !> [CONF] device name=mlx4_0
+[INFO] !> [CONF] device port=0
+[INFO] !> [CONF] device port=IB
+[INFO] !> [CONF] loop=1000
+[INFO] !> [CONF] capacity=10000000
+[INFO] !> [CONF] buf_size=64
+[INFO] !> [CONF] sleep=100 ms
+[INFO] !> [CONF] leader_fixed=true
+[INFO] !> [CONF] policy=all
+[INFO] !> [CONF] duration=100 ms
+[INFO] !> [CONF] system_size=10
+[INFO] Remotes size 9
+[INFO] Initializing CAS-Paxos
+[INFO] INIT_CONSENSUS system_size 9
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libqedr-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libmana-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libmlx4-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libvmw_pvrdma-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libmlx5-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libcxgb4-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libirdma-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libefa-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libipathverbs-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libhns-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libhfi1verbs-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libmthca-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libsiw-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/librxe-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libocrdma-rdmav34.so
+[INFO] Instantiating CasPaxos with system size 10
+[DEBUG] Initializing CAS-based Paxos (/home/alclev/cas-paxos/include/cas_paxos_st.h:138)
+[DEBUG] Quorum size: 6 (/home/alclev/cas-paxos/include/cas_paxos_st.h:139)
+[DEBUG] Opening device with name mlx4_0 on port 1 (/home/alclev/cas-paxos/include/cas_paxos_st.h:140)
+[DEBUG] Device candidate mlx4_0 (/home/alclev/remus/include/romulus/device.h:38)
+[DEBUG] Trying to open device: name=mlx4_0, port=1 (/home/alclev/remus/include/romulus/device.h:42)
+[DEBUG] Attempting to set port for device: mlx4_0 (/home/alclev/remus/include/romulus/device.h:94)
+[INFO] Using device: name=mlx4_0, port=1
+[INFO] Registering remotely accessible memory
+[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=70000010, bytes=560000128, is_multiple=false
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/libbnxt_re-rdmav34.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libibverbs/liberdma-rdmav34.so
+[FATAL] Failed to register memory region: BufRegion4, error=Cannot allocate memory
+[Inferior 1 (process 40864) exited with code 01]
+(gdb) ^C

@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <memory>
 
-#include "common.h"
+#include <romulus/common.h>
 
 constexpr bool is_pow2(uint32_t v) { return v && ((v & (v - 1)) == 0); }
 

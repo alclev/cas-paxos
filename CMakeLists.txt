@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(romulus LANGUAGES CXX VERSION 1.0.0)
+project(cas-paxos LANGUAGES CXX VERSION 1.0.0)
 
 # Options
 option(DOCS "Set to build documentation" OFF)
@@ -36,12 +36,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "Using standard ${CXX_STANDARD}")
 
 set(CMAKE_CXX_STANDARD ${CXX_STANDARD})
+set(ROMULUS_INCLUDE_PATH "/home/alclev/remus/include")
 
-
-add_library(romulus INTERFACE)
-target_include_directories(romulus
+add_library(${PROJECT_NAME} INTERFACE)
+target_include_directories(${PROJECT_NAME}
   INTERFACE
     ${CMAKE_SOURCE_DIR}/include
+    ${ROMULUS_INCLUDE_PATH}
 )
-add_subdirectory(benchmark)
-add_subdirectory(tests)
+add_subdirectory(experiments)

@@ -61,13 +61,7 @@ function load_cfg {
 			REMOTES="$REMOTES,$machine"
 		fi
 	done
-
-	ROMULUS_ARGS="--remotes ${REMOTES} \
---transport-type ${TRANSPORT_TYPE} \
---dev-port ${DEV_PORT} \
---registry-ip ${REGISTRY_IP}"
-	ARGS="${ROMULUS_ARGS}"
-	# echo "Using args: $ARGS"
+	ARGS="--remotes ${REMOTES}"
 }
 
 # SSH into MACHINES once, to fix known_hosts
@@ -160,13 +154,10 @@ function cl_run() {
 
 	for i in "${!MACHINES[@]}"; do
 		host="${MACHINES[$i]}"
-		if [[ i -eq 0 ]]; then
-			EXTRA_ARGS="--reset-barrier 0"
-		else
-			EXTRA_ARGS=""
-		fi
+		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --leader-fixed ${ARGS}"
+		echo "$CMD"
 		cat >>"$tmp_screen" <<EOF
-screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ./${EXE_NAME} --node-id ${i} ${ARGS} ${EXTRA_ARGS}; bash
+screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}; bash
 logfile logs/log_${i}.txt
 log on
 EOF
@@ -200,15 +191,16 @@ function cl_debug() {
 
 	for i in "${!MACHINES[@]}"; do
 		host="${MACHINES[$i]}"
+		CMD="--hostname ${host} --node-id ${i} --leader-fixed ${ARGS}"
 		if [[ $i -eq 0 && -n "$gdb_cmd" ]]; then
 			cat >>"$tmp_screen" <<EOF
-screen -t node${i} ssh ${USER}@${host}.${DOMAIN} gdb -ex \"${gdb_cmd}\" -ex \"r\" --args ./${EXE_NAME} --node-id ${i} ${ARGS}; bash
+screen -t node${i} ssh ${USER}@${host}.${DOMAIN} gdb -ex \"${gdb_cmd}\" -ex \"r\" --args ./${EXE_NAME} ${CMD}; bash
 logfile gdb-logs/gdb_${i}.log
 log on
 EOF
 		else
 			cat >>"$tmp_screen" <<EOF
-screen -t node${i} ssh ${USER}@${host}.${DOMAIN} gdb -ex \"r\" --args ./${EXE_NAME} --node-id ${i} ${ARGS}; bash
+screen -t node${i} ssh ${USER}@${host}.${DOMAIN} gdb -ex \"r\" --args ./${EXE_NAME} ${CMD}; bash
 logfile gdb-logs/gdb_${i}.log
 log on
 EOF
@@ -373,10 +365,6 @@ elif [[ "$cmd" == "connect" && "$count" -eq 1 ]]; then
 	cl_connect
 elif [[ "$cmd" == "reset" && "$count" -eq 1 ]]; then
 	reset
-elif [[ "$cmd" == "test-remus" && "$count" -eq 1 ]]; then
-	test_remus
-elif [[ "$cmd" == "test-perftest" && "$count" -eq 1 ]]; then
-	test_perftest >logs/perftest.log 2>&1
 elif [[ "$cmd" == "do-all" && "$count" -eq 2 ]]; then
 	do_all "$2"
 else
