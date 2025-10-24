@@ -1,4 +1,4 @@
-# Cas-Paxos : A CAS-based Paxos abortable-consensus variant
+# CAS-Paxos : A cas-based Paxos consensus variant
 
 This library builds upon classical cas-based consensus over Remote Direct Memory Access (RDMA). 
 The RDMA control plane is developed and managed by the following library: [Romulus](https://github.com/sss-lehigh/remus/tree/romulus)
@@ -56,63 +56,53 @@ bash cl.sh run-debug "experiments/simple" "catch throw"
 ### Algorithm
 
 #### Normal Execution (Leader Fixed)
-```text
 - Background thread listening for failures
   - In the event of a failure detection --> [Failure case](#failure-case)
 - Leader remains fixed throghout execution and delivers all proposals
-  - Propose
-  - Prepare
-  - Promise
-  - Commit
-```
+  - `Propose`
+  - `Prepare`
+  - `Promise`
+  - `Commit`
 #### Normal Execution (All)
-```pseudocode
 - Background thread listening for failures
   - In the event of a failure detection --> [Failure case](#failure-case)
 - All hosts propose a value, and leadership is **earned** through successful commit
 - Safety is ensured by the properties of the cas-based PREPARE and ACCEPT phases
 All hosts execute:
-  - Propose 
-  - Prepare (CAS quorum)
-  - Promise (CAS quorum)
-  - Commit (whoever committed this will become leader for the next round)
+  - `Propose` 
+  - `Prepare` (CAS quorum)
+  - `Promise` (CAS quorum)
+  - `Commit` (whoever committed this will become leader for the next round)
     - [Leader Change](#leader-change)
   - From here, we employ Multi-Paxos optimization by assuming stable leader for subsequent rounds
   - Repeat
-  ```
 #### Normal Execution (Rotating)
-```text
 - Background thread listening for failures
   - In the event of a failure detection --> [Failure case](#failure-case)
 - Each host leads a **portion** of the overall execution
 - Leadership is earned by the means as [Normal Rotating Execution](#normal-execution-rotating)
 A subset of the hosts execute:
-  - Propose 
-  - Prepare (CAS quorum)
-  - Promise (CAS quorum)
-  - Commit (whoever committed this will become leader for the next round)
+  - `Propose` 
+  - `Prepare` (CAS quorum)
+  - `Promise` (CAS quorum)
+  - `Commit` (whoever committed this will become leader for the next round)
     - [Leader Change](#leader-change)
   - From here, we employ Multi-Paxos optimization by assuming stable leader for subsequent rounds
   - Repeat
-```
 #### Failure Case
-```text
 1. [Leader Relection](#leader-change)
-2. CatchUp() :
+2. `CatchUp`
    - Sync committed slots starting at log offset
-```
 #### Leader change
-```text
 1. New leader is chosen by simple rule
 2. New leader updates its thread-local state to reflect leadership
-3. New leader CAS's <leader> slot with it's STATE metadata
-4. **Everyone** else perform a READ on <leader> slot
+3. New leader `CAS`s <leader> slot with it's STATE metadata
+4. **Everyone** else perform a `READ` on <leader> slot
     - If empty --> No leader has been elected yet, proceed. 
     - Else, update the following relavent host-local metadata:
        1. <Leader's ballot number>
        2. <Last accepted (ballot, value)>
 5. Continue normal execution
-```
 
 ## Citations
 
