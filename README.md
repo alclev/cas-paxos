@@ -56,3 +56,13 @@ bash cl.sh run-debug "experiments/simple" "catch throw"
 ## Citations
 
 ## Contributing
+
+This project is part of ongoing academic research at Lehigh University.  
+Collaboration is encouraged, and for any external contributions please open a PR.
+
+## License
+
+© 2025 Alex Clevenger.  
+This code is made available under a modified [MIT License](./LICENSE) intended for **academic research**.  
+
+
