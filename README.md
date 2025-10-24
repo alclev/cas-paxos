@@ -1,7 +1,7 @@
 # Cas-Paxos : A CAS-based Paxos abortable-consensus variant
 
 This library builds upon classical cas-based consensus over Remote Direct Memory Access (RDMA). 
-The RDMA control plane is developed and managed by the following library: [Remus](https://github.com/sss-lehigh/remus)
+The RDMA control plane is developed and managed by the following library: [Romulus](https://github.com/sss-lehigh/remus/tree/romulus)
 
 ## Usage
 
