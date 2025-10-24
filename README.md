@@ -106,8 +106,7 @@ A subset of the hosts execute:
 
 ## Citations
 
-This project is built on top of the prior works of Jacob Nelson, Ph.D @jacnel
-
+This project is built on top of the prior works of Jacob Nelson, Ph.D - @jacnel
 Portions of the code and design have been adopted from prior work and external sources including:
 - [Mu](https://www.usenix.org/system/files/osdi20-aguilera.pdf)
 - [Velos](https://arxiv.org/pdf/2106.08676)
