@@ -1,12 +1,12 @@
 # CAS-Paxos : A cas-based Paxos consensus variant
 
-This library builds upon classical cas-based consensus over Remote Direct Memory Access (RDMA). 
-The RDMA control plane is developed and managed by the following library: [Romulus](https://github.com/sss-lehigh/remus/tree/romulus)
+This library builds upon abortable cas-based consensus over Remote Direct Memory Access (RDMA). 
+The RDMA control plane is defined in the following library: [Romulus](https://github.com/sss-lehigh/remus/tree/romulus).
 
 ## Usage
 
 Refer to script `tools/cl.sh`, which can and should be used to manage experiments and development. 
-The first thing that **must** be done before running any code is to update the parameters in `config/cloudlab.conf`. This tells the script which machines to deploy the binary executables to. Then, the enviroment must be prepared using `cl.sh install-deps`. From here, the remaining usage is experiment-specific. 
+The first thing that **must** be done before running any code is to update the parameters in `config/cloudlab.conf`. This tells the script which machines to deploy the binary executables to. Then, the enviroment must be prepared using `cl.sh install-deps`. From here, the remaining usage is application-specific. 
 #### Dependencies
 - `librdmacm-dev`
 -  `ibverbs-utils `
