@@ -57,7 +57,7 @@ bash cl.sh run-debug "experiments/simple" "catch throw"
 
 #### Normal Execution (Leader Fixed)
 - Background thread listening for failures
-  - In the event of a failure detection --> [Failure case](#failure-case)
+  - In the event of a failure detection → [Failure case](#failure-case)
 - Leader remains fixed throghout execution and delivers all proposals
   - `Propose`
   - `Prepare`
@@ -65,7 +65,7 @@ bash cl.sh run-debug "experiments/simple" "catch throw"
   - `Commit`
 #### Normal Execution (All)
 - Background thread listening for failures
-  - In the event of a failure detection --> [Failure case](#failure-case)
+  - In the event of a failure detection → [Failure case](#failure-case)
 - All hosts propose a value, and leadership is **earned** through successful commit
 - Safety is ensured by the properties of the cas-based PREPARE and ACCEPT phases
 All hosts execute:
@@ -73,12 +73,12 @@ All hosts execute:
   - `Prepare` (CAS quorum)
   - `Promise` (CAS quorum)
   - `Commit` (whoever committed this will become leader for the next round)
-    - [Leader Change](#leader-change)
+    → [Leader Change](#leader-change)
   - From here, we employ Multi-Paxos optimization by assuming stable leader for subsequent rounds
   - Repeat
 #### Normal Execution (Rotating)
 - Background thread listening for failures
-  - In the event of a failure detection --> [Failure case](#failure-case)
+  - In the event of a failure detection → [Failure case](#failure-case)
 - Each host leads a **portion** of the overall execution
 - Leadership is earned by the means as [Normal Rotating Execution](#normal-execution-rotating)
 A subset of the hosts execute:
@@ -98,10 +98,10 @@ A subset of the hosts execute:
 2. New leader updates its thread-local state to reflect leadership
 3. New leader `CAS`s <leader> slot with it's STATE metadata
 4. **Everyone** else perform a `READ` on <leader> slot
-    - If empty --> No leader has been elected yet, proceed. 
+    - If empty → No leader has been elected yet, proceed. 
     - Else, update the following relavent host-local metadata:
-       1. <Leader's ballot number>
-       2. <Last accepted (ballot, value)>
+       1. `<Leader's ballot number>`
+       2. `<Last accepted (ballot, value)>`
 5. Continue normal execution
 
 ## Citations
