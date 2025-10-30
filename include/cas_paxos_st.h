@@ -322,7 +322,7 @@ class CasPaxos : public Paxos {
 
  private:
   void Failure() {
-    ROMULUS_INFO("Failure detected. Undergoing leader election...")
+    ROMULUS_INFO("Failure detected. Undergoing leader election...");
     conn_manager_->arrive_strict_barrier();
     LeaderChange();
     conn_manager_->arrive_strict_barrier();
@@ -336,10 +336,12 @@ class CasPaxos : public Paxos {
     // highest-ballot that does NOT belong to the leader that just failed
     // This node assumes leadership.
 
-    // New leader updates its state to reflect leader change
-    // Also, toggle the is_leader_ in old leader to false
+    // New leader updates its metadata to reflect the leader change
+    // - reads from the <leader> slot to get old max_ballot
+    // - sets its own ballot to max_ballot_old + 1
+    // **toggle the is_leader_ in old leader to false**
 
-    // Then, **EVERYONE** read from <leader> slot
+    // Then, **everyone else** read from <leader> slot
     // If empty, no leader has been elected yet
     // Else, update:
     //    <max ballot number>

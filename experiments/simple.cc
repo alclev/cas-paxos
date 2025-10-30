@@ -8,9 +8,14 @@
 #include <random>
 #include <string>
 
-#include "cas_paxos_impl.h"
 #include "cfg.h"
 #include "state.h"
+
+#ifdef USE_MU
+#include "mu/mu_impl.h"
+#else
+#include "cas_paxos_impl.h"
+#endif
 
 #define PAXOS_NS paxos_st
 constexpr uint32_t kNumProposals = 8092;
@@ -40,15 +45,15 @@ int main(int argc, char* argv[]) {
   // Command line arguments
   int host_id = args->uget(romulus::NODE_ID);
   std::string registry_ip = args->sget(romulus::REGISTRY_IP);
-  std::string outfile = args->sget(romulus::OUTPUT_FILE);
+  std::string output_file = args->sget(romulus::OUTPUT_FILE);
   // Clear any stale output file
-  if (std::filesystem::exists(outfile)) std::filesystem::remove(outfile);
+  if (std::filesystem::exists(output_file)) std::filesystem::remove(output_file);
   auto testtime =
       std::chrono::seconds(args->uget(romulus::TESTTIME));  // in seconds
   auto dev_name = args->sget(romulus::DEV_NAME);
   auto dev_port = args->uget(romulus::DEV_PORT);
   auto transport = args->sget(romulus::TRANSPORT_TYPE);
-  uint8_t transport_flag;
+  [[maybe_unused]] uint8_t transport_flag;
   if (transport == "IB") {
     transport_flag = IBV_LINK_LAYER_INFINIBAND;
   } else if (transport == "RoCE") {
@@ -65,6 +70,9 @@ int main(int argc, char* argv[]) {
       args->uget(romulus::DURATION));  // in milliseconds
   // More config
   int system_size = remotes.size() + 1;
+  std::fstream outfile(output_file, std::ios::out);                              
+  if (!outfile) ROMULUS_FATAL("Could not open output file.");                    
+  outfile << "lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us,throughput_ops_s\n";
 
   // Random number generator.
   std::random_device rand_device;
@@ -77,7 +85,7 @@ int main(int argc, char* argv[]) {
   ROMULUS_INFO("!> [CONF] hostname={}", hostname);
   ROMULUS_INFO("!> [CONF] host id={}", host_id);
   ROMULUS_INFO("!> [CONF] registry ip={}", registry_ip);
-  ROMULUS_INFO("!> [CONF] output file={}", outfile);
+  ROMULUS_INFO("!> [CONF] output file={}", output_file);
   ROMULUS_INFO("!> [CONF] testtime={}_s", testtime.count());
   ROMULUS_INFO("!> [CONF] device name={}", dev_name);
   ROMULUS_INFO("!> [CONF] device port={}", dev_port);
@@ -90,6 +98,7 @@ int main(int argc, char* argv[]) {
   ROMULUS_INFO("!> [CONF] policy={}", policy);
   ROMULUS_INFO("!> [CONF] duration={}_ms", duration.count());
   ROMULUS_INFO("!> [CONF] system_size={}", system_size);
+  ROMULUS_INFO("!> [CONF] output file={}", output_file);
 
   if (policy == "rotating") {
     if (duration >= testtime) {
@@ -116,14 +125,15 @@ int main(int argc, char* argv[]) {
   std::function<void(void)> init = INIT_LATENCY;
   std::function<void(void)> exec = EXEC_LATENCY;
   std::function<void(void)> done = DONE_LATENCY;
-  std::function<void(void)> calc = CALC_LATENCY;
+  std::function<void(std::fstream&)> calc = CALC_LATENCY;
   std::function<void(void)> reset = RESET;
 
   init();
   ROMULUS_INFO("Starting latency test");
+  auto testtime_us =
+      std::chrono::duration_cast<std::chrono::microseconds>(testtime);
   ROMULUS_STOPWATCH_BEGIN();
-  while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
-         static_cast<uint64_t>(testtime.count())) {
+  while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) < static_cast<uint64_t>(testtime_us.count())) {
     for (uint32_t i = 0; i < loop; ++i) {
       if (leader_fixed && host_id == 0) {
         exec();
@@ -132,11 +142,9 @@ int main(int argc, char* argv[]) {
         exec();
       } else if (!leader_fixed && policy == "rotating") {
         // Each host leads a portion of the overall execution.
-        auto curr_us = ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS);
-        if ((static_cast<uint32_t>(curr_us) /
-             static_cast<uint32_t>(duration.count())) %
-                system_size ==
-            static_cast<uint32_t>(host_id)) {
+        auto curr_ms = ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MILLISECONDS);
+        if ((static_cast<uint32_t>(curr_ms) / duration.count()) % system_size ==
+            host_id) {
           exec();
         } else {
           done();
@@ -146,7 +154,7 @@ int main(int argc, char* argv[]) {
     }
   }
   done();
-  calc();
+  calc(outfile);
 
   init = INIT_THROUGHPUT;
   exec = EXEC_THROUGHPUT;
@@ -159,7 +167,8 @@ int main(int argc, char* argv[]) {
   ROMULUS_INFO("Starting throughput test");
   ROMULUS_STOPWATCH_BEGIN();
   ROMULUS_STOPWATCH_START();
-  while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) < testtime.count()) {
+  while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
+         static_cast<uint64_t>(testtime_us.count())) {
     for (uint32_t i = 0; i < loop; ++i) {
       if (leader_fixed && host_id == 0) {
         exec();
@@ -168,11 +177,9 @@ int main(int argc, char* argv[]) {
         exec();
       } else if (!leader_fixed && policy == "rotating") {
         // Each host leads a portion of the overall execution.
-        auto curr_us = ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS);
-        if ((static_cast<uint32_t>(curr_us) /
-             static_cast<uint32_t>(duration.count())) %
-                system_size ==
-            static_cast<uint32_t>(host_id)) {
+        auto curr_ms = ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MILLISECONDS);
+        if ((static_cast<uint32_t>(curr_ms) / duration.count()) % system_size ==
+            host_id) {
           if (first) x++;
           first = false;
           exec();
@@ -185,11 +192,12 @@ int main(int argc, char* argv[]) {
     }
   }
   done();
-  calc();
-  ROMULUS_DEBUG("times_leader={}", x);
-
+  calc(outfile);
+  ROMULUS_INFO("Experiment is finished. Cleaning up...");
+  outfile.close();
   for (auto& p : proposals) {
     delete[] p.second;
   }
+  exit(0);
   return 0;
 }

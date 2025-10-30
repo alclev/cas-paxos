@@ -41,7 +41,11 @@ set(ROMULUS_INCLUDE_PATH "/home/alclev/remus/include")
 add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME}
   INTERFACE
-    ${CMAKE_SOURCE_DIR}/include
-    ${ROMULUS_INCLUDE_PATH}
+  ${CMAKE_SOURCE_DIR}/include
+  ${ROMULUS_INCLUDE_PATH}
 )
+
+option(USE_MU "Enable Mu" OFF)
+
 add_subdirectory(experiments)
+

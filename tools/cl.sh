@@ -151,13 +151,13 @@ function cl_run() {
 	# Set up a screen script for running the program on all MACHINES
 	tmp_screen="$(mktemp)" || exit 1
 	make_screen "$tmp_screen"
-
+	NUM_MACHINES=${#MACHINES[@]}
 	for i in "${!MACHINES[@]}"; do
 		host="${MACHINES[$i]}"
-		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --leader-fixed ${ARGS}"
+		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --leader-fixed --output-file stats_${NUM_MACHINES}_nodes.csv ${ARGS}"
 		echo "$CMD"
 		cat >>"$tmp_screen" <<EOF
-screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}; bash
+screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}
 logfile logs/log_${i}.txt
 log on
 EOF
@@ -217,6 +217,27 @@ function reset_memcached() {
 	ssh ${USER}@${MACHINES[0]}.${DOMAIN} "sudo pkill ${APPLICATION}; sleep 1; nohup ${APPLICATION} -vv -d -l 10.10.1.1 -p 9999 > memcached.log 2>&1 &"
 }
 
+function reset_mu() {
+	FILES_SENT=$(ssh ${USER}@${MACHINES[0]}.${DOMAIN} "test -f /users/${USER}/libcrashconsensus.so && echo true || echo false")
+
+	if [[ "$FILES_SENT" == "false" ]]; then
+		echo "Critical files do not exist on remote. Sending over now..."
+		# Set up memcached on node0
+		scp "lib/memcached" "${USER}@${MACHINES[0]}.${DOMAIN}:memcached"
+		scp "lib/libevent-2.1.so.6" "${USER}@${MACHINES[0]}.${DOMAIN}:~/"
+		for m in ${MACHINES[*]}; do
+			scp "lib/libcrashconsensus.so" "${USER}@${m}.${DOMAIN}:libcrashconsensus.so" &
+		done
+		wait
+	fi
+	# Reset the memcached server
+	ssh ${USER}@${MACHINES[0]}.${DOMAIN} "sudo pkill memcached"
+	sleep 1
+	# Launch the memcached server
+	MEMCACHED_ARGS="-vv -p 9999"
+	ssh ${USER}@${MACHINES[0]}.${DOMAIN} "nohup env LD_LIBRARY_PATH=/users/${USER} ./memcached ${MEMCACHED_ARGS} > memcached.log 2>&1 &"
+}
+
 # Connect to CloudLab nodes (e.g., for debugging)
 function cl_connect() {
 	last_valid_index=$((${#MACHINES[@]} - 1)) # The 0-indexed number of nodes
@@ -238,10 +259,19 @@ function do_all {
 	wait
 }
 
-function reset() {
+function reset-all() {
 	last_valid_index=$((${#MACHINES[@]} - 1)) # The 0-indexed number of nodes
 	for i in $(seq 0 ${last_valid_index}); do
 		ssh ${USER}@${MACHINES[$i]}.${DOMAIN} "sudo killall -9 -u $USER" &
+	done
+	wait
+	echo "Nodes have been reset."
+}
+
+function reset() {
+	last_valid_index=$((${#MACHINES[@]} - 1)) # The 0-indexed number of nodes
+	for i in $(seq 0 ${last_valid_index}); do
+		ssh ${USER}@${MACHINES[$i]}.${DOMAIN} "sudo pkill $1" &
 	done
 	wait
 	echo "Nodes have been reset."
@@ -325,6 +355,85 @@ function test_perftest {
 	echo "Done."
 }
 
+function run_mu {
+	# check if file exists
+	EXE_NAME=$(basename "$1")
+	if [[ ! -f "build/$1" ]]; then
+		echo "Executable not found: $1"
+		exit 1
+	fi
+	for m in ${MACHINES[*]}; do
+		scp "build/$1" "${USER}@${m}.${DOMAIN}:${EXE_NAME}" &
+	done
+	wait
+	rm -rf logs
+	mkdir logs
+	# Set up a screen script for running the program on all MACHINES
+	tmp_screen="$(mktemp)" || exit 1
+	make_screen "$tmp_screen"
+
+	IDS=$(seq 1 $((${#MACHINES[@]})) | paste -sd, -)
+	STARTING_PORT="6379"
+	DORY_REGISTRY_IP="10.10.1.1:9999"
+	NUM_MACHINES=${#MACHINES[@]}
+	for i in "${!MACHINES[@]}"; do
+		host="${MACHINES[$i]}"
+		ENV_ARGS="EXPER_PORT=${STARTING_PORT} SID=$((i + 1)) IDS=${IDS} DORY_REGISTRY_IP=${DORY_REGISTRY_IP} LD_LIBRARY_PATH=~/"
+		CMD="${ENV_ARGS} ./${EXE_NAME} --hostname ${host} --node-id ${i} --leader-fixed --output-file stats_${NUM_MACHINES}_nodes.csv ${ARGS}"
+		echo "$CMD"
+		cat >>"$tmp_screen" <<EOF
+screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}
+logfile logs/log_${i}.txt
+log on
+EOF
+	done
+
+	screen -c "$tmp_screen"
+	rm "$tmp_screen"
+}
+
+function run_mu_debug {
+	# check if file exists
+	EXE_NAME=$(basename "$1")
+	if [[ ! -f "build/$1" ]]; then
+		echo "Executable not found: $1"
+		exit 1
+	fi
+	for m in ${MACHINES[*]}; do
+		scp "build/$1" "${USER}@${m}.${DOMAIN}:${EXE_NAME}" &
+	done
+	wait
+	rm -rf logs
+	mkdir logs
+	# Set up a screen script for running the program on all MACHINES
+	tmp_screen="$(mktemp)" || exit 1
+	make_screen "$tmp_screen"
+
+	IDS=$(seq 0 $((${#MACHINES[@]} - 1)) | paste -sd, -)
+	STARTING_PORT="6379"
+	DORY_REGISTRY_IP="10.10.1.1:9999"
+	GDB_ARGS=""
+	for i in "${!MACHINES[@]}"; do
+		if [[ $i -eq 0 ]]; then
+			GDB_ARGS="gdb -ex \"catch throw\" -ex \"r\" --args"
+		else
+			GDB_ARGS=""
+		fi
+		host="${MACHINES[$i]}"
+		ENV_ARGS="EXPER_PORT=${STARTING_PORT} SID=${i} IDS=${IDS} DORY_REGISTRY_IP=${DORY_REGISTRY_IP} LD_LIBRARY_PATH=~/"
+		CMD="${ENV_ARGS} ${GDB_ARGS} ./${EXE_NAME} --hostname ${host} --node-id ${i} --leader-fixed ${ARGS}"
+		echo "$CMD"
+		cat >>"$tmp_screen" <<EOF
+screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}; bash
+logfile gdb-logs/gdb_${i}.log
+log on
+EOF
+	done
+
+	screen -c "$tmp_screen"
+	rm "$tmp_screen"
+}
+
 # Get the important stuff out of the command-line args
 cmd=$1   # The requested command
 count=$# # The number of command-line args
@@ -363,10 +472,48 @@ elif [[ "$cmd" == "build-release" && "$count" -eq 1 ]]; then
 	source tools/build.sh release
 elif [[ "$cmd" == "connect" && "$count" -eq 1 ]]; then
 	cl_connect
-elif [[ "$cmd" == "reset" && "$count" -eq 1 ]]; then
-	reset
+elif [[ "$cmd" == "reset" && "$count" -eq 2 ]]; then
+	reset $2
 elif [[ "$cmd" == "do-all" && "$count" -eq 2 ]]; then
 	do_all "$2"
+elif [[ "$cmd" == "build-mu" && "$count" -eq 2 ]]; then
+	if [[ "$2" != "debug" && "$2" != "release" ]]; then
+		usage
+		exit 1
+	fi
+	source tools/build.sh "$2" "MU"
+elif [[ "$cmd" == "run-mu" && "$count" -eq 2 ]]; then
+	run_mu "$2"
+elif [[ "$cmd" == "build-run-mu" && "$count" -eq 3 ]]; then
+	source tools/build.sh "$2" "MU"
+	run_mu "$3"
+elif [[ "$cmd" == "reset-mu" && "$count" -eq 1 ]]; then
+	reset_mu
+elif [[ "$cmd" == "run-mu-debug" && "$count" -eq 2 ]]; then
+	run_mu_debug "$2"
+elif [[ "$cmd" == "launch-experiment" && "$count" -eq 2 ]]; then
+	ORIG_MACHINES=("${MACHINES[@]}")
+	echo "Resetting memcached server..."
+	reset_memcached
+	for i in $(seq 3 ${#ORIG_MACHINES[@]}); do
+		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
+		load_cfg
+		echo "Resetting..."
+		reset $(basename "$2")
+		echo "Launching experiment with ${#MACHINES[@]} nodes..."
+		cl_run "$2"
+	done
+elif [[ "$cmd" == "launch-experiment-mu" && "$count" -eq 2 ]]; then
+	ORIG_MACHINES=("${MACHINES[@]}")
+	for i in $(seq 3 ${#ORIG_MACHINES[@]}); do
+		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
+		load_cfg
+		echo "Resetting..."
+		reset_mu && reset $(basename "$2")
+		sleep 5
+		echo "Launching experiment with ${#MACHINES[@]} nodes..."
+		run_mu "$2"
+	done
 else
 	usage
 fi

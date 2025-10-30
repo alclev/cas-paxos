@@ -46,7 +46,7 @@ inline auto ARGS = {
     U64_ARG_OPT(LOOP, "Number of iterations between runtime checks.", 1000),
     U64_ARG_OPT(CAPACITY, "Capacity of the replicated log.", (1ULL << 15)),
     U64_ARG_OPT(BUF_SIZE, "Buffer size for remote writes.", 64),
-    U64_ARG_OPT(SLEEP, "Sleep interval between proposals in ms", 100),
+    U64_ARG_OPT(SLEEP, "Sleep interval between proposals in ms", 10),
     BOOL_ARG_OPT(LEADER_FIXED,
                  "If true, only a single node proposes commands."),
     ENUM_ARG_OPT(POLICY, "Leader rotation policy when not fixed.", "all",
