@@ -331,7 +331,8 @@ class CasPaxos : public Paxos {
     conn_manager_->arrive_strict_barrier();
   }
 
-  void LeaderChange() {
+  // Params: node_id of the new leader
+  void LeaderChange(int node_id) {
     // First, we scan proposal region at log_offset_ to determine the
     // highest-ballot that does NOT belong to the leader that just failed
     // This node assumes leadership.
@@ -347,6 +348,7 @@ class CasPaxos : public Paxos {
     //    <max ballot number>
     //    <Last accepted (ballot, value)>
   }
+  
   //+ Prepare work request then post with first request.
   uint32_t PrepareWrite(uint32_t len, uint8_t* buf) {
     ROMULUS_ASSERT(buf_offset_ < buf_chunk_size_,
@@ -402,14 +404,28 @@ class CasPaxos : public Paxos {
     ROMULUS_DEBUG("<InlineProposal> Starting.");
     auto backoff = std::chrono::nanoseconds(std::rand() % kMaxStartingBackoff);
     bool ok, done = false;
+    int rc;
     while (!done) {
       ROMULUS_COUNTER_INC("attempts");
       // Skip preparation if we are the leader -- key multi-paxos optimization
-      if (is_leader_)
-        ok = true;
-      else
-        ok = Prepare();
-      if (ok) {
+#ifdef MULTIPAXOS
+      if (stable_leader_) {
+        // Skip prepare
+        rc = 0;
+      } else {
+        // Leader failure or beginning execution -- need to run prepare...
+        rc = Prepare();
+        // Upon success, rc will encode the node id of the new leader
+        is_leader_ = (rc == host_id_);
+        LeaderChange(rc);
+        // Once leader data has propogated, we assume stable leader again
+        stable_leader_ = true;
+      }
+#else
+      // Otherwise, we do the prepare every round
+      rc = Prepare();
+#endif
+      if (rc != -1) {
         ok = Promise(v);
         if (ok) {
           auto committed = log_[log_offset_].GetValue();
@@ -568,7 +584,9 @@ class CasPaxos : public Paxos {
                   curr_proposal->GetMaxBallot());
     ++wr_id_;
   }
-  bool Prepare() {
+  // Returns the node id of the elected leader
+  // Returns -1 on error
+  int Prepare() {
     State* curr_proposal = &proposed_state_[log_offset_];
     std::vector<State> expected, swap;
     std::vector<bool> ok, done;
@@ -637,22 +655,25 @@ class CasPaxos : public Paxos {
         } else {
           // CAS failed and higher ballot. Abort.
           ROMULUS_DEBUG("Failed: state={}", c->scratch_state->ToString());
-          return false;
+          return -1;
         }
       }
       ++wr_id_;
     }
 
     // Update current proposal to reflect the highest balloted proposal.
+    int leader_id = host_id_;
     for (uint32_t i = 0; i < system_size_; ++i) {
       if (swap[i].GetBallot() > curr_proposal->GetBallot()) {
         curr_proposal->SetProposal(swap[i].GetBallot(), swap[i].GetValue());
+        leader_id = i;
       }
     }
     ROMULUS_DEBUG("<Prepare> Prepared slot: log_offset={}, state={}",
                   log_offset_, curr_proposal->ToString());
-    return true;
+    return leader_id;
   }
+
   bool Promise(Value v) {
     // DYNO_CHECK_DEBUG(DYNO_ABORT, is_leader_,
     //                  "Entering Phase 2 but not the leader.");
