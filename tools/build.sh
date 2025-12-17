@@ -40,6 +40,7 @@ cd build
 CC=clang-18 CXX=clang++-18 VERBOSE=1 cmake \
 	-DCMAKE_PREFIX_PATH=/opt/romulus/lib/cmake \
 	-DCMAKE_MODULE_PATH=/opt/romulus/lib/cmake \
+	-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
 	$CONDITIONAL_ARGS ..
 # -DCMAKE_VERBOSE_MAKEFILE=ON
 # Compile

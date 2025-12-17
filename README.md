@@ -96,7 +96,7 @@ A subset of the hosts execute:
 #### Leader change
 1. New leader is chosen by simple rule
 2. New leader updates its thread-local state to reflect leadership
-3. New leader `CAS`s <leader> slot with it's STATE metadata
+3. New leader `CAS`s <leader> slot with it's STATE metadatad
 4. **Everyone** else perform a `READ` on <leader> slot
     - If empty → No leader has been elected yet, proceed. 
     - Else, update the following relavent host-local metadata:

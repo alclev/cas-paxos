@@ -36,7 +36,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "Using standard ${CXX_STANDARD}")
 
 set(CMAKE_CXX_STANDARD ${CXX_STANDARD})
-set(ROMULUS_INCLUDE_PATH "/home/alclev/remus/include")
+set(ROMULUS_INCLUDE_PATH "/home/alclev/romulus/include")
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME}
@@ -47,5 +47,8 @@ target_include_directories(${PROJECT_NAME}
 
 option(USE_MU "Enable Mu" OFF)
 
+add_compile_definitions(MAP_DUMP)
+
 add_subdirectory(experiments)
+
 

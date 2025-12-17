@@ -26,8 +26,7 @@ class APArray {
                1) *
                   Alignment;
     ROMULUS_INFO(
-        "Allocating aligned memory: alignment={}, slotsize={}, capacity={}, "
-        "bytes={}, is_multiple={}",
+        "Allocating aligned memory: alignment={}, slotsize={}, capacity={}, bytes={}, is_multiple={}",
         Alignment, SlotSize, capacity_, bytes_, is_multiple);
     raw_ = reinterpret_cast<uint8_t*>(std::aligned_alloc(Alignment, bytes_));
     ROMULUS_ASSERT(raw_ != nullptr, "aligned_alloc failed: error={}", std::strerror(errno));

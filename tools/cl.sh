@@ -154,7 +154,7 @@ function cl_run() {
 	NUM_MACHINES=${#MACHINES[@]}
 	for i in "${!MACHINES[@]}"; do
 		host="${MACHINES[$i]}"
-		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --leader-fixed --output-file stats_${NUM_MACHINES}_nodes.csv ${ARGS}"
+		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${NUM_MACHINES}_nodes.csv ${ARGS}"
 		echo "$CMD"
 		cat >>"$tmp_screen" <<EOF
 screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}
@@ -474,6 +474,8 @@ elif [[ "$cmd" == "connect" && "$count" -eq 1 ]]; then
 	cl_connect
 elif [[ "$cmd" == "reset" && "$count" -eq 2 ]]; then
 	reset $2
+elif [[ "$cmd" == "reset-all" && "$count" -eq 1 ]]; then
+	reset-all
 elif [[ "$cmd" == "do-all" && "$count" -eq 2 ]]; then
 	do_all "$2"
 elif [[ "$cmd" == "build-mu" && "$count" -eq 2 ]]; then

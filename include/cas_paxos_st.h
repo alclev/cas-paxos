@@ -4,11 +4,13 @@
 #include <romulus/common.h>
 #include <romulus/connection_manager.h>
 #include <romulus/device.h>
+#include <romulus/romulus.h>
 #include <state.h>
 
 #include <cassert>
 #include <memory>
 #include <numeric>
+
 // Compile time configurations for testing different optimizations
 // #define DYNO_NO_WRITEBUF
 // #define DYNO_NO_SENDALL
@@ -20,9 +22,15 @@ const std::string kRegistryName = "CasPaxos";
 const std::string kPdId = "PdId";
 const std::string kBlockId = "LogBlock";
 const std::string kScratchRegionId = "ScratchRegion";
-const std::string kBallotRegionId = "BallotRegion";
+const std::string kProposedRegionId = "ProposedRegion";
 const std::string kLogRegionId = "LogRegion";
 const std::string kBufRegionPrefix = "BufRegion";
+const std::string kLeaderRegionId = "LeaderRegion";
+
+const std::string kLocalId = "StagingBlock";
+const std::string kLocalWriteId = "LocalWriteRegion";
+const std::string kLocalReadId = "LocalReadRegion";
+const std::string kLocalCasId = "LocalCasRegion";
 
 constexpr uint32_t kSlotSize = sizeof(State);
 constexpr uint32_t kNumBufSlots = 50000000;
@@ -30,56 +38,13 @@ constexpr std::chrono::seconds kTimeout(10);
 constexpr uint16_t kNullBallot = std::numeric_limits<uint16_t>::min();
 constexpr uint32_t kMaxStartingBackoff = 3600;
 
-struct RemoteContext {
-  State* scratch_state;
-  State* proposed_state;
-
+struct Context {
   romulus::ReliableConnection* conn;
-  // Log related info
-  romulus::AddrInfo scratch_laddr;
-  romulus::RemoteAddr proposal_raddr;
-  romulus::RemoteAddr log_raddr;
-
-  // Buffer related info
-  romulus::RemoteAddr buf_raddr;
-  romulus::AddrInfo buf_laddr;
-
-  romulus::WorkRequest buf_wr;
-  romulus::WorkRequest log_wr;
-  bool post_buf_wr;
-
-  RemoteContext() {}
-  RemoteContext(const RemoteContext& c)
-      : scratch_state(c.scratch_state),
-        proposed_state(c.proposed_state),
-        conn(c.conn),
-        scratch_laddr(c.scratch_laddr),
-        proposal_raddr(c.proposal_raddr),
-        log_raddr(c.log_raddr),
-        buf_wr(c.buf_wr),
-        log_wr(c.log_wr),
-        post_buf_wr(c.post_buf_wr) {}
+  romulus::WorkRequest wr;
+  Context() = default;
 };
 
 namespace {  // namespace anonymous
-
-void StageLogRequest(RemoteContext* c) {
-  if (c->post_buf_wr) {
-    c->buf_wr.append(&c->log_wr);
-  }
-}
-
-bool PostRequests(RemoteContext* c) {
-  bool ok = c->post_buf_wr ? c->conn->Post(&c->buf_wr, 1)
-                           : c->conn->Post(&c->log_wr, 1);
-  c->post_buf_wr = false;
-  return ok;
-}
-
-bool PollCompletionsOnce(RemoteContext* c, uint64_t wr_id) {
-  return c->conn->TryProcessOutstanding() > 0 &&
-         c->conn->CheckCompletionsForId(wr_id);
-}
 
 template <typename Rep, typename Period>
 inline std::chrono::duration<Rep, Period> DoBackoff(
@@ -104,35 +69,45 @@ inline uint32_t NextBallot(uint32_t local_ballot, uint32_t peer_ballot,
   }
 }
 
+bool PollCompletionsOnce(romulus::ReliableConnection* c, uint64_t wr_id) {
+  return c->TryProcessOutstanding() > 0 && c->CheckCompletionsForId(wr_id);
+}
+
 }  // namespace
 
 class CasPaxos : public Paxos {
  public:
-  CasPaxos(uint32_t capacity, std::string hostname, uint8_t host_id,
-           std::vector<std::string> peers, uint8_t transport_flag,
-           uint64_t buf_sz)
-      : system_size_(peers.size() + 1),
-        capacity_(capacity),
+  CasPaxos(std::shared_ptr<romulus::ArgMap> args,
+           std::vector<std::string> peers, uint8_t transport_flag)
+      : args_(args),
+        system_size_(peers.size() + 1),
+        capacity_(args->uget(romulus::CAPACITY)),
         wr_id_(0),
         log_offset_(0),
         is_leader_(false),
-        hostname_(hostname),
-        host_id_(host_id),
+        stable_leader_(args->bget(romulus::STABLE_LEADER)),
+        hostname_(args->sget(romulus::HOSTNAME)),
+        host_id_(args->uget(romulus::NODE_ID)),
         quorum_(romulus::GetQuorum(peers.size() + 1)),
         peers_(peers),
         device_(transport_flag),
-        buf_size_(buf_sz) {}
-  ~CasPaxos() {
-    for (auto* c : contexts_) {
-      delete c;
+        buf_size_(args->uget(romulus::BUF_SIZE)),
+        num_qps_(args->uget(romulus::NUM_QP)) {
+    contexts_.reserve(system_size_);
+    for (std::size_t n = 0; n < system_size_; ++n) {
+      contexts_.push_back(new Context());
     }
+  }
+
+  ~CasPaxos() {
     delete raw_;
+    delete local_raw_;
     SyncNodes();
   }
 
   void Init(std::string_view dev_name, int dev_port,
             std::unique_ptr<romulus::ConnectionRegistry> registry,
-            bool stable_leader) {
+            std::unordered_map<uint64_t, std::string> mach_map) {
     // Set up remotely accessible memory.
     ROMULUS_DEBUG("Initializing CAS-based Paxos");
     ROMULUS_DEBUG("Quorum size: {}", quorum_);
@@ -140,142 +115,146 @@ class CasPaxos : public Paxos {
     ROMULUS_ASSERT(device_.Open(dev_name, dev_port), "Failed to open device.");
     device_.AllocatePd(kPdId);
 
-    stable_leader_ = stable_leader;
-
     ROMULUS_INFO("Registering remotely accessible memory");
-    uint64_t scratch_len = system_size_;
-    uint64_t proposal_len = capacity_;
-    uint64_t log_len = capacity_;
+    uint64_t scratch_len = system_size_ * kSlotSize;
+    uint64_t proposal_len = capacity_ * kSlotSize;
+    uint64_t log_len = capacity_ * kSlotSize;
+    uint64_t leader_len = sizeof(State) * kSlotSize;
 
     ROMULUS_ASSERT(buf_size_ % kSlotSize == 0,
                    "Buf size not being a multiple of {} is not supported!",
                    kSlotSize);
-    raw_ = new romulus::APArray<State, kSlotSize, CACHE_PREFETCH_SIZE>(
-        scratch_len + proposal_len + log_len +
-        ((buf_size_ / kSlotSize) * system_size_));
-    std::memset(raw_->Get(), 0, raw_->GetTotalBytes());
-    // Constructing the memblock
-    memblock_ = romulus::MemBlock(
-        kBlockId, device_.GetPd(kPdId), reinterpret_cast<uint8_t*>(raw_->Get()),
-        ((scratch_len + proposal_len + log_len) * kSlotSize) +
-            (buf_size_ * system_size_));
-    // Registering memblock regions
-    memblock_.RegisterMemRegion(kScratchRegionId, 0, scratch_len * kSlotSize);
-    memblock_.RegisterMemRegion(kBallotRegionId, scratch_len * kSlotSize,
-                                proposal_len * kSlotSize);
-    memblock_.RegisterMemRegion(kLogRegionId,
-                                (scratch_len + proposal_len) * kSlotSize,
-                                log_len * kSlotSize);
 
-    // Set up local view of log memory
-    scratch_ = romulus::APArraySlice(raw_, 0, scratch_len);
-    proposed_state_ =
-        romulus::APArraySlice(raw_, scratch_len, scratch_len + proposal_len);
-    log_ = romulus::APArraySlice(raw_, scratch_len + proposal_len,
-                                 scratch_len + proposal_len + log_len);
+    // NB: the following configuration assumes STANDALONE
+    std::size_t remote_len = scratch_len + proposal_len + log_len + leader_len;
+    raw_ = new uint8_t[remote_len];
+    std::memset(raw_, 0, remote_len);
+
+    // Constructing the memblock
+    auto pd = device_.GetPd(kPdId);
+    memblock_ = romulus::MemBlock(kBlockId, pd, raw_, remote_len);
+
+    // Registering memblock regions
+    memblock_.RegisterMemRegion(kScratchRegionId, 0, scratch_len);
+    memblock_.RegisterMemRegion(kProposedRegionId, scratch_len, proposal_len);
+    memblock_.RegisterMemRegion(kLogRegionId, (scratch_len + proposal_len),
+                                log_len);
+    memblock_.RegisterMemRegion(
+        kLeaderRegionId, scratch_len + proposal_len + log_len, leader_len);
+
+    // We reserve system size number of slots for each of the staging buffers
+    std::size_t local_chunk = kSlotSize;
+    std::size_t local_len = local_chunk * 3;
+
+    uint8_t* local_raw = new uint8_t[local_len];
+    local_memblock_ = romulus::MemBlock(kLocalId, pd, local_raw, local_len);
+    local_memblock_.RegisterMemRegion(kLocalWriteId, 0, local_chunk);
+    local_memblock_.RegisterMemRegion(kLocalReadId, local_chunk, local_chunk);
+    local_memblock_.RegisterMemRegion(kLocalCasId, local_chunk * 2,
+                                      local_chunk);
+
+    // Optionally set up AParray for fast access to local views of log memory
 #ifndef STANDALONE
-    // Register and set up buffer memory
-    auto base_offset = (scratch_len + proposal_len + log_len) * kSlotSize;
-    for (uint32_t i = 0; i < system_size_; ++i) {
-      uint64_t node_offset = i * buf_size_;
-      memblock_.RegisterMemRegion(kBufRegionPrefix + std::to_string(i),
-                                  base_offset + node_offset, buf_size_);
-      if (i == host_id_) {
-        buf_ = &raw_->Get()[base_offset + node_offset];
-      }
-    }
+    // Not implemented...
 #endif
     // Initialize proposed state (remote peers read this). +1 because 0 is a
     // special value in the state.
     ROMULUS_ASSERT(kSlotSize == sizeof(State),
                    "kSlotSize != sizeof(State) not supported.");
-    for (uint32_t i = 0; i < capacity_; ++i) {
-      proposed_state_[i] = State(host_id_ + 1, kNullBallot, kNullBallot);
-      log_[i] = State(0, kNullBallot, kNullBallot);
-    }
 
-    ROMULUS_ASSERT(reinterpret_cast<uint64_t>(scratch_.Begin()) ==
-                       memblock_.GetAddrInfo(kScratchRegionId).addr,
-                   "Address mismatch (scratch)");
-    ROMULUS_ASSERT(reinterpret_cast<uint64_t>(proposed_state_.Begin()) ==
-                       memblock_.GetAddrInfo(kBallotRegionId).addr,
-                   "Address mismatch (proposals)");
-    ROMULUS_ASSERT(reinterpret_cast<uint64_t>(log_.Begin()) ==
-                       memblock_.GetAddrInfo(kLogRegionId).addr,
-                   "Address mismatch (log)");
-    ROMULUS_ASSERT(
-        reinterpret_cast<uint64_t>(buf_) ==
-            memblock_.GetAddrInfo(kBufRegionPrefix + std::to_string(host_id_))
-                .addr,
-        "Address mismatch (buf)");
+    // Safe to write directly to rMem here:
+
+    auto proposed_base =
+        (uint8_t*)memblock_.GetAddrInfo(kProposedRegionId).addr;
+    auto log_base = (uint8_t*)memblock_.GetAddrInfo(kLogRegionId).addr;
+    for (uint32_t i = 0; i < capacity_; ++i) {
+      new (&proposed_base[i]) State(host_id_ + 1, kNullBallot, kNullBallot);
+      new (&log_base[i]) State(0, kNullBallot, kNullBallot);
+    }
 
     // Register memory and connect to other nodes
     registry_ = std::move(registry);
     conn_manager_ = std::make_unique<romulus::ConnectionManager>(
-        hostname_, registry_.get(), host_id_, system_size_);
-    ROMULUS_DEBUG("[STRICT BARRIER] arrive");
-    conn_manager_->arrive_strict_barrier();
-    ROMULUS_DEBUG("[STRICT BARRIER] exit");
-    ROMULUS_DEBUG("Attemping to register memory...");
-    bool register_ok = conn_manager_->Register(peers_, memblock_, device_);
+        hostname_, registry_.get(), host_id_, system_size_, num_qps_);
 
-    ROMULUS_DEBUG("[BARRIER] arrive");
+    // Barrier
     conn_manager_->arrive_strict_barrier();
-    ROMULUS_DEBUG("[BARRIER] exit");
+
+    ROMULUS_DEBUG("Attemping to register memory...");
+    bool register_ok = conn_manager_->Register(device_, memblock_);
+
+    // Barrier
+    conn_manager_->arrive_strict_barrier();
 
     ROMULUS_DEBUG("Attemping to connect to remote peers...");
-    bool connect_ok = conn_manager_->Connect(peers_, memblock_);
+    bool connect_ok = conn_manager_->Connect(memblock_);
 
-    ROMULUS_DEBUG("[BARRIER] arrive");
+    // Barrier
     conn_manager_->arrive_strict_barrier();
-    ROMULUS_DEBUG("[BARRIER] exit");
 
     ROMULUS_ASSERT(register_ok && connect_ok,
                    "Failed to register or connect log memory");
-
-    // Initialize worker contexts for each participant (including this node).
-    // Assign the first thread to work through loopback.
-    contexts_.reserve(system_size_);
-    for (int i = 0; i < system_size_; ++i) {
-      contexts_.push_back(new RemoteContext());
-      RemoteContext* context = contexts_[i];
-      context->proposed_state = &proposed_state_[0];
-
-      // Setup connection info.
-      auto peer =
-          i == host_id_ ? romulus::kLoopback : peers_[i < host_id_ ? i : i - 1];
-
-      // Log.
-      context->conn = conn_manager_->GetConnection(peer, kBlockId);
-
-      context->scratch_laddr = memblock_.GetAddrInfo(kScratchRegionId);
-      context->scratch_laddr.addr += kSlotSize * i;  // Offset into scratch mem
-      context->scratch_laddr.length = sizeof(State);
-      context->scratch_state =
-          reinterpret_cast<State*>(context->scratch_laddr.addr);
-
-      ROMULUS_ASSERT(conn_manager_->GetRemoteAddr(peer, kBlockId, kLogRegionId,
-                                                  &context->log_raddr),
-                     "Failed to get remote address");
-      context->log_raddr.addr_info.length = sizeof(State);
-
-      ROMULUS_ASSERT(
-          conn_manager_->GetRemoteAddr(peer, kBlockId, kBallotRegionId,
-                                       &context->proposal_raddr),
-          "Failed to get remote address");
-
-      context->proposal_raddr.addr_info.length = sizeof(State);
-
-      // Buffer.
-      ROMULUS_ASSERT(
-          conn_manager_->GetRemoteAddr(
-              peer, kBlockId, kBufRegionPrefix + std::to_string(host_id_),
-              &context->buf_raddr),
-          "Failed to get remote address");
-      context->buf_laddr =
-          memblock_.GetAddrInfo(kBufRegionPrefix + std::to_string(host_id_));
+    // At this point, we need to cache the connections and addresses
+    romulus::RemoteAddr remote_addr;
+    std::vector<std::string> regions = {kScratchRegionId, kProposedRegionId,
+                                        kLogRegionId, kLeaderRegionId};
+    for (auto& m : mach_map) {
+      // <region_id, remote_addr>
+      std::unordered_map<std::string, romulus::RemoteAddr> tmp_addrs;
+      // We need to account for all the remotely visible regions
+      for (auto& r : regions) {
+        // If the machine id maps to **this** node, then this will represent the
+        // loopback addr
+        conn_manager_->GetRemoteAddr(m.first, kBlockId, r, &remote_addr);
+        tmp_addrs.emplace(r, remote_addr);
+      }
+      // <machine_id, map<region, remote_addr>>
+      remote_addrs_.emplace(m.first, tmp_addrs);
+      // Note that having available multiple QP's does not do much unless
+      // there is concurrent access to them
+      std::vector<romulus::ReliableConnection*> conns;
+      // here, the 0th index **is the loopback**
+      if (m.second == hostname_) {
+        conns.push_back(conn_manager_->GetConnection(m.first, 0));
+      } else {
+        for (int q = 1; q < (int)num_qps_ + 1; ++q) {
+          auto conn = conn_manager_->GetConnection(m.first, q);
+          conns.push_back(conn);
+        }
+      }
+      remote_conns_.emplace(m.first, conns);
     }
+    // Optionally dump the contents of our cached maps
+
+#ifdef MAP_DUMP
+    // Dump the remote addresses
+    for (auto& m : remote_addrs_) {
+      for (auto& r : m.second) {
+        if (m.first == host_id_)
+          ROMULUS_INFO("[MAP] Machine={} (loopback)\tRegion={}\tAddr={:x}",
+                       m.first, r.first, r.second.addr_info.addr);
+        else
+          ROMULUS_INFO("[MAP] Machine={}\tRegion={}\tAddr={:x}", m.first,
+                       r.first, r.second.addr_info.addr);
+      }
+    }
+    // Dump the connections
+    for (auto& c : remote_conns_) {
+      if (c.second.size() == 1) {
+        ROMULUS_INFO("[MAP] Machine={}\tConnection={:x} (loopback)", c.first,
+                     reinterpret_cast<uintptr_t>(c.second.front()));
+      } else {
+        for (int q = 0; q < (int)c.second.size(); ++q) {
+          ROMULUS_INFO("[MAP] Machine={}\tConnection={:x}", c.first,
+                       reinterpret_cast<uintptr_t>(c.second[q]));
+        }
+      }
+    }
+#endif
+    // Finally, barrier
+    conn_manager_->arrive_strict_barrier();
   }
+
   void Reset() override {
     log_offset_ = 0;
     buf_offset_ = 0;
@@ -323,32 +302,95 @@ class CasPaxos : public Paxos {
  private:
   void Failure() {
     ROMULUS_INFO("Failure detected. Undergoing leader election...");
-    conn_manager_->arrive_strict_barrier();
-    LeaderChange();
-    conn_manager_->arrive_strict_barrier();
-    // Catch up on previously committed values.
-    CatchUp();
-    conn_manager_->arrive_strict_barrier();
+    is_leader_ = false;
+    stable_leader_ = false;
+    // TODO
+    // conn_manager_->arrive_strict_barrier();
+    // LeaderChange();
+    // conn_manager_->arrive_strict_barrier();
+    // // Catch up on previously committed values.
+    // CatchUp();
+    // conn_manager_->arrive_strict_barrier();
   }
 
   // Params: node_id of the new leader
-  void LeaderChange(int node_id) {
-    // First, we scan proposal region at log_offset_ to determine the
-    // highest-ballot that does NOT belong to the leader that just failed
-    // This node assumes leadership.
+  void LeaderChange(State* new_leader) {
+    ROMULUS_INFO("Electing new leader {}", new_leader->GetValue().id());
+    // Barrier
+    conn_manager_->arrive_strict_barrier();
+    uint32_t ok_count = 0;
+    std::vector<bool> ok(system_size_);
+    // If we are the leader, then we write to the leader slot
+    if (is_leader_) {
+      ROMULUS_DEBUG("IM THE LEADER");
+      // Write the new leader to the leader slot
+      current_leader_ = new_leader;
 
-    // New leader updates its metadata to reflect the leader change
-    // - reads from the <leader> slot to get old max_ballot
-    // - sets its own ballot to max_ballot_old + 1
-    // **toggle the is_leader_ in old leader to false**
+      auto laddr = local_memblock_.GetAddrInfo(kLocalWriteId);
+      auto *laddr_raw = reinterpret_cast<uint8_t*>(laddr.addr);
+      *reinterpret_cast<State*>(laddr_raw) = *new_leader;
 
-    // Then, **everyone else** read from <leader> slot
-    // If empty, no leader has been elected yet
-    // Else, update:
-    //    <max ballot number>
-    //    <Last accepted (ballot, value)>
+      for (int i = 0; i < system_size_; i++) {
+        auto* c = contexts_[i];
+        auto raddr = remote_addrs_[i][kLeaderRegionId];
+        raddr.addr_info.offset = 0;
+        raddr.addr_info.length = kSlotSize;
+        // We hardcode using the first qp, unless there is an explicit reason to
+        // iterate through them on a single thread
+        c->conn = remote_conns_[i].front();
+        // NB: Here, we can consider chaining the WR's and passing them to a
+        // single connection but the problem here is that we are interfacing
+        // with multiple peers, so we cannot, rely on a single QP, therefore we
+        // will have to post one
+        // if (i != 0) {
+        //   outstanding_[i - 1].append(&outstanding_[i]);
+        // }
+        romulus::WorkRequest::BuildWrite(laddr, raddr, wr_id_, &c->wr);
+        ROMULUS_ASSERT(c->conn->Post(&c->wr, 1),
+                       "Error posting in leader change.");
+      }
+
+      while (ok_count < system_size_) {
+        for (uint32_t i = 0; i < system_size_; ++i) {
+          if (ok[i]) continue;
+          auto* c = contexts_[i];
+          ok[i] = PollCompletionsOnce(c->conn, wr_id_) > 0;
+          if (ok[i]) ++ok_count;
+        }
+      }
+    }
+    // Barrier
+    conn_manager_->arrive_strict_barrier();
+    // Now we read from our slot
+    if (!is_leader_) {
+      // Landing space for the reads
+      // we only need to read once from our own slot
+      auto* c = contexts_[host_id_];
+      auto laddr = local_memblock_.GetAddrInfo(kLocalReadId);
+      auto raddr = remote_addrs_[host_id_][kLeaderRegionId];
+      raddr.addr_info.offset = 0;
+      raddr.addr_info.length = kSlotSize;
+      // Should be loopback
+      c->conn = remote_conns_[host_id_].front();
+
+      romulus::WorkRequest::BuildRead(laddr, raddr, wr_id_,
+                                      &c->wr);
+      ROMULUS_ASSERT(c->conn->Post(&c->wr, 1),
+                     "Error reading in leader change.");
+      // Only expecting a single completion
+      while (!PollCompletionsOnce(c->conn, wr_id_));     
+      
+      auto laddr_raw = reinterpret_cast<uint64_t*>(laddr.addr);
+      ROMULUS_DEBUG("[Leader READ] {:x}", *laddr_raw);
+      
+      State result = *reinterpret_cast<State*>(laddr_raw);
+      ROMULUS_DEBUG("New leader: {}", result.ToString());
+    }
+    wr_id_++;
+    conn_manager_->arrive_strict_barrier();
   }
-  
+
+#if 0
   //+ Prepare work request then post with first request.
   uint32_t PrepareWrite(uint32_t len, uint8_t* buf) {
     ROMULUS_ASSERT(buf_offset_ < buf_chunk_size_,
@@ -381,51 +423,65 @@ class CasPaxos : public Paxos {
       c->post_buf_wr = true;  // Needs to be posted.
       romulus::WorkRequest::BuildWrite(c->buf_laddr, c->buf_raddr, wr_id_,
                                        &c->buf_wr);
-      c->buf_wr.unsignaled();  // Does not need a completion since we always to
-                               // another op after.
+      c->buf_wr.unsignaled();  // Does not need a completion since we always
+                               // to another op after.
       c->buf_raddr.addr_info.offset += total_len;
       c->buf_laddr.offset += total_len;
     }
     ++wr_id_;
     return total_len;
   }
+#endif
+
   // Repeated attempt to propose the given value until it is successfully
   // committed. Initially, try to update the log by repeatedly calling
   // TryCatchUp until it returns false, which indicates that the log offset is
   // at an entry that was not committed yet. Then, update the ballot to be the
   // next highest unique ballot number for that slot. Next, prepare peers by
-  // attempting to CAS in the newly chosen ballot. Finally, commit the value by
-  // writing to a quorum of nodes. During this process it is possible that a
-  // previously proposed value is adopted, in which case the cycle will repeat
-  // in an attempt to commit the provided value. If the prepare phase is
-  // successful, then the node considers itself the leader. If it remains the
-  // leader then future ballot updates and prepare phases will be skipped.
-  void ProposeInternal(Value v) {
+  // attempting to CAS in the newly chosen ballot. Finally, commit the value
+  // by writing to a quorum of nodes. During this process it is possible that
+  // a previously proposed value is adopted, in which case the cycle will
+  // repeat in an attempt to commit the provided value. If the prepare phase
+  // is successful, then the node considers itself the leader. If it remains
+  // the leader then future ballot updates and prepare phases will be skipped.
+  void ProposeInternal([[maybe_unused]] Value v) {
+    if(host_id_ == 0){
+      is_leader_ = true;
+    }else{
+      is_leader_ = false;
+    }
+    State *new_leader = new State(0xdead, 0xbeef, Value(0xdeadbeef));
+    LeaderChange(new_leader);
+
+#if 0
     ROMULUS_DEBUG("<InlineProposal> Starting.");
     auto backoff = std::chrono::nanoseconds(std::rand() % kMaxStartingBackoff);
-    bool ok, done = false;
-    int rc;
+    bool ok = false, done = false, skip = false;
+    State* result = nullptr;
     while (!done) {
       ROMULUS_COUNTER_INC("attempts");
       // Skip preparation if we are the leader -- key multi-paxos optimization
 #ifdef MULTIPAXOS
       if (stable_leader_) {
         // Skip prepare
-        rc = 0;
+        skip = true;
       } else {
         // Leader failure or beginning execution -- need to run prepare...
-        rc = Prepare();
+        skip = false;
+        auto new_leader = Prepare();
         // Upon success, rc will encode the node id of the new leader
-        is_leader_ = (rc == host_id_);
-        LeaderChange(rc);
+        is_leader_ = (new_leader->id() == host_id_);
+        LeaderChange(new_leader);
+
         // Once leader data has propogated, we assume stable leader again
         stable_leader_ = true;
       }
 #else
       // Otherwise, we do the prepare every round
-      rc = Prepare();
+      result = Prepare();
+      LeaderChange(result);
 #endif
-      if (rc != -1) {
+      if (result != nullptr || skip) {
         ok = Promise(v);
         if (ok) {
           auto committed = log_[log_offset_].GetValue();
@@ -460,9 +516,11 @@ class CasPaxos : public Paxos {
       }
     }
     ROMULUS_COUNTER_INC("proposed");
+#endif
   }
 
   bool TryCatchUp() {
+#if 0
     ROMULUS_DEBUG("<TryCatchUp> Catching up slot: {}", log_offset_);
 
     // Post READs to all remote peers.
@@ -511,7 +569,8 @@ class CasPaxos : public Paxos {
 
       // This slot is committed.
       if (num_agreed >= quorum_) {
-        // If the local log does not reflect the accepted value then CAS it in.
+        // If the local log does not reflect the accepted value then CAS it
+        // in.
         if (log_[log_offset_].GetValue() != accepted_val) {
           auto loopback_context = contexts_[host_id_];
           loopback_context->log_raddr.addr_info.offset =
@@ -521,9 +580,9 @@ class CasPaxos : public Paxos {
               log_[log_offset_].raw, c_i->scratch_state->raw, wr_id_,
               &loopback_context->log_wr);
           StageLogRequest(loopback_context);
-          ROMULUS_ASSERT(
-              PostRequests(loopback_context),
-              "<TryCatchUp> Failed to post requests when updating local slot.");
+          ROMULUS_ASSERT(PostRequests(loopback_context),
+                         "<TryCatchUp> Failed to post requests when updating "
+                         "local slot.");
 
           // Only expect a single outstanding completion.
           while (!PollCompletionsOnce(loopback_context, wr_id_));
@@ -537,9 +596,11 @@ class CasPaxos : public Paxos {
     }
     ++wr_id_;
     ROMULUS_DEBUG("<TryCatchUp> Failed. log_offset={}", log_offset_);
+#endif
     return false;
   }
   void UpdateBallot() {
+#if 0
     // Skip if we are the leader.
     if (is_leader_) return;
     ROMULUS_DEBUG("Updating ballot");
@@ -583,10 +644,12 @@ class CasPaxos : public Paxos {
     ROMULUS_DEBUG("<UpdateBallot> Updated ballot: ballot={}",
                   curr_proposal->GetMaxBallot());
     ++wr_id_;
+#endif
   }
-  // Returns the node id of the elected leader
-  // Returns -1 on error
-  int Prepare() {
+
+  State* Prepare() {
+    return nullptr;
+#if 0
     State* curr_proposal = &proposed_state_[log_offset_];
     std::vector<State> expected, swap;
     std::vector<bool> ok, done;
@@ -655,28 +718,26 @@ class CasPaxos : public Paxos {
         } else {
           // CAS failed and higher ballot. Abort.
           ROMULUS_DEBUG("Failed: state={}", c->scratch_state->ToString());
-          return -1;
+          return nullptr;
         }
       }
       ++wr_id_;
     }
 
     // Update current proposal to reflect the highest balloted proposal.
-    int leader_id = host_id_;
     for (uint32_t i = 0; i < system_size_; ++i) {
       if (swap[i].GetBallot() > curr_proposal->GetBallot()) {
         curr_proposal->SetProposal(swap[i].GetBallot(), swap[i].GetValue());
-        leader_id = i;
       }
     }
     ROMULUS_DEBUG("<Prepare> Prepared slot: log_offset={}, state={}",
                   log_offset_, curr_proposal->ToString());
-    return leader_id;
+    return curr_proposal;
+#endif
   }
 
-  bool Promise(Value v) {
-    // DYNO_CHECK_DEBUG(DYNO_ABORT, is_leader_,
-    //                  "Entering Phase 2 but not the leader.");
+  bool Promise([[maybe_unused]] Value v) {
+#if 0
     State* curr_proposal = &proposed_state_[log_offset_];
     std::vector<State> expected;
     std::vector<bool> ok, done;
@@ -701,8 +762,8 @@ class CasPaxos : public Paxos {
                   proposed_state_[log_offset_].ToString());
 
     // Retry until a quroum succeeds and the local log is written to. Making
-    // sure that we write to the local log allows a follower to be certain that
-    // if the slot is filled that the value is committed.
+    // sure that we write to the local log allows a follower to be certain
+    // that if the slot is filled that the value is committed.
     while (done_count < quorum_) {
       // Post CAS ops.
       uint32_t ok_count = 0;
@@ -757,34 +818,41 @@ class CasPaxos : public Paxos {
       }
       ++wr_id_;
     }
+#endif
     return true;
   }
 
+  bool isLeaderStable() override { return stable_leader_; }
+
+  bool isLeader() override { return stable_leader_; }
+
   void DumpLog() {
+#if 0
     for (uint32_t i = 0; i < log_offset_; ++i) {
       ROMULUS_DEBUG("log[{}]: {}", i, log_[i].ToString());
     }
+#endif
   }
 
   // Member variables.
  private:
+  // Global arg map
+  std::shared_ptr<romulus::ArgMap> args_;
+
   // Total number of nodes in the system.
   const uint8_t system_size_;
 
   // Number of slots in the log.
   const uint32_t capacity_;
 
-  // Local view of remotely accessible memory.
-  romulus::APArray<State, kSlotSize, CACHE_PREFETCH_SIZE>* raw_;
-  romulus::APArraySlice<State, kSlotSize, CACHE_PREFETCH_SIZE> scratch_;
-  romulus::APArraySlice<State, kSlotSize, CACHE_PREFETCH_SIZE> proposed_state_;
-  romulus::APArraySlice<State, kSlotSize, CACHE_PREFETCH_SIZE> log_;
+  uint8_t* raw_;
+  uint8_t* local_raw_;
 
-  uint8_t* buf_;
+  [[maybe_unused]] uint8_t* buf_;
   uint32_t buf_offset_ = 0;
-  uint64_t buf_chunk_size_;
+  [[maybe_unused]] uint64_t buf_chunk_size_;
 
-  uint64_t wr_id_ = 0;
+  [[maybe_unused]] uint64_t wr_id_ = 0;
   uint32_t log_offset_ = 0;
 
   // Whether this node thinks its the leader.
@@ -803,15 +871,23 @@ class CasPaxos : public Paxos {
   // Names of remote peers.
   std::vector<std::string> peers_;
 
-  // Stores a list of worker contexts.
-  std::vector<RemoteContext*> contexts_;
+  std::unordered_map<uint64_t,
+                     std::unordered_map<std::string, romulus::RemoteAddr>>
+      remote_addrs_;
+  std::unordered_map<uint64_t, std::vector<romulus::ReliableConnection*>>
+      remote_conns_;
+  State* current_leader_;
+
+  std::vector<paxos_st::Context*> contexts_;
 
   // RDMA related members.
   romulus::Device device_;
   std::unique_ptr<romulus::ConnectionManager> conn_manager_;
   std::unique_ptr<romulus::ConnectionRegistry> registry_;
   romulus::MemBlock memblock_;
+  romulus::MemBlock local_memblock_;
   uint64_t buf_size_;
+  uint64_t num_qps_;
 };
 
 }  // namespace paxos_st

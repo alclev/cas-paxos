@@ -55,6 +55,8 @@ class Paxos {
   virtual void Propose(uint32_t len, uint8_t* buf) = 0;
   virtual void SyncNodes() = 0;
   virtual void CleanUp() = 0;
+  virtual bool isLeaderStable() = 0;
+  virtual bool isLeader() = 0;
   virtual ~Paxos() {}
 };
 

@@ -7,14 +7,13 @@
 
 std::unique_ptr<Paxos> paxos;
 
-#define INIT_CONSENSUS(transport_flag, buf_sz)                                 \
+#define INIT_CONSENSUS(transport_flag, buf_sz, mach_map)                       \
   ROMULUS_INFO("Initializing CAS-Paxos");                                      \
   auto registry =                                                              \
       std::make_unique<romulus::ConnectionRegistry>("PaxosTest", registry_ip); \
-  paxos = std::make_unique<PAXOS_NS::CasPaxos>(                                \
-      capacity, hostname.data(), host_id, remotes, transport_flag, buf_sz);    \
+  paxos = std::make_unique<PAXOS_NS::CasPaxos>(args, remotes, transport_flag); \
   reinterpret_cast<PAXOS_NS::CasPaxos*>(paxos.get())                           \
-      ->Init(dev_name, dev_port, std::move(registry), leader_fixed);
+      ->Init(dev_name, dev_port, std::move(registry), mach_map);
 
 std::vector<double> latencies;
 
@@ -35,7 +34,7 @@ std::vector<double> latencies;
 #define DONE_LATENCY []() { paxos->CatchUp(); };
 
 #define CALC_LATENCY                                                           \
-  [&](std::fstream& outfile) {                                                                      \
+  [&](std::fstream& outfile) {                                                 \
     double latency_avg = 0.0;                                                  \
     double latency_stddev = 0.0;                                               \
     double latency_50p = 0.0;                                                  \
@@ -64,8 +63,8 @@ std::vector<double> latencies;
       latency_99_9p =                                                          \
           latencies[static_cast<uint32_t>((latencies.size() * .999))];         \
     }                                                                          \
-    outfile << latency_avg << "," << latency_50p << "," << latency_99p << ","     \
-         << latency_99_9p << ",";                                              \
+    outfile << latency_avg << "," << latency_50p << "," << latency_99p << ","  \
+            << latency_99_9p << ",";                                           \
     ROMULUS_INFO("!> [LAT] count={}", latencies.size());                       \
     ROMULUS_INFO("!> [LAT] lat_avg={:4.2f} ± {:4.2f} us", latency_avg,         \
                  latency_stddev);                                              \
@@ -112,7 +111,7 @@ uint64_t count = 0;
   };
 
 #define CALC_THROUGHPUT                                                      \
-  [&](std::fstream& outfile) {                                                                    \
+  [&](std::fstream& outfile) {                                               \
     double avg_throughput = 0.0;                                             \
     uint32_t total_count = 0;                                                \
     assert(runtimes.size() == counts.size());                                \
@@ -123,7 +122,7 @@ uint64_t count = 0;
     }                                                                        \
     total_count = std::accumulate(counts.begin(), counts.end(), 0);          \
     avg_throughput /= runtimes.size();                                       \
-    outfile << avg_throughput << std::endl;                                     \
+    outfile << avg_throughput << std::endl;                                  \
     ROMULUS_INFO("!> [THRU] throughput={:4.2f}ops/us", avg_throughput);      \
     ROMULUS_INFO("!> [THRU] count={}", total_count);                         \
     paxos->CleanUp();                                                        \
