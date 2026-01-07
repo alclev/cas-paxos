@@ -12,7 +12,6 @@ git status
 read -p "Do you want to proceed with the commit? (y/n): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-	read -p "Enter commit message: " commit_msg
 	git commit -m "${*:1}"
 	git push
 else
