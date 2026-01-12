@@ -47,7 +47,7 @@ target_include_directories(${PROJECT_NAME}
 
 option(USE_MU "Enable Mu" OFF)
 
-# add_compile_definitions(MAP_DUMP)
+# add_compile_definitions(SYSDUMP)
 
 add_subdirectory(experiments)
 
