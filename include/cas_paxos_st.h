@@ -762,7 +762,6 @@ class CasPaxos : public Paxos {
   }
 
   bool Promise([[maybe_unused]] Value v) {
-#if 0
     State* curr_proposal = &proposed_state_[log_offset_];
     std::vector<State> expected;
     std::vector<bool> ok, done;
@@ -803,8 +802,8 @@ class CasPaxos : public Paxos {
           c->log_raddr.addr_info.offset = log_offset_ * kSlotSize;
           romulus::WorkRequest::BuildCAS(c->scratch_laddr, c->log_raddr,
                                          expected[i].raw, curr_proposal->raw,
-                                         wr_id_, &c->log_wr);
-          ROMULUS_ASSERT(PostRequests(c),
+                                         wr_id_, &c->wr);
+          ROMULUS_ASSERT(c->conn->Post(&c->wr, 1),
                          "<Promise> Failed when posting requests.");
         }
       }
@@ -814,7 +813,7 @@ class CasPaxos : public Paxos {
         for (uint32_t i = 0; i < system_size_; ++i) {
           if (done[i] || ok[i]) continue;
           c = contexts_[i];
-          ok[i] = PollCompletionsOnce(c, wr_id_);
+          ok[i] = PollCompletionsOnce(c->conn, wr_id_);
           if (ok[i]) ++ok_count;
         }
       }
@@ -843,7 +842,6 @@ class CasPaxos : public Paxos {
       }
       ++wr_id_;
     }
-#endif
     return true;
   }
 
