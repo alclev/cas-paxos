@@ -60,6 +60,26 @@ struct RemoteContext {
         proposal_raddr(c.proposal_raddr),
         log_raddr(c.log_raddr),
         wr(c.wr) {}
+  std::string ToString() const {
+    std::ostringstream oss;
+    oss << "RemoteContext{"
+        << "scratch_state=" << static_cast<const void*>(scratch_state) << ", "
+        << "proposed_state=" << static_cast<const void*>(proposed_state) << ", "
+        << "conn=" << static_cast<const void*>(conn) << ", "
+        << "scratch_laddr={addr=" << reinterpret_cast<void*>(scratch_laddr.addr)
+        << ", offset=" << scratch_laddr.offset
+        << ", length=" << scratch_laddr.length << "}, "
+        << "proposal_raddr={addr="
+        << reinterpret_cast<void*>(proposal_raddr.addr_info.addr)
+        << ", offset=" << proposal_raddr.addr_info.offset
+        << ", length=" << proposal_raddr.addr_info.length << "}, "
+        << "log_raddr={addr="
+        << reinterpret_cast<void*>(log_raddr.addr_info.addr)
+        << ", offset=" << log_raddr.addr_info.offset
+        << ", length=" << log_raddr.addr_info.length << "}"
+        << "}";
+    return oss.str();
+  }
 };
 
 namespace {  // namespace anonymous
@@ -132,7 +152,7 @@ class CasPaxos : public Paxos {
     uint64_t scratch_len = system_size_ * kSlotSize;
     uint64_t proposal_len = capacity_ * kSlotSize;
     uint64_t log_len = capacity_ * kSlotSize;
-    uint64_t leader_len = sizeof(State) * kSlotSize;
+    uint64_t leader_len = kSlotSize;
 
     ROMULUS_ASSERT(buf_size_ % kSlotSize == 0,
                    "Buf size not being a multiple of {} is not supported!",
@@ -239,12 +259,13 @@ class CasPaxos : public Paxos {
       RemoteContext* context = contexts_[i];
       context->proposed_state = &proposed_state_[0];
 
-      context->conn = remote_conns_[host_id_].front();
+      context->conn = remote_conns_[i].front();
       context->scratch_laddr = memblock_.GetAddrInfo(kScratchRegionId);
-      context->scratch_laddr.addr += kSlotSize * i;  // Offset into scratch mem
+      context->scratch_laddr.offset = kSlotSize * i;
       context->scratch_laddr.length = sizeof(State);
-      context->scratch_state =
-          reinterpret_cast<State*>(context->scratch_laddr.addr);
+
+      context->scratch_state = reinterpret_cast<State*>(
+          context->scratch_laddr.addr + context->scratch_laddr.offset);
 
       context->log_raddr = remote_addrs_[i][kLogRegionId];
       context->log_raddr.addr_info.length = sizeof(State);
@@ -476,7 +497,7 @@ class CasPaxos : public Paxos {
   // is successful, then the node considers itself the leader. If it remains
   // the leader then future ballot updates and prepare phases will be skipped.
   void ProposeInternal([[maybe_unused]] Value v) {
-    ROMULUS_DEBUG("<InlineProposal> Starting.");
+    ROMULUS_DEBUG("<ProposeInternal> Starting.");
     auto backoff = std::chrono::nanoseconds(std::rand() % kMaxStartingBackoff);
     bool ok = false, done = false, skip = false;
     State* result = nullptr;
@@ -484,6 +505,8 @@ class CasPaxos : public Paxos {
       ROMULUS_COUNTER_INC("attempts");
       // Skip preparation if we are the leader -- key multi-paxos optimization
       if (multi_paxos_opt_) {
+        ROMULUS_DEBUG(
+            "Multi-Paxos optimization enabled. Skipping prepare phase...");
         // Proceed with the multipaxos optimization...
         if (stable_leader_) {
           // Skip prepare
@@ -501,8 +524,10 @@ class CasPaxos : public Paxos {
         }
       } else {
         // Otherwise, we do the prepare every round
-        result = Prepare();
-        LeaderChange(result);
+        auto new_leader = Prepare();
+        // Upon success, rc will encode the node id of the new leader
+        is_leader_ = (new_leader->GetValue().id() == host_id_);
+        LeaderChange(new_leader);
       }
 
       if (result != nullptr || skip) {
@@ -703,6 +728,7 @@ class CasPaxos : public Paxos {
           ok[i] = false;
           c = contexts_[i];
           c->log_raddr.addr_info.offset = log_offset_ * kSlotSize;
+          ROMULUS_DEBUG("Prepare: Issuing CAS to QP {}", c->conn->GetQpNum(),c->ToString());
           romulus::WorkRequest::BuildCAS(c->scratch_laddr, c->log_raddr,
                                          expected[i].raw, swap[i].raw, wr_id_,
                                          &c->wr);
@@ -743,7 +769,8 @@ class CasPaxos : public Paxos {
                         swap[i].ToString(), expected[i].ToString());
         } else {
           // CAS failed and higher ballot. Abort.
-          ROMULUS_DEBUG("Failed: state={}", c->scratch_state->ToString());
+          ROMULUS_DEBUG("CAS failed and higher ballot. Abort.\tState={}",
+                        c->scratch_state->ToString());
           return nullptr;
         }
       }
