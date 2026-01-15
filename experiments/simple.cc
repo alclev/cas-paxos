@@ -65,8 +65,6 @@ int main(int argc, char* argv[]) {
 
   init();
 
-  exec();
-  exit(0);
   ROMULUS_INFO("Starting latency test");
   auto testtime_us =
       std::chrono::duration_cast<std::chrono::microseconds>(testtime);

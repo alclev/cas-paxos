@@ -434,7 +434,8 @@ class CasPaxos : public Paxos {
       while (!PollCompletionsOnce(c->conn, wr_id_));
 
       for (int i = 0; i < system_size_; ++i) {
-        auto laddr_raw = reinterpret_cast<uint64_t*>(laddr.addr + laddr.offset);
+        [[maybe_unused]] auto laddr_raw =
+            reinterpret_cast<uint64_t*>(laddr.addr + laddr.offset);
         ROMULUS_DEBUG("[Leader READ] {:x}", *laddr_raw);
       }
     }
@@ -499,8 +500,8 @@ class CasPaxos : public Paxos {
   void ProposeInternal([[maybe_unused]] Value v) {
     ROMULUS_DEBUG("<ProposeInternal> Starting.");
     auto backoff = std::chrono::nanoseconds(std::rand() % kMaxStartingBackoff);
-    bool ok = false, done = false, skip = false;
-    State* result = nullptr;
+    bool ok = false, done = false;
+    State* new_leader = nullptr;
     while (!done) {
       ROMULUS_COUNTER_INC("attempts");
       // Skip preparation if we are the leader -- key multi-paxos optimization
@@ -508,31 +509,35 @@ class CasPaxos : public Paxos {
         ROMULUS_DEBUG(
             "Multi-Paxos optimization enabled. Skipping prepare phase...");
         // Proceed with the multipaxos optimization...
-        if (stable_leader_) {
-          // Skip prepare
-          skip = true;
-        } else {
+        if (!stable_leader_) {
           // Leader failure or beginning execution -- need to run prepare...
-          skip = false;
-          auto new_leader = Prepare();
+          new_leader = Prepare();
           // Upon success, rc will encode the node id of the new leader
           is_leader_ = (new_leader->GetValue().id() == host_id_);
           LeaderChange(new_leader);
 
           // Once leader data has propogated, we assume stable leader again
           stable_leader_ = true;
+        } else {
+          // we have a stable leader and stored locally
+          new_leader = &leader_[0];
         }
+        // Otherwise, we are stable and do nothing
       } else {
         // Otherwise, we do the prepare every round
-        auto new_leader = Prepare();
-        // Upon success, rc will encode the node id of the new leader
-        is_leader_ = (new_leader->GetValue().id() == host_id_);
-        LeaderChange(new_leader);
+        if ((new_leader = Prepare()) != nullptr) {
+          // Upon success, rc will encode the node id of the new leader
+          is_leader_ = (new_leader->GetValue().id() == host_id_);
+          LeaderChange(new_leader);
+        }
       }
-
-      if (result != nullptr || skip) {
+      // only True if we "won" the prepare phase OR prepare phase has already
+      // been won for multipaxos
+      if (new_leader) {
+        // This node is the leader, so we proceed
         ok = Promise(v);
         if (ok) {
+          // Invariant: non-null log entries are considered committed
           auto committed = log_[log_offset_].GetValue();
           if (committed == v) {
             // Given value was committed. Done.
@@ -702,76 +707,105 @@ class CasPaxos : public Paxos {
 
   State* Prepare() {
     State* curr_proposal = &proposed_state_[log_offset_];
+    Ballot curr_proposal_max_ballot = curr_proposal->GetMaxBallot();
     std::vector<State> expected, swap;
-    std::vector<bool> ok, done;
+    std::vector<bool> polled, done;
     uint32_t done_count = 0;
     RemoteContext* c;
 
-    ok.resize(system_size_);
+    polled.resize(system_size_);
     done.resize(system_size_);
     expected.resize(system_size_);
     swap.resize(system_size_);
+    // We are deliberately filling the expected and swap with placeholder data
+    // given the first rounds of CAS will not succeed
     for (uint32_t i = 0; i < system_size_; ++i) {
+      // Expected is simply the last observed state, i.e. the result of the last
+      // CAS
       expected[i] = State();
-      swap[i] = State(curr_proposal->GetMaxBallot(), kNullBallot, kNullBallot);
-      ok[i] = false;
+      // Swap represents the highest accepted proposal observed by proposer i
+      swap[i] = State(curr_proposal_max_ballot, kNullBallot, kNullBallot);
+      polled[i] = false;
       done[i] = false;
     }
+
     // Retry until a quroum succeeds.
     while (done_count < quorum_) {
-      uint32_t ok_count = 0;
+      uint32_t posted = 0;
       // Post CAS ops.
       for (uint32_t i = 0; i < system_size_; ++i) {
-        if (done[i]) {
-          ++ok_count;
-        } else {
-          ok[i] = false;
-          c = contexts_[i];
-          c->log_raddr.addr_info.offset = log_offset_ * kSlotSize;
-          ROMULUS_DEBUG("Prepare: Issuing CAS to QP {}", c->conn->GetQpNum(),c->ToString());
-          romulus::WorkRequest::BuildCAS(c->scratch_laddr, c->log_raddr,
-                                         expected[i].raw, swap[i].raw, wr_id_,
-                                         &c->wr);
-          ROMULUS_ASSERT(c->conn->Post(&c->wr, 1),
-                         "<Prepare> Failed when posting requests.");
-          // StageLogRequest(c);
-          // ROMULUS_ASSERT(PostRequests(c),
-          //                "<Prepare> Failed when posting requests.");
-        }
+        if (done[i]) continue;
+        polled[i] = false;
+        c = contexts_[i];
+        c->log_raddr.addr_info.offset = log_offset_ * kSlotSize;
+        ROMULUS_DEBUG("Prepare: Issuing CAS to QP {}", c->conn->GetQpNum(),
+                      c->ToString());
+        // We extract the observed value and popualte the swap with a copy of
+        // that with the max_ballot of our current proposal. This preserces the
+        // last accepted ballot and value in the metadata
+        auto cas_swap = expected[i];
+        cas_swap.SetMaxBallot(curr_proposal_max_ballot);
+        romulus::WorkRequest::BuildCAS(c->scratch_laddr, c->log_raddr,
+                                       expected[i].raw, cas_swap.raw, wr_id_,
+                                       &c->wr);
+        ROMULUS_ASSERT(c->conn->Post(&c->wr, 1),
+                       "<Prepare> Failed when posting requests.");
+        ++posted;
+        // StageLogRequest(c);
+        // ROMULUS_ASSERT(PostRequests(c),
+        //                "<Prepare> Failed when posting requests.");
       }
 
       // Poll for completions
-      while (ok_count < system_size_) {
+      uint32_t completions = 0;
+      while (completions < posted) {
         for (uint32_t i = 0; i < system_size_; ++i) {
-          if (done[i] || ok[i]) continue;
-          c = contexts_[i];
-          ok[i] = PollCompletionsOnce(c->conn, wr_id_);
-          if (ok[i]) ++ok_count;
+          if (done[i] || polled[i]) continue;
+          if (PollCompletionsOnce(contexts_[i]->conn, wr_id_)) {
+            polled[i] = true;
+            ++completions;
+          }
         }
       }
-
       // Check return value of CAS.
-      auto* curr_proposal = &proposed_state_[log_offset_];
+      // auto* curr_proposal = &proposed_state_[log_offset_];
       for (uint32_t i = 0; i < system_size_; ++i) {
-        if (done[i] || !ok[i]) continue;
-        c = contexts_[i];
-        if (c->scratch_state->raw == expected[i].raw) {
-          // CAS succeeded. Done.
-          ++done_count;
+        if (done[i] || !polled[i]) continue;
+        // This will the result of the previous CAS
+        State observed = *contexts_[i]->scratch_state;
+        // Invariant: For eah acceptor i, swap[i] needs to maintain the value of
+        // the highest accepted ballot ever observed
+        if (observed.GetBallot() > swap[i].GetBallot()) {
+          swap[i].SetProposal(observed.GetBallot(), observed.GetValue());
+        }
+        if (observed.raw == expected[i].raw) {
+          // CAS succeeded. Done for this slot.
           done[i] = true;
-        } else if (c->scratch_state->GetMaxBallot() <=
-                   curr_proposal->GetMaxBallot()) {
-          // CAS failed but ballot is still good. Update proposal and retry.
-          swap[i].SetProposal(c->scratch_state->GetBallot(),
-                              c->scratch_state->GetValue());
-          expected[i] = *(c->scratch_state);
-          ROMULUS_DEBUG("<Promise> Updating: swap={}, expected={}",
-                        swap[i].ToString(), expected[i].ToString());
+          ++done_count;
+        } else if (observed.GetMaxBallot() <= curr_proposal_max_ballot) {
+          ROMULUS_DEBUG(
+              "CAS failed but ballot is still good. Update expected and "
+              "retry.\tState={}",
+              observed.ToString());
+          expected[i] = observed;
         } else {
-          // CAS failed and higher ballot. Abort.
-          ROMULUS_DEBUG("CAS failed and higher ballot. Abort.\tState={}",
-                        c->scratch_state->ToString());
-          return nullptr;
+          ROMULUS_DEBUG(
+              "CAS failed and higher ballot. Bump and restart.\tState={}",
+              observed.ToString());
+          // Bump to strictly greater than what we observed.
+          curr_proposal_max_ballot = observed.GetMaxBallot() + 1;
+          curr_proposal->SetMaxBallot(curr_proposal_max_ballot);
+          for (uint32_t j = 0; j < system_size_; ++j) {
+            expected[j] = State();
+            swap[j] = State(curr_proposal_max_ballot, kNullBallot, kNullBallot);
+          }
+          // reset prepare bc we have new ballot
+          std::fill(done.begin(), done.end(), false);
+          std::fill(polled.begin(), polled.end(), false);
+          done_count = 0;
+          // Preserved what has been observed already
+          expected[i] = observed;
+          break;
         }
       }
       ++wr_id_;
@@ -779,16 +813,18 @@ class CasPaxos : public Paxos {
 
     // Update current proposal to reflect the highest balloted proposal.
     for (uint32_t i = 0; i < system_size_; ++i) {
+      // We only reduce over the quorum members
+      if (!done[i]) continue;
       if (swap[i].GetBallot() > curr_proposal->GetBallot()) {
         curr_proposal->SetProposal(swap[i].GetBallot(), swap[i].GetValue());
       }
     }
-    ROMULUS_DEBUG("<Prepare> Prepared slot: log_offset={}, state={}",
-                  log_offset_, curr_proposal->ToString());
+    ROMULUS_DEBUG("Prepared slot: log_offset={}, state={}", log_offset_,
+                  curr_proposal->ToString());
     return curr_proposal;
   }
 
-  bool Promise([[maybe_unused]] Value v) {
+  bool Promise(Value v) {
     State* curr_proposal = &proposed_state_[log_offset_];
     std::vector<State> expected;
     std::vector<bool> ok, done;
@@ -815,7 +851,7 @@ class CasPaxos : public Paxos {
     // Retry until a quroum succeeds and the local log is written to. Making
     // sure that we write to the local log allows a follower to be certain
     // that if the slot is filled that the value is committed.
-    while (done_count < quorum_) {
+    while (done_count < quorum_ || !done[host_id_]) {
       // Post CAS ops.
       uint32_t ok_count = 0;
       for (uint32_t i = 0; i < system_size_; ++i) {
@@ -834,9 +870,8 @@ class CasPaxos : public Paxos {
                          "<Promise> Failed when posting requests.");
         }
       }
-
       // Poll for completions
-      while (ok_count < system_size_) {
+      while (ok_count < quorum_) {
         for (uint32_t i = 0; i < system_size_; ++i) {
           if (done[i] || ok[i]) continue;
           c = contexts_[i];
@@ -848,22 +883,30 @@ class CasPaxos : public Paxos {
       for (uint32_t i = 0; i < system_size_; ++i) {
         if (done[i] || !ok[i]) continue;
         c = contexts_[i];
-        if (expected[i].raw == c->scratch_state->raw) {
+        // This will the result of the previous CAS
+        State observed = *c->scratch_state;
+        if (expected[i].raw == observed.raw) {
           // CAS succeeded. Done.
           ++done_count;
           done[i] = true;
 
-        } else if (c->scratch_state->GetMaxBallot() <=
-                   curr_proposal->GetMaxBallot()) {
+        } else if (observed.GetMaxBallot() <= curr_proposal->GetMaxBallot()) {
+          // Safety check, same ballot cannot have multiple values
+          if (observed.GetBallot() == curr_proposal->GetBallot() &&
+              observed.GetValue() != curr_proposal->GetValue()) {
+            ROMULUS_ASSERT(false,
+                           "<Promise> Same ballot, different value observed: "
+                           "observed={}, proposal={}",
+                           observed.ToString(), curr_proposal->ToString());
+          }
           // CAS failed but ballot is still good. Retry because we already ran
           // the prepare phase.
-          expected[i] = *(c->scratch_state);
+          expected[i] = observed;
           ROMULUS_DEBUG("<Promise> Updating expected: expected={}",
                         expected[i].ToString());
         } else {
           // CAS failed on first try (as leader) or a higher ballot is found.
-          ROMULUS_DEBUG("<Promise> Failed: state={}",
-                        c->scratch_state->ToString());
+          ROMULUS_DEBUG("<Promise> Failed: state={}", observed.ToString());
           return false;
         }
       }
