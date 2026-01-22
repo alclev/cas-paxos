@@ -66,6 +66,7 @@ int main(int argc, char* argv[]) {
   init();
 
   ROMULUS_INFO("Starting latency test");
+  ROMULUS_INFO("MultiPaxos Optimization: {}", multipax_opt ? "ON" : "OFF");
   auto testtime_us =
       std::chrono::duration_cast<std::chrono::microseconds>(testtime);
   ROMULUS_STOPWATCH_BEGIN();

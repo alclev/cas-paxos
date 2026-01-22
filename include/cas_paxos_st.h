@@ -83,18 +83,28 @@ struct RemoteContext {
 };
 
 namespace {  // namespace anonymous
-
+  
 template <typename Rep, typename Period>
 inline std::chrono::duration<Rep, Period> DoBackoff(
     std::chrono::duration<Rep, Period> backoff) {
+
   ROMULUS_DEBUG(
-      "Backing off for {} ms",
-      std::chrono::duration_cast<std::chrono::milliseconds>(backoff).count());
-  // Backoff if an abort was triggered this round.
-  auto start = std::chrono::steady_clock::now();
-  while (std::chrono::steady_clock::now() - start < backoff);
-  return backoff * 2;
+      "Backing off for {} us",
+      std::chrono::duration_cast<std::chrono::microseconds>(backoff).count());
+
+  if (backoff < std::chrono::microseconds(50)) {
+    // Spin politely for short backoffs
+    auto start = std::chrono::steady_clock::now();
+    while (std::chrono::steady_clock::now() - start < backoff) {
+      _mm_pause();
+    }
+  } else {
+    std::this_thread::sleep_for(backoff);
+  }
+
+  return std::min(backoff * 2, kMaxBackoff);
 }
+
 // Return the next higher unique ballot calculated by offsetting for this host
 // into the next chunk of ballots to use. If the peer ballot is lower than the
 // local ballot, then return the current ballot.
@@ -204,6 +214,9 @@ class CasPaxos : public Paxos {
     registry_ = std::move(registry);
     conn_manager_ = std::make_unique<romulus::ConnectionManager>(
         hostname_, registry_.get(), host_id_, system_size_, num_qps_);
+
+    // Reusuing the barrier object here- it is just a counter
+    registry_->Register<Barrier>("paxos_epoch", Barrier());
 
     // Barrier
     conn_manager_->arrive_strict_barrier();
@@ -344,7 +357,6 @@ class CasPaxos : public Paxos {
     ROMULUS_INFO("!> skipped={}", ROMULUS_COUNTER_GET("skipped"));
     ROMULUS_INFO("!> proposed={}", ROMULUS_COUNTER_GET("proposed"));
     CatchUp();
-    DumpLog();
   }
 
  private:
@@ -497,12 +509,14 @@ class CasPaxos : public Paxos {
   // repeat in an attempt to commit the provided value. If the prepare phase
   // is successful, then the node considers itself the leader. If it remains
   // the leader then future ballot updates and prepare phases will be skipped.
-  void ProposeInternal([[maybe_unused]] Value v) {
+  void ProposeInternal(Value v) {
     ROMULUS_DEBUG("<ProposeInternal> Starting.");
     auto backoff = std::chrono::nanoseconds(std::rand() % kMaxStartingBackoff);
-    bool ok = false, done = false;
-    State* new_leader = nullptr;
+    bool done = false;
+    std::vector<State> pre_expected;
+    State* curr_proposal;
     while (!done) {
+      bool ok = false;
       ROMULUS_COUNTER_INC("attempts");
       // Skip preparation if we are the leader -- key multi-paxos optimization
       if (multi_paxos_opt_) {
@@ -511,31 +525,36 @@ class CasPaxos : public Paxos {
         // Proceed with the multipaxos optimization...
         if (!stable_leader_) {
           // Leader failure or beginning execution -- need to run prepare...
-          new_leader = Prepare();
+          auto prepare_result = Prepare();
+          curr_proposal = prepare_result.first;
+          pre_expected = prepare_result.second;
           // Upon success, rc will encode the node id of the new leader
-          is_leader_ = (new_leader->GetValue().id() == host_id_);
-          LeaderChange(new_leader);
+          is_leader_ = (curr_proposal->GetValue().id() == host_id_);
+          LeaderChange(curr_proposal);
 
           // Once leader data has propogated, we assume stable leader again
           stable_leader_ = true;
-        } else {
-          // we have a stable leader and stored locally
-          new_leader = &leader_[0];
         }
         // Otherwise, we are stable and do nothing
       } else {
         // Otherwise, we do the prepare every round
-        if ((new_leader = Prepare()) != nullptr) {
+        auto prepare_result = Prepare();
+        curr_proposal = prepare_result.first;
+        pre_expected = prepare_result.second;
+        ROMULUS_DEBUG("Node {} completed prepare with curr_proposal={}",
+                      host_id_, curr_proposal->ToString());
+        if (curr_proposal != nullptr) {
           // Upon success, rc will encode the node id of the new leader
-          is_leader_ = (new_leader->GetValue().id() == host_id_);
-          LeaderChange(new_leader);
+          is_leader_ = (curr_proposal->GetValue().id() == host_id_);
+          // LeaderChange(new_leader); no need for leader change
         }
       }
       // only True if we "won" the prepare phase OR prepare phase has already
       // been won for multipaxos
-      if (new_leader) {
+      if ((multi_paxos_opt_ && is_leader_) ||
+          (!multi_paxos_opt_ && curr_proposal)) {
         // This node is the leader, so we proceed
-        ok = Promise(v);
+        ok = Promise(v, pre_expected);
         if (ok) {
           // Invariant: non-null log entries are considered committed
           auto committed = log_[log_offset_].GetValue();
@@ -566,6 +585,7 @@ class CasPaxos : public Paxos {
       // If aborted, backoff.
       if (!ok) {
         is_leader_ = false;
+        stable_leader_ = false;
         backoff = DoBackoff(backoff);
       }
     }
@@ -705,9 +725,10 @@ class CasPaxos : public Paxos {
   }
 #endif
 
-  State* Prepare() {
+  std::pair<State*, std::vector<State>> Prepare() {
     State* curr_proposal = &proposed_state_[log_offset_];
     Ballot curr_proposal_max_ballot = curr_proposal->GetMaxBallot();
+    auto backoff = std::chrono::nanoseconds(std::rand() % kMaxStartingBackoff);
     std::vector<State> expected, swap;
     std::vector<bool> polled, done;
     uint32_t done_count = 0;
@@ -792,26 +813,36 @@ class CasPaxos : public Paxos {
           ROMULUS_DEBUG(
               "CAS failed and higher ballot. Bump and restart.\tState={}",
               observed.ToString());
-          // Bump to strictly greater than what we observed.
-          curr_proposal_max_ballot = observed.GetMaxBallot() + 1;
-          curr_proposal->SetMaxBallot(curr_proposal_max_ballot);
-          for (uint32_t j = 0; j < system_size_; ++j) {
-            expected[j] = State();
-            swap[j] = State(curr_proposal_max_ballot, kNullBallot, kNullBallot);
-          }
+
+          // We generate a globally unique ballot that is guaranteed to be
+          // strictly larger than any ballot we have observed
+          Ballot unique_ballot = GlobalBallot();
+          // curr_proposal->SetProposal(unique_ballot,
+          // curr_proposal->GetValue());
+          curr_proposal->SetProposal(unique_ballot, curr_proposal->GetValue());
+          curr_proposal->SetMaxBallot(unique_ballot);
+          curr_proposal_max_ballot = unique_ballot;
+          // REMOVE:
+          // for (uint32_t j = 0; j < system_size_; ++j) {
+          //   expected[j] = State();
+          //   swap[j] = State(unique_ballot, kNullBallot, kNullBallot);
+          // }
           // reset prepare bc we have new ballot
           std::fill(done.begin(), done.end(), false);
           std::fill(polled.begin(), polled.end(), false);
           done_count = 0;
           // Preserved what has been observed already
           expected[i] = observed;
+          // perform exponential backoff
+          ROMULUS_DEBUG("Prepare: Backing off for {}...", backoff);
+          backoff = DoBackoff(backoff);
           break;
         }
       }
       ++wr_id_;
     }
-
-    // Update current proposal to reflect the highest balloted proposal.
+    // Reducing over the quorum: update current proposal to reflect the highest
+    // balloted proposal.
     for (uint32_t i = 0; i < system_size_; ++i) {
       // We only reduce over the quorum members
       if (!done[i]) continue;
@@ -821,21 +852,22 @@ class CasPaxos : public Paxos {
     }
     ROMULUS_DEBUG("Prepared slot: log_offset={}, state={}", log_offset_,
                   curr_proposal->ToString());
-    return curr_proposal;
+    return {curr_proposal, expected};
   }
 
-  bool Promise(Value v) {
+  bool Promise(Value v, std::vector<State> pre_expected) {
     State* curr_proposal = &proposed_state_[log_offset_];
-    std::vector<State> expected;
-    std::vector<bool> ok, done;
+    std::vector<State> expected = pre_expected;
     uint32_t done_count = 0;
     RemoteContext* c;
-
-    ok.resize(system_size_);
-    done.resize(system_size_);
-    expected.resize(system_size_);
+    // Metadata to indicate whether a CAS for a given acceptor has been POLLED
+    std::vector<bool> ok(system_size_, false);
+    // Metadata to indicate to indicate a SUCCESSFUL cas for the given acceptor
+    std::vector<bool> done(system_size_, false);
+    // expected.resize(system_size_);
     for (uint32_t i = 0; i < system_size_; ++i) {
-      expected[i] = State();
+      // expected[i] =
+      //     State(curr_proposal->GetMaxBallot(), kNullBallot, kNullBallot);
       done[i] = false;
     }
 
@@ -851,7 +883,7 @@ class CasPaxos : public Paxos {
     // Retry until a quroum succeeds and the local log is written to. Making
     // sure that we write to the local log allows a follower to be certain
     // that if the slot is filled that the value is committed.
-    while (done_count < quorum_ || !done[host_id_]) {
+    while (done_count < quorum_) {
       // Post CAS ops.
       uint32_t ok_count = 0;
       for (uint32_t i = 0; i < system_size_; ++i) {
@@ -919,12 +951,13 @@ class CasPaxos : public Paxos {
 
   bool isLeader() override { return stable_leader_; }
 
-  void DumpLog() {
-#if 0
-    for (uint32_t i = 0; i < log_offset_; ++i) {
-      ROMULUS_DEBUG("log[{}]: {}", i, log_[i].ToString());
-    }
-#endif
+  inline Ballot GlobalBallot() {
+    uint64_t epoch = 0;
+    registry_->Fetch_and_Add("paxos_epoch", 1, &epoch);
+    // This allows for a maximum of 15 proposers
+    epoch = (epoch << 4) | host_id_;
+    // truncate the first 48 bits of the word
+    return static_cast<Ballot>(epoch);
   }
 
   // Member variables.
