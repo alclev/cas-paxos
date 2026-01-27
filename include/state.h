@@ -95,26 +95,27 @@ struct State {
    * @param type
    */
   State() : raw(0) {}
-  State(uint16_t max, uint16_t accepted, Value value) {
-    raw = (static_cast<uint64_t>(max) << (kTotalBits - kMaxBallotBits)) |
+  State(uint16_t promise_ballot, uint16_t accepted, Value value) {
+    raw = (static_cast<uint64_t>(promise_ballot) << (kTotalBits - kMaxBallotBits)) |
           (static_cast<uint64_t>(accepted) << kValueBits) |
           static_cast<uint64_t>(value.raw());
   }
 
   // Getters
-  inline Ballot GetMaxBallot() const {
+  inline Ballot GetPromiseBallot() const {
     return static_cast<Ballot>((raw & kMaxBallotMask) >>
                                (kTotalBits - kMaxBallotBits));
   }
+  // accepted ballot
   inline Ballot GetBallot() const {
     return static_cast<Ballot>((raw & kBallotMask) >> kValueBits);
   }
   inline Value GetValue() const { return Value(raw & kValueMask); }
 
   // Setters
-  inline void SetMaxBallot(Ballot max) {
+  inline void SetPromiseBallot(Ballot promise_ballot) {
     raw = (raw & (~kMaxBallotMask)) |
-          (static_cast<uint64_t>(max) << (kTotalBits - kMaxBallotBits));
+          (static_cast<uint64_t>(promise_ballot) << (kTotalBits - kMaxBallotBits));
   }
   inline void SetBallot(Ballot ballot) {
     raw =
@@ -131,7 +132,7 @@ struct State {
 
   std::string ToString() const {
     std::stringstream ss;
-    ss << "<max=" << GetMaxBallot() << ", <ballot=" << GetBallot()
+    ss << "<promise_ballot=" << GetPromiseBallot() << ", <ballot=" << GetBallot()
        << ", value=(" << static_cast<uint32_t>(GetValue().id()) << ", "
        << GetValue().offset() << ")"
        << ">> (raw=" << raw << ")";
