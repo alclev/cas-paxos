@@ -17,7 +17,7 @@ std::unique_ptr<Paxos> paxos;
 
 std::vector<double> latencies;
 
-#define INIT_LATENCY [&]() { paxos->SyncNodes(); };
+#define SYNC_NODES [&]() { paxos->SyncNodes(); };
 
 #define EXEC_LATENCY                                                      \
   [&]() {                                                                 \
@@ -125,5 +125,4 @@ uint64_t count = 0;
     outfile << avg_throughput << std::endl;                                  \
     ROMULUS_INFO("!> [THRU] throughput={:4.2f}ops/us", avg_throughput);      \
     ROMULUS_INFO("!> [THRU] count={}", total_count);                         \
-    paxos->CleanUp();                                                        \
   };

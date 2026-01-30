@@ -154,10 +154,10 @@ function cl_run() {
 	NUM_MACHINES=${#MACHINES[@]}
 	for i in "${!MACHINES[@]}"; do
 		host="${MACHINES[$i]}"
-		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${NUM_MACHINES}_nodes.csv ${ARGS}"
+		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt"
 		echo "$CMD"
 		cat >>"$tmp_screen" <<EOF
-screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}
+screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}; bash
 logfile logs/log_${i}.txt
 log on
 EOF
@@ -191,16 +191,16 @@ function cl_debug() {
 
 	for i in "${!MACHINES[@]}"; do
 		host="${MACHINES[$i]}"
-		CMD="--hostname ${host} --node-id ${i} --leader-fixed ${ARGS}"
+		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt"
 		if [[ $i -eq 0 && -n "$gdb_cmd" ]]; then
 			cat >>"$tmp_screen" <<EOF
-screen -t node${i} ssh ${USER}@${host}.${DOMAIN} gdb -ex \"${gdb_cmd}\" -ex \"r\" --args ./${EXE_NAME} ${CMD}; bash
+screen -t node${i} ssh ${USER}@${host}.${DOMAIN} gdb -ex \"${gdb_cmd}\" -ex \"r\" --args ${CMD}; bash
 logfile gdb-logs/gdb_${i}.log
 log on
 EOF
 		else
 			cat >>"$tmp_screen" <<EOF
-screen -t node${i} ssh ${USER}@${host}.${DOMAIN} gdb -ex \"r\" --args ./${EXE_NAME} ${CMD}; bash
+screen -t node${i} ssh ${USER}@${host}.${DOMAIN} gdb -ex \"r\" --args ${CMD}; bash
 logfile gdb-logs/gdb_${i}.log
 log on
 EOF

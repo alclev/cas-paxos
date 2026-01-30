@@ -335,8 +335,8 @@ public:
   }
   void SyncNodes() override {
     ROMULUS_DEBUG("Syncing nodes");
-    conn_manager_->arrive_barrier_timeout();
-    ROMULUS_DEBUG("Nodes synced");
+    conn_manager_->arrive_strict_barrier();
+    ROMULUS_DEBUG("Nodes synced.");
   }
   void CleanUp() override {
     SyncNodes();
@@ -369,14 +369,19 @@ private:
 
   // Params: node_id of the new leader
   void LeaderChange(State *new_leader) {
-    ROMULUS_INFO("Electing new leader {}", new_leader->GetValue().id());
+    if (new_leader == nullptr) {
+      ROMULUS_INFO("Electing new leader (unknown - yielded)");
+    } else {
+      ROMULUS_INFO("Electing new leader {}", new_leader->GetValue().id());
+    }
     // Barrier
     conn_manager_->arrive_strict_barrier();
+
     uint32_t ok_count = 0;
     std::vector<bool> ok(system_size_);
     // If we are the leader, then we write to the leader slot
     if (is_leader_) {
-      ROMULUS_DEBUG("IM THE LEADER");
+      ROMULUS_DEBUG("I'm the leader!'");
       // Write the new leader to the leader slot
       leader_[0] = *new_leader;
 
@@ -420,6 +425,7 @@ private:
     }
     // Barrier
     conn_manager_->arrive_strict_barrier();
+
     // Now we read from our slot
     if (!is_leader_) {
       // Landing space for the reads
@@ -442,13 +448,11 @@ private:
       while (!PollCompletionsOnce(c->conn, wr_id_))
         ;
 
-      for (int i = 0; i < system_size_; ++i) {
-        [[maybe_unused]] auto laddr_raw =
-            reinterpret_cast<uint64_t *>(laddr.addr + laddr.offset);
-        ROMULUS_DEBUG("[Leader READ] {:x}", *laddr_raw);
-      }
+      ROMULUS_DEBUG("[Leader READ] {:x}",
+                    *reinterpret_cast<uint64_t *>(laddr.addr + laddr.offset));
     }
     wr_id_++;
+    stable_leader_ = (new_leader != nullptr);
     conn_manager_->arrive_strict_barrier();
   }
 
@@ -463,7 +467,7 @@ private:
   // repeat in an attempt to commit the provided value. If the prepare phase
   // is successful, then the node considers itself the leader. If it remains
   // the leader then future ballot updates and prepare phases will be skipped.
-  void ProposeInternal(Value v) {
+  void ProposeInternal(Value &v) {
     ROMULUS_DEBUG("<ProposeInternal> Starting.");
     auto backoff = std::chrono::nanoseconds(std::rand() % kMaxStartingBackoff);
     bool done = false;
@@ -482,14 +486,23 @@ private:
           auto prepare_result = Prepare();
           curr_proposal = prepare_result.first;
           pre_expected = prepare_result.second;
-          // Upon success, rc will encode the node id of the new leader
-          is_leader_ = (curr_proposal->GetValue().id() == host_id_);
-          LeaderChange(curr_proposal);
 
-          // Once leader data has propogated, we assume stable leader again
-          stable_leader_ = true;
+          Ballot winning_ballot = curr_proposal->GetPromiseBallot();
+          uint32_t leader_id = winning_ballot % system_size_;
+          is_leader_ = (leader_id == host_id_);
+
+          LeaderChange(curr_proposal);
+        } else {
+          // Otherwise, we are stable
+          curr_proposal = &proposed_state_[log_offset_];
+          pre_expected.resize(system_size_);
+          for (uint32_t i = 0; i < system_size_; ++i) {
+            // Expected state: our ballot is already installed, no value yet
+            pre_expected[i] =
+                State(curr_proposal->GetPromiseBallot(), 0, Value(0));
+          }
         }
-        // Otherwise, we are stable and do nothing
+
       } else {
         // Otherwise, we do the prepare every round
         auto prepare_result = Prepare();
@@ -499,6 +512,7 @@ private:
                       host_id_, curr_proposal->ToString());
         if (curr_proposal != nullptr) {
           // Upon success, rc will encode the node id of the new leader
+          // Note the is_leader is less relavent for a non-multi paxos scenario
           is_leader_ = (curr_proposal->GetValue().id() == host_id_);
           // LeaderChange(new_leader); no need for leader change
         }
@@ -538,9 +552,16 @@ private:
 
       // If aborted, backoff.
       if (!ok) {
-        is_leader_ = false;
-        stable_leader_ = false;
-        backoff = DoBackoff(backoff);
+        if (multi_paxos_opt_ && !is_leader_ && stable_leader_) {
+          // Multi-Paxos: We're not leader, but there is a stable leader
+          // Just wait and retry - don't reset stable_leader_
+          backoff = DoBackoff(backoff);
+        } else {
+          // Non-Multi-Paxos, or we were leader and failed, or no stable leader
+          is_leader_ = false;
+          stable_leader_ = false;
+          backoff = DoBackoff(backoff);
+        }
       }
     }
     ROMULUS_COUNTER_INC("proposed");
@@ -687,6 +708,11 @@ private:
   std::pair<State *, std::vector<State>> Prepare() {
     State *curr_proposal = &proposed_state_[log_offset_];
     Ballot curr_promise_ballot = curr_proposal->GetPromiseBallot();
+    if (local_ballot_ == 0) {
+      local_ballot_ = MakeBallot(1);
+    }
+    curr_promise_ballot = std::max(curr_promise_ballot, local_ballot_);
+    curr_proposal->SetPromiseBallot(curr_promise_ballot);
 
     auto backoff = std::chrono::nanoseconds(std::rand() % kMaxStartingBackoff);
     RemoteContext *c;
@@ -703,17 +729,17 @@ private:
       state[i] = State();
     }
 
-    // Retry until a quroum succeeds.
     while (done_count < quorum_) {
+      std::fill(polled.begin(), polled.end(), false);
+      ++wr_id_;
+
       uint32_t posted = 0;
       // Post CAS ops.
       for (uint32_t i = 0; i < system_size_; ++i) {
         if (done[i])
           continue;
-        polled[i] = false;
         c = contexts_[i];
         c->log_raddr.addr_info.offset = log_offset_ * kSlotSize;
-        // Construct an issue cas
         uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
                          (static_cast<uint64_t>(host_id_) << 32) |
                          static_cast<uint64_t>(i);
@@ -729,9 +755,6 @@ private:
         ROMULUS_ASSERT(c->conn->Post(&c->wr, 1),
                        "<Prepare> Failed when posting requests.");
         ++posted;
-        // StageLogRequest(c);
-        // ROMULUS_ASSERT(PostRequests(c),
-        //                "<Prepare> Failed when posting requests.");
       }
 
       // Poll for completions
@@ -746,54 +769,63 @@ private:
           }
         }
       }
+
       // Check return value of CAS.
+      bool need_bump = false;
+      Ballot observed_max_ballot = curr_promise_ballot;
+      uint32_t winning_index = 0;
+
       for (uint32_t i = 0; i < system_size_; ++i) {
         if (done[i] || !polled[i])
           continue;
-        // This will the result of the previous CAS
         State observed = *contexts_[i]->scratch_state;
 
         if (observed.raw == expected[i].raw) {
-          // CAS succeeded. Done for this slot.
+          ROMULUS_DEBUG("Prepare: cas success");
           state[i] = observed;
           done[i] = true;
           ++done_count;
-          continue;
         } else {
-          // Cas failure path
           expected[i] = observed;
-
+          swap[i] = State(curr_promise_ballot, observed.GetBallot(),
+                          observed.GetValue());
+          state[i] = observed;
           if (observed.GetPromiseBallot() > curr_promise_ballot) {
-            // Abort. Bump ballot and try again
-            Ballot unique_ballot = GlobalBallot();
-            ROMULUS_ASSERT(
-                unique_ballot > observed.GetPromiseBallot(),
-                "GlobalBallot did not exceed observed promise ballot");
-
-            curr_promise_ballot = unique_ballot;
-            curr_proposal->SetPromiseBallot(unique_ballot);
-            // Reset all acceptor metadata
-            done_count = 0;
-            std::fill(done.begin(), done.end(), false);
-            std::fill(polled.begin(), polled.end(), false);
-
-            for (uint32_t j = 0; j < system_size_; ++j) {
-              expected[j] = State();
-              swap[j] = State(curr_promise_ballot, 0, Value(0));
-              state[j] = State();
-            }
-
-            backoff = DoBackoff(backoff);
-            break;
-          } else {
-            // Ballot is still good. Try again with same ballot but observed
-            // proposal
-            swap[i] = State(curr_promise_ballot, observed.GetBallot(),
-                            observed.GetValue());
+            need_bump = true;
+            observed_max_ballot =
+                std::max(observed_max_ballot, observed.GetPromiseBallot());
+            winning_index = i;
           }
         }
       }
-      ++wr_id_;
+      // Handle ballot bump after processing all completions
+      if (need_bump) {
+        if (multi_paxos_opt_) {
+          // In multi-paxos we give up -- let them be the leader
+          ROMULUS_DEBUG(
+              "Prepare: detected higher ballot, yielding to other leader");
+          is_leader_ = false;
+          // failure condition
+          return {&state[winning_index], state};
+        }
+        ROMULUS_DEBUG("Prepare: cas failed. abort and bump.");
+        Ballot unique_ballot = BumpBallot(observed_max_ballot);
+        ROMULUS_ASSERT(unique_ballot > observed_max_ballot,
+                       "GlobalBallot did not exceed observed promise ballot");
+
+        curr_promise_ballot = unique_ballot;
+        curr_proposal->SetPromiseBallot(unique_ballot);
+
+        done_count = 0;
+        std::fill(done.begin(), done.end(), false);
+
+        for (uint32_t j = 0; j < system_size_; ++j) {
+          expected[j] = State();
+          swap[j] = State(curr_promise_ballot, 0, Value(0));
+
+          backoff = DoBackoff(backoff);
+        }
+      }
     }
     // Reduce over the quorum: adopt highest accepted proposal
     Ballot best_ballot = 0;
@@ -808,10 +840,6 @@ private:
         best_value = state[i].GetValue();
       }
     }
-    // If any acceptor had accepted a proposal, we must adopt it
-    if (best_ballot != 0) {
-      curr_proposal->SetProposal(best_ballot, best_value);
-    }
     ROMULUS_DEBUG("Prepared slot: log_offset={}, state={}", log_offset_,
                   curr_proposal->ToString());
     return {curr_proposal, state};
@@ -822,7 +850,8 @@ private:
     Ballot curr_promise_ballot = curr_proposal->GetPromiseBallot();
     RemoteContext *c;
     std::vector<State> expected(system_size_);
-    // Metadata to indicate to indicate a SUCCESSFUL cas for the given acceptor
+    // Metadata to indicate to indicate a SUCCESSFUL cas for the given
+    // acceptor
     std::vector<bool> done(system_size_, false);
     // Metadata to indicate whether a CAS for a given acceptor has been POLLED
     std::vector<bool> polled(system_size_, false);
@@ -899,16 +928,41 @@ private:
         } else if (observed.GetPromiseBallot() > curr_promise_ballot) {
           return false;
         } else {
-          ROMULUS_ASSERT(false,
-                         "<Promise> CAS failed without higher promise ballot: "
-                         "observed={}, expected={}, proposal={}",
-                         observed.ToString(), expected[i].ToString(),
-                         curr_proposal->ToString());
+          expected[i] = observed;
+          if (observed.GetBallot() != 0) {
+            log_[log_offset_] = observed;
+            return true;
+          }
+          ROMULUS_DEBUG("<Promise> CAS failed without higher promise ballot: "
+                        "observed={}, expected={}, proposal={}",
+                        observed.ToString(), expected[i].ToString(),
+                        curr_proposal->ToString());
         }
       }
       ++wr_id_;
     }
+    log_[log_offset_] = *curr_proposal;
     return true;
+  }
+
+  // decode the ballot (round * sys_size + host_id)
+  // Note, the division gets rid of the host_id constant
+  Ballot BumpBallot(Ballot observed_ballot) {
+    auto observed_round = observed_ballot / system_size_;
+    auto my_round = local_ballot_ / system_size_;
+    auto next_round = std::max(observed_round + 1, my_round + 1);
+
+    auto new_ballot = MakeBallot(next_round);
+    local_ballot_ = static_cast<Ballot>(new_ballot);
+    return local_ballot_;
+  }
+
+  Ballot MakeBallot(uint32_t round) {
+    uint32_t b = round * system_size_ + host_id_;
+    ROMULUS_ASSERT(b <= std::numeric_limits<uint16_t>::max(),
+                   "Ballot overflow: round={}, system_size={}", round,
+                   system_size_);
+    return static_cast<Ballot>(b);
   }
 
   bool isLeaderStable() override { return stable_leader_; }
@@ -977,6 +1031,8 @@ private:
       remote_conns_;
 
   std::vector<RemoteContext *> contexts_;
+
+  Ballot local_ballot_ = 0;
 
   // RDMA related members.
   romulus::Device device_;

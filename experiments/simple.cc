@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
   INIT_CONSENSUS(transport_flag, buf_size, mach_map);
   FILL_PROPOSALS();
 
-  std::function<void(void)> init = INIT_LATENCY;
+  std::function<void(void)> init = SYNC_NODES;
   std::function<void(void)> exec = EXEC_LATENCY;
   std::function<void(void)> done = DONE_LATENCY;
   std::function<void(std::fstream&)> calc = CALC_LATENCY;
@@ -77,16 +77,22 @@ int main(int argc, char* argv[]) {
       busy_wait(sleep);
     }
   }
-  done();
+  init();
+  // done();
   calc(outfile);
+  
+  ROMULUS_DEBUG("Exiting normally!");
+  exit(0);
 
-  init = INIT_THROUGHPUT;
+
+
+  init = SYNC_NODES;
   exec = EXEC_THROUGHPUT;
   done = DONE_THROUGHPUT;
   calc = CALC_THROUGHPUT;
 
   [[maybe_unused]] int x = 0;
-  bool first = true;
+  // bool first = true;
   init();
   ROMULUS_INFO("Starting throughput test");
   ROMULUS_STOPWATCH_BEGIN();
@@ -94,34 +100,18 @@ int main(int argc, char* argv[]) {
   while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
          static_cast<uint64_t>(testtime_us.count())) {
     for (uint32_t i = 0; i < loop; ++i) {
-      if (leader_fixed && id == 0) {
-        exec();
-      } else if (!leader_fixed && policy == "all") {
-        // All hosts try to propose.
-        exec();
-      } else if (!leader_fixed && policy == "rotating") {
-        // Each host leads a portion of the overall execution.
-        auto curr_ms = ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MILLISECONDS);
-        if ((static_cast<uint32_t>(curr_ms) / duration.count()) % system_size ==
-            id) {
-          if (first) x++;
-          first = false;
-          exec();
-        } else {
-          first = true;
-          done();
-        }
-      }
+      exec();
       busy_wait(sleep);
     }
   }
   done();
   calc(outfile);
+  init();
+  paxos->CleanUp();
   ROMULUS_INFO("Experiment is finished. Cleaning up...");
   outfile.close();
   for (auto& p : proposals) {
     delete[] p.second;
   }
-  exit(0);
   return 0;
 }
