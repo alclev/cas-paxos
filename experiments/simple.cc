@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
       busy_wait(sleep);
     }
   }
-  init();
+  init(); // sync
   // done();
   calc(outfile);
   
