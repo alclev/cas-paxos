@@ -1,0 +1,1503 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 390
+#
+# Samples: 160K of event 'cycles:P'
+# Event count (approx.): 111888899989
+#
+# Children      Self  Command   Shared Object            Symbol                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+# ........  ........  ........  .......................  ..........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+#
+    99.26%     0.00%  caspaxos  [unknown]                [k] 0xffffffffffffffff
+            |
+            ---0xffffffffffffffff
+               |          
+               |--98.59%--main
+               |          |          
+               |          |--92.97%--std::chrono::_V2::steady_clock::now()
+               |          |          |          
+               |          |          |--84.72%--__GI___clock_gettime (inlined)
+               |          |          |          |          
+               |          |          |          |--55.16%--0x7fffe1f53b00
+               |          |          |          |          
+               |          |          |          |--4.11%--0x7fffe1f53b36
+               |          |          |          |          
+               |          |          |          |--1.42%--0x7fffe1f53b8e
+               |          |          |          |          
+               |          |          |          |--1.42%--0x7fffe1f53b26
+               |          |          |          |          
+               |          |          |          |--1.42%--0x7fffe1f53b4b
+               |          |          |          |          
+               |          |          |          |--1.41%--0x7fffe1f53b4d
+               |          |          |          |          
+               |          |          |          |--1.41%--0x7fffe1f53acf
+               |          |          |          |          
+               |          |          |          |--1.40%--0x7fffe1f53b3a
+               |          |          |          |          
+               |          |          |          |--1.40%--0x7fffe1f53b75
+               |          |          |          |          
+               |          |          |          |--1.40%--0x7fffe1f53b0c
+               |          |          |          |          
+               |          |          |          |--1.39%--0x7fffe1f53b83
+               |          |          |          |          
+               |          |          |          |--1.39%--0x7fffe1f53ab4
+               |          |          |          |          
+               |          |          |          |--1.38%--__vdso_clock_gettime
+               |          |          |          |          
+               |          |          |          |--1.38%--0x7fffe1f53b20
+               |          |          |          |          
+               |          |          |          |--1.37%--0x7fffe1f53af3
+               |          |          |          |          
+               |          |          |          |--1.36%--0x7fffe1f53abc
+               |          |          |          |          
+               |          |          |          |--1.35%--0x7fffe1f53b11
+               |          |          |          |          
+               |          |          |           --1.34%--0x7fffe1f53ad8
+               |          |          |          
+               |          |          |--1.39%--clock_gettime@plt
+               |          |          |          
+               |          |           --1.35%--0x7fffe1f53b7c
+               |          |          
+               |          |--1.37%--std::chrono::_V2::steady_clock::now()@plt
+               |          |          
+               |           --1.32%--__GI___clock_gettime (inlined)
+               |          
+                --0.67%--std::chrono::_V2::steady_clock::now()
+
+    98.59%     2.79%  caspaxos  caspaxos                 [.] main
+            |          
+            |--95.81%--main
+            |          |          
+            |          |--92.97%--std::chrono::_V2::steady_clock::now()
+            |          |          |          
+            |          |          |--84.72%--__GI___clock_gettime (inlined)
+            |          |          |          |          
+            |          |          |          |--55.16%--0x7fffe1f53b00
+            |          |          |          |          
+            |          |          |          |--4.11%--0x7fffe1f53b36
+            |          |          |          |          
+            |          |          |          |--1.42%--0x7fffe1f53b8e
+            |          |          |          |          
+            |          |          |          |--1.42%--0x7fffe1f53b26
+            |          |          |          |          
+            |          |          |          |--1.42%--0x7fffe1f53b4b
+            |          |          |          |          
+            |          |          |          |--1.41%--0x7fffe1f53b4d
+            |          |          |          |          
+            |          |          |          |--1.41%--0x7fffe1f53acf
+            |          |          |          |          
+            |          |          |          |--1.40%--0x7fffe1f53b3a
+            |          |          |          |          
+            |          |          |          |--1.40%--0x7fffe1f53b75
+            |          |          |          |          
+            |          |          |          |--1.40%--0x7fffe1f53b0c
+            |          |          |          |          
+            |          |          |          |--1.39%--0x7fffe1f53b83
+            |          |          |          |          
+            |          |          |          |--1.39%--0x7fffe1f53ab4
+            |          |          |          |          
+            |          |          |          |--1.38%--__vdso_clock_gettime
+            |          |          |          |          
+            |          |          |          |--1.38%--0x7fffe1f53b20
+            |          |          |          |          
+            |          |          |          |--1.37%--0x7fffe1f53af3
+            |          |          |          |          
+            |          |          |          |--1.36%--0x7fffe1f53abc
+            |          |          |          |          
+            |          |          |          |--1.35%--0x7fffe1f53b11
+            |          |          |          |          
+            |          |          |           --1.34%--0x7fffe1f53ad8
+            |          |          |          
+            |          |          |--1.39%--clock_gettime@plt
+            |          |          |          
+            |          |           --1.35%--0x7fffe1f53b7c
+            |          |          
+            |          |--1.37%--std::chrono::_V2::steady_clock::now()@plt
+            |          |          
+            |           --1.32%--__GI___clock_gettime (inlined)
+            |          
+             --2.79%--0xffffffffffffffff
+                       main
+
+    94.34%     6.84%  caspaxos  libstdc++.so.6.0.33      [.] std::chrono::_V2::steady_clock::now()
+            |          
+            |--88.19%--std::chrono::_V2::steady_clock::now()
+            |          |          
+            |          |--84.72%--__GI___clock_gettime (inlined)
+            |          |          |          
+            |          |          |--55.16%--0x7fffe1f53b00
+            |          |          |          
+            |          |          |--4.11%--0x7fffe1f53b36
+            |          |          |          
+            |          |          |--1.42%--0x7fffe1f53b8e
+            |          |          |          
+            |          |          |--1.42%--0x7fffe1f53b26
+            |          |          |          
+            |          |          |--1.42%--0x7fffe1f53b4b
+            |          |          |          
+            |          |          |--1.41%--0x7fffe1f53b4d
+            |          |          |          
+            |          |          |--1.41%--0x7fffe1f53acf
+            |          |          |          
+            |          |          |--1.40%--0x7fffe1f53b3a
+            |          |          |          
+            |          |          |--1.40%--0x7fffe1f53b75
+            |          |          |          
+            |          |          |--1.40%--0x7fffe1f53b0c
+            |          |          |          
+            |          |          |--1.39%--0x7fffe1f53b83
+            |          |          |          
+            |          |          |--1.39%--0x7fffe1f53ab4
+            |          |          |          
+            |          |          |--1.38%--__vdso_clock_gettime
+            |          |          |          
+            |          |          |--1.38%--0x7fffe1f53b20
+            |          |          |          
+            |          |          |--1.37%--0x7fffe1f53af3
+            |          |          |          
+            |          |          |--1.36%--0x7fffe1f53abc
+            |          |          |          
+            |          |          |--1.35%--0x7fffe1f53b11
+            |          |          |          
+            |          |           --1.34%--0x7fffe1f53ad8
+            |          |          
+            |          |--1.39%--clock_gettime@plt
+            |          |          
+            |           --1.35%--0x7fffe1f53b7c
+            |          
+             --6.15%--0xffffffffffffffff
+                       |          
+                       |--5.48%--main
+                       |          std::chrono::_V2::steady_clock::now()
+                       |          
+                        --0.67%--std::chrono::_V2::steady_clock::now()
+
+    86.04%     0.00%  caspaxos  libc.so.6                [.] __GI___clock_gettime (inlined)
+            |
+            ---__GI___clock_gettime (inlined)
+               |          
+               |--55.16%--0x7fffe1f53b00
+               |          
+               |--4.11%--0x7fffe1f53b36
+               |          
+               |--1.42%--0x7fffe1f53b8e
+               |          
+               |--1.42%--0x7fffe1f53b26
+               |          
+               |--1.42%--0x7fffe1f53b4b
+               |          
+               |--1.41%--0x7fffe1f53b4d
+               |          
+               |--1.41%--0x7fffe1f53acf
+               |          
+               |--1.40%--0x7fffe1f53b3a
+               |          
+               |--1.40%--0x7fffe1f53b75
+               |          
+               |--1.40%--0x7fffe1f53b0c
+               |          
+               |--1.39%--0x7fffe1f53b83
+               |          
+               |--1.39%--0x7fffe1f53ab4
+               |          
+               |--1.38%--__vdso_clock_gettime
+               |          
+               |--1.38%--0x7fffe1f53b20
+               |          
+               |--1.37%--0x7fffe1f53af3
+               |          
+               |--1.36%--0x7fffe1f53abc
+               |          
+               |--1.35%--0x7fffe1f53b11
+               |          
+                --1.34%--0x7fffe1f53ad8
+
+    55.16%    55.16%  caspaxos  [vdso]                   [.] 0x0000000000000b00
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53b00
+
+    55.16%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b00
+            |
+            ---0x7fffe1f53b00
+
+     4.11%     4.11%  caspaxos  [vdso]                   [.] 0x0000000000000b36
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53b36
+
+     4.11%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b36
+            |
+            ---0x7fffe1f53b36
+
+     4.11%     4.11%  caspaxos  libc.so.6                [.] clock_gettime@@GLIBC_2.17
+            |          
+             --4.11%--0xffffffffffffffff
+                       |          
+                       |--2.07%--0x5ff2171d4774
+                       |          |          
+                       |          |--1.41%--0x7ddd36adf986
+                       |          |          0x7ddd366ec968
+                       |          |          
+                       |           --0.66%--0x7ddd366ec973
+                       |          
+                        --2.03%--main
+                                  |          
+                                  |--1.37%--std::chrono::_V2::steady_clock::now()
+                                  |          __GI___clock_gettime (inlined)
+                                  |          
+                                   --0.66%--__GI___clock_gettime (inlined)
+
+     1.42%     1.42%  caspaxos  [vdso]                   [.] 0x0000000000000b8e
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53b8e
+
+     1.42%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b8e
+            |
+            ---0x7fffe1f53b8e
+
+     1.42%     1.42%  caspaxos  [vdso]                   [.] 0x0000000000000b26
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53b26
+
+     1.42%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b26
+            |
+            ---0x7fffe1f53b26
+
+     1.42%     1.42%  caspaxos  [vdso]                   [.] 0x0000000000000b4b
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53b4b
+
+     1.42%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b4b
+            |
+            ---0x7fffe1f53b4b
+
+     1.41%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b4d
+            |
+            ---0x7fffe1f53b4d
+
+     1.41%     1.41%  caspaxos  [vdso]                   [.] 0x0000000000000b4d
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53b4d
+
+     1.41%     1.41%  caspaxos  [vdso]                   [.] 0x0000000000000acf
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53acf
+
+     1.41%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53acf
+            |
+            ---0x7fffe1f53acf
+
+     1.40%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b3a
+            |
+            ---0x7fffe1f53b3a
+
+     1.40%     1.40%  caspaxos  [vdso]                   [.] 0x0000000000000b75
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53b75
+
+     1.40%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b75
+            |
+            ---0x7fffe1f53b75
+
+     1.40%     1.40%  caspaxos  [vdso]                   [.] 0x0000000000000b0c
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53b0c
+
+     1.40%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b0c
+            |
+            ---0x7fffe1f53b0c
+
+     1.39%     1.38%  caspaxos  libstdc++.so.6.0.33      [.] clock_gettime@plt
+            |          
+             --1.38%--0xffffffffffffffff
+                       main
+                       std::chrono::_V2::steady_clock::now()
+                       clock_gettime@plt
+
+     1.39%     1.39%  caspaxos  [vdso]                   [.] 0x0000000000000b83
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53b83
+
+     1.39%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b83
+            |
+            ---0x7fffe1f53b83
+
+     1.39%     1.39%  caspaxos  [vdso]                   [.] 0x0000000000000ab4
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53ab4
+
+     1.39%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53ab4
+            |
+            ---0x7fffe1f53ab4
+
+     1.39%     1.39%  caspaxos  [vdso]                   [.] 0x0000000000000b3a
+            |          
+             --1.38%--0xffffffffffffffff
+                       main
+                       std::chrono::_V2::steady_clock::now()
+                       __GI___clock_gettime (inlined)
+                       0x7fffe1f53b3a
+
+     1.38%     1.38%  caspaxos  [vdso]                   [.] __vdso_clock_gettime
+            |
+            ---0xffffffffffffffff
+               main
+               |          
+                --1.38%--std::chrono::_V2::steady_clock::now()
+                          __GI___clock_gettime (inlined)
+                          __vdso_clock_gettime
+
+     1.38%     1.38%  caspaxos  [vdso]                   [.] 0x0000000000000b20
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53b20
+
+     1.38%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b20
+            |
+            ---0x7fffe1f53b20
+
+     1.37%     1.36%  caspaxos  caspaxos                 [.] std::chrono::_V2::steady_clock::now()@plt
+            |          
+             --1.36%--0xffffffffffffffff
+                       main
+                       std::chrono::_V2::steady_clock::now()@plt
+
+     1.37%     1.37%  caspaxos  [vdso]                   [.] 0x0000000000000af3
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53af3
+
+     1.37%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53af3
+            |
+            ---0x7fffe1f53af3
+
+     1.36%     1.36%  caspaxos  [vdso]                   [.] 0x0000000000000abc
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53abc
+
+     1.36%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53abc
+            |
+            ---0x7fffe1f53abc
+
+     1.35%     1.35%  caspaxos  [vdso]                   [.] 0x0000000000000b7c
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               0x7fffe1f53b7c
+
+     1.35%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b7c
+            |
+            ---0x7fffe1f53b7c
+
+     1.35%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b11
+            |
+            ---0x7fffe1f53b11
+
+     1.34%     1.34%  caspaxos  [vdso]                   [.] 0x0000000000000b11
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53b11
+
+     1.34%     1.34%  caspaxos  [vdso]                   [.] 0x0000000000000ad8
+            |
+            ---0xffffffffffffffff
+               main
+               std::chrono::_V2::steady_clock::now()
+               __GI___clock_gettime (inlined)
+               0x7fffe1f53ad8
+
+     1.34%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53ad8
+            |
+            ---0x7fffe1f53ad8
+
+     0.43%     0.00%  caspaxos  [kernel.kallsyms]        [k] asm_sysvec_apic_timer_interrupt
+     0.41%     0.00%  caspaxos  [kernel.kallsyms]        [k] sysvec_apic_timer_interrupt
+     0.38%     0.00%  caspaxos  [kernel.kallsyms]        [k] __sysvec_apic_timer_interrupt
+     0.38%     0.01%  caspaxos  [kernel.kallsyms]        [k] hrtimer_interrupt
+     0.32%     0.01%  caspaxos  [kernel.kallsyms]        [k] __hrtimer_run_queues
+     0.30%     0.00%  caspaxos  [kernel.kallsyms]        [k] tick_nohz_highres_handler
+     0.29%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b03
+     0.26%     0.00%  caspaxos  [kernel.kallsyms]        [k] tick_sched_handle
+     0.25%     0.00%  caspaxos  [kernel.kallsyms]        [k] update_process_times
+     0.23%     0.00%  caspaxos  [kernel.kallsyms]        [k] scheduler_tick
+     0.14%     0.00%  caspaxos  [kernel.kallsyms]        [k] task_tick_fair
+     0.10%     0.01%  caspaxos  [kernel.kallsyms]        [k] update_load_avg
+     0.07%     0.00%  caspaxos  caspaxos                 [.] paxos_st::CasPaxos::ProposeInternal(Value&)
+     0.07%     0.00%  caspaxos  caspaxos                 [.] paxos_st::CasPaxos::Propose(unsigned int, unsigned char*)
+     0.06%     0.01%  caspaxos  caspaxos                 [.] paxos_st::CasPaxos::Promise(Value)
+     0.05%     0.00%  caspaxos  caspaxos                 [.] paxos_st::CasPaxos::Init(std::basic_string_view<char, std::char_traits<char> >, int, std::unique_ptr<romulus::ConnectionRegistry, std::default_delete<romulus::ConnectionRegistry> >, std::unordered_map<unsigned long, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::hash<unsigned long>, std::equal_to<unsigned long>, std::allocator<std::pair<unsigned long const, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > >)
+     0.04%     0.00%  caspaxos  [kernel.kallsyms]        [k] entry_SYSCALL_64_after_hwframe
+     0.04%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_syscall_64
+     0.04%     0.00%  caspaxos  [kernel.kallsyms]        [k] x64_sys_call
+     0.04%     0.04%  caspaxos  [kernel.kallsyms]        [k] __irqentry_text_end
+     0.04%     0.00%  caspaxos  [kernel.kallsyms]        [k] perf_event_task_tick
+     0.04%     0.01%  caspaxos  caspaxos                 [.] romulus::ReliableConnection::TryProcessOutstanding()
+     0.04%     0.01%  caspaxos  [kernel.kallsyms]        [k] tick_do_update_jiffies64
+     0.03%     0.01%  caspaxos  [kernel.kallsyms]        [k] perf_adjust_freq_unthr_context
+     0.03%     0.03%  caspaxos  [kernel.kallsyms]        [k] __update_load_avg_se
+     0.03%     0.00%  caspaxos  caspaxos                 [.] std::_Function_handler<void (), main::$_6>::_M_invoke(std::_Any_data const&)
+     0.03%     0.00%  caspaxos  [kernel.kallsyms]        [k] tick_sched_do_timer
+     0.03%     0.00%  caspaxos  caspaxos                 [.] std::_Function_handler<void (), main::$_1>::_M_invoke(std::_Any_data const&)
+     0.03%     0.00%  caspaxos  [kernel.kallsyms]        [k] update_wall_time
+     0.03%     0.03%  caspaxos  [kernel.kallsyms]        [k] native_write_msr
+     0.03%     0.01%  caspaxos  [kernel.kallsyms]        [k] timekeeping_advance
+     0.02%     0.02%  caspaxos  [kernel.kallsyms]        [k] __update_load_avg_cfs_rq
+     0.02%     0.02%  caspaxos  [vdso]                   [.] 0x0000000000000b03
+     0.02%     0.00%  caspaxos  [kernel.kallsyms]        [k] tick_program_event
+     0.02%     0.01%  caspaxos  [kernel.kallsyms]        [k] sugov_update_single_freq
+     0.02%     0.01%  caspaxos  [kernel.kallsyms]        [k] update_curr
+     0.02%     0.00%  caspaxos  caspaxos                 [.] romulus::ConnectionManager::Register(romulus::Device const&, romulus::MemBlock const&)
+     0.02%     0.00%  caspaxos  [kernel.kallsyms]        [k] irq_exit_rcu
+     0.02%     0.02%  caspaxos  [kernel.kallsyms]        [k] update_cfs_group
+     0.02%     0.00%  caspaxos  [kernel.kallsyms]        [k] arch_scale_freq_tick
+     0.02%     0.00%  caspaxos  [kernel.kallsyms]        [k] clockevents_program_event
+     0.02%     0.00%  caspaxos  [kernel.kallsyms]        [k] __irq_exit_rcu
+     0.02%     0.02%  caspaxos  libc.so.6                [.] pthread_spin_lock@@GLIBC_2.34
+     0.02%     0.00%  caspaxos  libc.so.6                [.] __pthread_spin_lock (inlined)
+     0.02%     0.02%  caspaxos  [kernel.kallsyms]        [k] native_read_msr
+     0.02%     0.00%  caspaxos  [kernel.kallsyms]        [k] handle_softirqs
+     0.02%     0.02%  caspaxos  [kernel.kallsyms]        [k] native_irq_return_iret
+     0.01%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947d0e
+     0.01%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53af7
+     0.01%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] memcached_get
+     0.01%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] memcached_get_by_key
+     0.01%     0.01%  caspaxos  caspaxos                 [.] unsigned int std::uniform_int_distribution<unsigned int>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&, std::uniform_int_distribution<unsigned int>::param_type const&)
+     0.01%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] execute_ioctl
+     0.01%     0.00%  caspaxos  libc.so.6                [.] __GI___ioctl
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x64_sys_ioctl
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] irqentry_exit
+     0.01%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b85
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_uverbs_ioctl
+     0.01%     0.00%  caspaxos  caspaxos                 [.] romulus::ConnectionManager::Connect(romulus::MemBlock const&)
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] asm_exc_page_fault
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_uverbs_cmd_verbs
+     0.01%     0.01%  caspaxos  [kernel.kallsyms]        [k] read_tsc
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] timekeeping_update
+     0.01%     0.00%  caspaxos  libc.so.6                [.] __memset_sse2_unaligned_erms
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_uverbs_run_method
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] x86_pmu_disable
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] exc_page_fault
+     0.01%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36df9431
+     0.01%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36df7cbe
+     0.01%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36dec270
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] sched_clock_cpu
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] run_timer_softirq
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] __run_timers
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_user_addr_fault
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] irqentry_exit_to_user_mode
+     0.01%     0.00%  caspaxos  caspaxos                 [.] romulus::ReliableConnection::Init(ibv_pd*)
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] x86_pmu_enable
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] _raw_spin_lock_irqsave
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] handle_mm_fault
+     0.01%     0.01%  caspaxos  [kernel.kallsyms]        [k] native_sched_clock
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] sched_clock
+     0.01%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b15
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] __handle_mm_fault
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] account_process_tick
+     0.01%     0.01%  caspaxos  [kernel.kallsyms]        [k] __raw_spin_lock_irqsave
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] trigger_load_balance
+     0.01%     0.00%  caspaxos  caspaxos                 [.] romulus::ConnectionManager::WaitForNodesNoTimeout()
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] sched_clock_noinstr
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] call_timer_fn
+     0.01%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53ab0
+     0.01%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x00007ddd36e1cb7c
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] intel_pmu_enable_all
+     0.01%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b91
+     0.01%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b2b
+     0.01%     0.01%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000005687
+     0.01%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694a687
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] handle_pte_fault
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] account_user_time
+     0.01%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] memcached_fetch
+     0.01%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] memcached_fetch_result
+     0.01%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b7d
+     0.01%     0.00%  caspaxos  caspaxos                 [.] _start
+     0.01%     0.00%  caspaxos  libc.so.6                [.] __libc_start_main_impl (inlined)
+     0.01%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b76
+     0.01%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53ad6
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_anonymous_page
+     0.01%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36dec0c1
+     0.01%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694dcb6
+     0.01%     0.01%  caspaxos  [kernel.kallsyms]        [k] error_entry
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] schedule
+     0.01%     0.00%  caspaxos  libc.so.6                [.] __libc_start_call_main
+     0.01%     0.00%  caspaxos  libc.so.6                [.] __GI_exit (inlined)
+     0.01%     0.00%  caspaxos  libc.so.6                [.] __run_exit_handlers
+     0.01%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] __GI__dl_catch_exception (inlined)
+     0.01%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_modify_qp
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] __schedule
+     0.01%     0.00%  caspaxos  caspaxos                 [.] bool romulus::ConnectionRegistry::Retrieve<Barrier>(std::basic_string_view<char, std::char_traits<char> >, Barrier*)
+     0.01%     0.00%  caspaxos  caspaxos                 [.] std::unique_ptr<Paxos, std::default_delete<Paxos> >::~unique_ptr()
+     0.01%     0.00%  caspaxos  caspaxos                 [.] paxos_st::CasPaxos::~CasPaxos()
+     0.01%     0.00%  caspaxos  caspaxos                 [.] paxos_st::CasPaxos::~CasPaxos()
+     0.01%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53ab7
+     0.01%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b23
+     0.01%     0.01%  caspaxos  [kernel.kallsyms]        [k] update_min_vruntime
+     0.01%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53ada
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] fq_flush_timeout
+     0.01%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36deb097
+     0.01%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36dead5c
+     0.01%     0.00%  caspaxos  libc.so.6                [.] __libc_send (inlined)
+     0.01%     0.01%  caspaxos  caspaxos                 [.] std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::operator()()
+     0.01%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_map_object
+     0.01%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b3d
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x64_sys_sendto
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] __sys_sendto
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] inet_sendmsg
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_sendmsg
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] rcu_sched_clock_irq
+     0.01%     0.01%  caspaxos  [kernel.kallsyms]        [k] _raw_spin_lock
+     0.01%     0.01%  caspaxos  [kernel.kallsyms]        [k] nohz_balancer_kick
+     0.01%     0.01%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000002d67
+     0.01%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947d67
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] hrtimer_update_next_event
+     0.01%     0.01%  caspaxos  [kernel.kallsyms]        [k] ktime_get_update_offsets_now
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_vmi_munmap
+     0.01%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _start
+     0.01%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_start
+     0.01%     0.00%  caspaxos  caspaxos                 [.] romulus::ReliableConnection::ReliableConnection(romulus::Device const&)
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_vmi_align_munmap
+     0.01%     0.00%  caspaxos  caspaxos                 [.] std::__detail::_MakeUniq<paxos_st::CasPaxos>::__single_object std::make_unique<paxos_st::CasPaxos, std::shared_ptr<romulus::ArgMap>&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >&, unsigned char&>(std::shared_ptr<romulus::ArgMap>&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >&, unsigned char&)
+     0.01%     0.00%  caspaxos  caspaxos                 [.] paxos_st::CasPaxos::CasPaxos(std::shared_ptr<romulus::ArgMap>, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >, unsigned char)
+     0.01%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_get_device_list
+     0.01%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36dea2b6
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_sendmsg_locked
+     0.01%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_create_cq
+     0.01%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_start_final (inlined)
+     0.01%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_sysdep_start
+     0.01%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] dl_main
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] ktime_get
+     0.01%     0.00%  caspaxos  libc.so.6                [.] __GI___poll (inlined)
+     0.01%     0.01%  caspaxos  [kernel.kallsyms]        [k] sync_regs
+     0.01%     0.01%  caspaxos  [kernel.kallsyms]        [k] sugov_should_update_freq
+     0.01%     0.00%  caspaxos  [kernel.kallsyms]        [k] raw_notifier_call_chain
+     0.00%     0.00%  caspaxos  caspaxos                 [.] bool romulus::ConnectionRegistry::Retrieve<romulus::AddrInfo>(std::basic_string_view<char, std::char_traits<char> >, romulus::AddrInfo*)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __mlx4_cmd
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36def4f7
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __GI___libc_malloc (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __GI__IO_fflush (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] _IO_new_file_sync (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] _IO_new_do_write (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] new_do_write (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] _IO_new_file_write (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __GI___libc_write
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] sugov_get_util
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_sys_poll
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x64_sys_poll
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_cmd_wait
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] irq_enter_rcu
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __remove_hrtimer
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53abf
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __calc_delta.constprop.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] _raw_spin_lock_irq
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x00007ddd36e17c99
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] lapic_next_deadline
+     0.00%     0.00%  caspaxos  caspaxos                 [.] romulus::ConnectionManager::~ConnectionManager()
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::__detail::_Hashtable_alloc<std::allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, romulus::ReliableConnection>, true> > >::_M_deallocate_nodes(std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, romulus::ReliableConnection>, true>*)
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694d3a7
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] run_rebalance_domains
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x00007ddd36e248f0
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x00007ddd36e241b2
+     0.00%     0.00%  caspaxos  libc.so.6                [.] ___dlopen (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] dlopen_implementation (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] _dlerror_run
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_catch_error
+     0.00%     0.00%  caspaxos  libc.so.6                [.] dlopen_doit
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_open
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] dl_open_worker
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] dl_open_worker_begin
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] memcached_set
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] operator new(unsigned long)
+     0.00%     0.00%  caspaxos  caspaxos                 [.] bool romulus::ConnectionRegistry::Register<romulus::ConnInfo>(std::basic_string_view<char, std::char_traits<char> >, romulus::ConnInfo const&)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] vm_mmap_pgoff
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_push
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __tcp_push_pending_frames
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_write_xmit
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_map_object_from_fd
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_mmap
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x64_sys_mmap
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ksys_mmap_pgoff
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] timerqueue_del
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __GI_munmap (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x64_sys_munmap
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __vm_munmap
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] run_posix_cpu_timers
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __alloc_pages
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] alloc_pages_mpol
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] task_work_run
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_poll.constprop.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] reweight_entity
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] pvclock_gtod_notify
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_uverbs_handler_UVERBS_METHOD_INVOKE_WRITE
+     0.00%     0.00%  caspaxos  caspaxos                 [.] bool romulus::ConnectionRegistry::Retrieve<romulus::ConnInfo>(std::basic_string_view<char, std::char_traits<char> >, romulus::ConnInfo*)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] alloc_anon_folio
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] vma_alloc_folio
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b50
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] get_page_from_freelist
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_cmd_modify_qp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] enqueue_hrtimer
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_map_segments (inlined)
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_relocate_object
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] update_curr_se
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __libc_recv
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694a13a
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mmap_region
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __mmap_region
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] schedule_timeout
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] wait_for_completion_timeout
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_uverbs_modify_qp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] hrtimer_active
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] update_vsyscall
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000b91
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36debf2a
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x64_sys_recvfrom
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] cpuacct_charge
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000b71
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b71
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __hrtimer_next_event_base
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] _find_next_bit
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000b85
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::unique_ptr<ibv_qp, romulus::QpDeleter>::~unique_ptr()
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694df36
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] modify_qp
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] elf_dynamic_do_Rela (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] cgroup_rstat_updated
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __cgroup_account_cputime_field
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] schedule_hrtimeout_range
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __tcp_transmit_skb
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] clear_page_rep
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] schedule_hrtimeout_range_clock
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __mlx4_qp_modify.constprop.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_qp_modify
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] timerqueue_add
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __sys_recvfrom
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] __mmap64 (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ip_queue_xmit
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __ip_queue_xmit
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_modify_qp_with_udata
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] _ib_modify_qp
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_map_object_deps
+     0.00%     0.00%  caspaxos  libc.so.6                [.] _int_malloc
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] sock_recvmsg
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] update_fast_timekeeper
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rb_erase
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] irq_work_tick
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] sched_core_idle_cpu
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] fq_flush_iotlb
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] intel_flush_iotlb_all
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000ad6
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] profile_tick
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] timekeeping_adjust.constprop.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] update_sd_lb_stats.constprop.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rebalance_domains
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] load_balance
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] find_busiest_group
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] fpregs_assert_state_consistent
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] _raw_spin_unlock
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] get_next_freq.constprop.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __intel_pmu_enable_all.isra.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ip_local_out
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ip_output
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ip_finish_output
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __ip_finish_output
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __mlx4_ib_modify_qp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_security_modify_qp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_ib_modify_qp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] _mlx4_ib_modify_qp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x64_sys_write
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ksys_write
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] vfs_write
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] entry_SYSRETQ_unsafe_stack
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694c01f
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_cmd_create_cq
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] inet_recvmsg
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694d4df
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_cmd_create_qp_ex
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x00007ddd36e1e642
+     0.00%     0.00%  caspaxos  libc.so.6                [.] malloc
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] unmap_region
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x86_indirect_thunk_rax
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tick_nohz_get_idle_calls_cpu
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36dffdf0
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694e023
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694b5aa
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_cmd_query_port
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] openaux
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __split_vma
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ip_finish_output2
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_recvmsg
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::__detail::_Map_base<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, unsigned long> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true>, true>::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&&)
+     0.00%     0.00%  caspaxos  caspaxos                 [.] paxos_st::CasPaxos::SyncNodes()
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] error_return
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x00007ddd36e1d192
+     0.00%     0.00%  caspaxos  caspaxos                 [.] romulus::ReliableConnection::Accept(romulus::ConnInfo const&)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] neigh_resolve_output
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __dev_queue_xmit
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] pipe_write
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694d1a3
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_uverbs_handler_UVERBS_METHOD_CQ_CREATE
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_ib_create_cq
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] update_vdso_data.constprop.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __rcu_read_lock
+     0.00%     0.00%  caspaxos  [stack]                  [.] 0x00007fffe1e9c64f
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ntp_tick_length
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694a211
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] qi_flush_iotlb
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] dequeue_task_fair
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] dequeue_task
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __dev_xmit_skb
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000b81
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b81
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __GI___nanosleep (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __GI___clock_nanosleep (inlined)
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36dffc4e
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] folio_add_lru
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] folio_add_lru_vma
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_uverbs_handler_UVERBS_METHOD_QP_CREATE
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694bf7d
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __GI___libc_free (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_en_xmit
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] sch_direct_xmit
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x64_sys_clock_nanosleep
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] dev_hard_start_xmit
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x64_sys_openat
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_sys_openat2
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_filp_open
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] path_openat
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tlb_finish_mmu
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_uverbs_handler_UVERBS_METHOD_QUERY_PORT
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000002d57
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947d57
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_create_qp_user
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] create_qp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_ib_create_qp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] _mlx4_ib_create_qp
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] elf_machine_rela (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_en_build_dma_wqe
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36deb3db
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_query_port
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] uobj_destroy
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] entry_SYSCALL_64_safe_stack
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] _raw_spin_unlock_irqrestore
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __queue_work.part.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] delayed_work_timer_fn
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] finish_task_switch.isra.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] create_qp_common.constprop.0
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __GI___mmap64 (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_umem_get.part.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_umem_get
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] update_rq_clock
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] common_nsleep
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] hrtimer_nanosleep
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_nanosleep
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x64_sys_exit_group
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_group_exit
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_exit
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] exit_mm
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mmput
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __mmput
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] exit_mmap
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_ib_query_port
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_link_query_port
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_MAD_IFC
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947acb
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] dequeue_entity
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] folio_batch_move_lru
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_destroy_cq
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000b76
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x86_indirect_thunk_r12
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] task_mm_cid_work
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] cpuacct_account_field
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] qi_submit_sync
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] notifier_call_chain
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000b60
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b60
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] pthread_spin_unlock@plt
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000002d29
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947d29
+     0.00%     0.00%  caspaxos  libc.so.6                [.] tcache_get (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] tcache_get_n (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __random
+     0.00%     0.00%  caspaxos  libc.so.6                [.] rand
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] raw_spin_rq_lock_nested
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000b7d
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rcu_pending
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] unmap_vmas
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] unmap_single_vma
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] dma_map_page_attrs
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] avg_vruntime
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] cpufreq_driver_fast_switch
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] intel_cpufreq_fast_switch
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_recvmsg_locked
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] step_into
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] link_path_walk.part.0.constprop.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] walk_component
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] update_blocked_averages
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __dma_map_sg_attrs
+     0.00%     0.00%  caspaxos  caspaxos                 [.] romulus::ReliableConnection::Connect()
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] do_lookup_x
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] resolve_map (inlined)
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_lookup_symbol_x
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] open_verify (inlined)
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] __GI___open64_nocancel
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_wr_store_entry.isra.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] uverbs_destroy_uobject
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] destroy_hw_idr_uobject
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694cf55
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_cmd_destroy_qp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __wake_up_sync_key
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __iommu_dma_map
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] iommu_dma_map_page
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] iommu_dma_map_sg
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] asm_common_interrupt
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] common_interrupt
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_cmd_post
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_cq_alloc
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] native_flush_tlb_one_user
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] flush_tlb_mm_range
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] flush_tlb_func
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] prepare_task_switch
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36dea27f
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] zap_pmd_range.isra.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] unmap_page_range
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694c61a
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tlb_batch_pages_flush
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] free_pages_and_swap_cache
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] release_pages
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] lru_add_fn
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __mod_memcg_state
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mod_memcg_state
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_fault
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] psi_task_switch
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694a11f
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __perf_event_task_sched_out
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] perf_event_context_sched_out
+     0.00%     0.00%  caspaxos  caspaxos                 [.] romulus::AddrInfo::FromString(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] iommu_map
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __rcu_read_unlock
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] dma_map_sgtable
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] hrtimer_start_range_ns
+     0.00%     0.00%  caspaxos  caspaxos                 [.] romulus::ConnInfo::ToString[abi:cxx11]() const
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_wr_node_store
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] vma_complete
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_store_prealloc
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_wr_modify
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] kmem_cache_alloc
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_start_user
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_init
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] call_init (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] kick_pool
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] wake_up_process
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] try_to_wake_up
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rseq_ip_fixup
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] entry_SYSCALL_64
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] iommu_dma_alloc_iova
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] alloc_iova_fast
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] alloc_iova
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __msecs_to_jiffies
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] elf_machine_rela_relative (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] kmalloc_trace
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] strcmp
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_name_match_p
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_preallocate
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_ib_get_cq_umem
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __check_object_size.part.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __check_object_size
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] perf_event_mmap
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __iommu_map
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] std::ostream& std::ostream::_M_insert<unsigned long>(unsigned long)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __mem_cgroup_charge
+     0.00%     0.00%  caspaxos  libc.so.6                [.] _int_free
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] syscall_return_via_sysret
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] lru_gen_add_folio
+     0.00%     0.00%  caspaxos  [unknown]                [.] 0x0ec20008ffffffff
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000002de3
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947de3
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __memcmp_sse2
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] cpu_util_cfs_boost
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000003230
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36948230
+     0.00%     0.00%  caspaxos  [unknown]                [.] 0x090e000900000007
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000002d7d
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947d7d
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000005669
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694a669
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] next_expiry_recalc
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000002d71
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947d71
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947d4b
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __update_blocked_fair
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000abf
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x000000000000585b
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694a85b
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000005252
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694a252
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000b2b
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x000000000000520d
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694a20d
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] psi_group_change
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] cpu_util
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] effective_cpu_util
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rb_insert_color
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000002d18
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947d18
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] irq_work_run_list
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] xa_find_after
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000002cd5
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947cd5
+     0.00%     0.00%  caspaxos  [unknown]                [.] 0x00007ffeffffffff
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947fa3
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000abb
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53abb
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000002d08
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36948236
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947d08
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ttwu_do_activate
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] sugov_iowait_boost
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] pthread_spin_lock@plt
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] nohz_balance_exit_idle
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000aed
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53aed
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] early_xen_iret_patch
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000b7a
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b7a
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000002d49
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947d49
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000b6e
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b6e
+     0.00%     0.00%  caspaxos  [unknown]                [.] 0x0986000900000007
+     0.00%     0.00%  caspaxos  [heap]                   [.] 0x00005ff22c2db0f7
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] update_group_capacity
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000ab9
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53ab9
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] acct_account_cputime
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000b05
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b05
+     0.00%     0.00%  caspaxos  [stack]                  [.] 0x00007fffe1e9c58f
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] filemap_map_pages
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_read_fault
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000ae0
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53ae0
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000ab7
+     0.00%     0.00%  caspaxos  [unknown]                [.] 0x0c87000900000006
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000b8b
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53b8b
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000002f9c
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947f9c
+     0.00%     0.00%  caspaxos  [stack]                  [.] 0x00007fffe1e9c5cf
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000002cdd
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36947cdd
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694e043
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694afa6
+     0.00%     0.00%  caspaxos  caspaxos                 [.] paxos_st::CasPaxos::CleanUp()
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000acd
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x00007fffe1f53acd
+     0.00%     0.00%  caspaxos  [unknown]                [.] 0x00000000000001d9
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __printf_fp_buffer_1.isra.0
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::_Function_handler<void (std::basic_fstream<char, std::char_traits<char> >&), main::$_3>::_M_invoke(std::_Any_data const&, std::basic_fstream<char, std::char_traits<char> >&)
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] std::ostream& std::ostream::_M_insert<double>(double)
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] std::ostreambuf_iterator<char, std::char_traits<char> > std::num_put<char, std::ostreambuf_iterator<char, std::char_traits<char> > >::_M_insert_float<double>(std::ostreambuf_iterator<char, std::char_traits<char> >, std::ios_base&, char, char, double) const
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] 0x00007ddd36b0d284
+     0.00%     0.00%  caspaxos  libc.so.6                [.] ___vsnprintf
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __vsnprintf_internal (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __printf_buffer
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __printf_fp_spec (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __printf_fp_l_buffer
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __printf_fp_buffer_1 (inlined)
+     0.00%     0.00%  caspaxos  [vdso]                   [.] 0x0000000000000b23
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] update_sg_lb_stats
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] memset
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] pick_next_task
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] calc_global_load
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::unique_ptr<ibv_mr, romulus::MrDeleter>::~unique_ptr()
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_dereg_mr
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694b902
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_cmd_dereg_mr
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] uverbs_free_mr
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_dereg_mr_user
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_ib_dereg_mr
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_mr_free
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_node_count_gfp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_alloc_nodes
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] net_rx_action
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __napi_poll
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_en_poll_tx_cq
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_en_process_tx_cq
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] syscall_exit_to_user_mode
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] zap_pte_range
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_v4_send_check
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] lru_gen_del_folio.constprop.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] perf_event_mmap_event
+     0.00%     0.00%  caspaxos  libc.so.6                [.] malloc_consolidate
+     0.00%     0.00%  caspaxos  libc.so.6                [.] _int_free_maybe_consolidate
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] free_unref_page_commit
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] std::__cxx11::basic_stringstream<char, std::char_traits<char>, std::allocator<char> >::basic_stringstream(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::_Ios_Openmode)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __lruvec_stat_mod_folio
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] folio_add_new_anon_rmap
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] skb_copy_datagram_iter
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __skb_datagram_iter
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] simple_copy_to_iter
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_stream_alloc_skb
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] sk_forced_mem_schedule
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mem_cgroup_charge_skmem
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] uverbs_free_qp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_destroy_qp_user
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_ib_destroy_qp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] destroy_qp_common
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] intel_iommu_map_pages
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::to_chars(char*, char*, double)@plt
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::vformat[abi:cxx11](std::basic_string_view<char, std::char_traits<char> >, std::basic_format_args<std::basic_format_context<std::__format::_Sink_iter<char>, char> >)
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::__format::_Scanner<char>::_M_scan()
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::__format::_Scanner<char>::_M_on_replacement_field()
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::__format::_Formatting_scanner<std::__format::_Sink_iter<char>, char>::_M_format_arg(unsigned long)
+     0.00%     0.00%  caspaxos  caspaxos                 [.] decltype(auto) std::basic_format_arg<std::basic_format_context<std::__format::_Sink_iter<char>, char> >::_M_visit<std::__format::_Formatting_scanner<std::__format::_Sink_iter<char>, char>::_M_format_arg(unsigned long)::{lambda(auto:1&)#1}>(std::__format::_Formatting_scanner<std::__format::_Sink_iter<char>, char>::_M_format_arg(unsigned long)::{lambda(auto:1&)#1}&&, std::__format::_Arg_t)
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::basic_format_context<std::__format::_Sink_iter<char>, char>::iterator std::__format::__formatter_fp<char>::format<double, std::__format::_Sink_iter<char> >(double, std::basic_format_context<std::__format::_Sink_iter<char>, char>&) const
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] uverbs_process_attr
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] sock_rfree
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __sk_mem_reduce_allocated
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mem_cgroup_uncharge_skmem
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] sock_poll
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_table_get_range
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_mtt_init
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_alloc_mtt_range
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __mlx4_alloc_mtt_range
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_table_get
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_stream_memory_free
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_leaf_max_gap
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_update_gap.part.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rep_movs_alternative
+     0.00%     0.00%  caspaxos  caspaxos                 [.] romulus::ConnInfo::FromString(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rdma_nl_rcv_msg
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x00007ddd36e25cfd
+     0.00%     0.00%  caspaxos  libnl-3.so.200.26.0      [.] nl_send_simple
+     0.00%     0.00%  caspaxos  libnl-3.so.200.26.0      [.] nl_send
+     0.00%     0.00%  caspaxos  libnl-3.so.200.26.0      [.] nl_send_iovec
+     0.00%     0.00%  caspaxos  libnl-3.so.200.26.0      [.] nl_sendmsg
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __libc_sendmsg
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x64_sys_sendmsg
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __sys_sendmsg
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ___sys_sendmsg
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ____sys_sendmsg
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] netlink_sendmsg
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] netlink_unicast
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rdma_nl_rcv
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rdma_nl_rcv_skb.constprop.0.isra.0
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x00007ddd36e246ec
+     0.00%     0.00%  caspaxos  libc.so.6                [.] _IO_new_fopen (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __fopen_internal (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] _IO_new_file_fopen (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __GI__IO_file_open (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __libc_open64 (inlined)
+     0.00%     0.00%  caspaxos  caspaxos                 [.] bool romulus::ConnectionRegistry::Register<romulus::AddrInfo>(std::basic_string_view<char, std::char_traits<char> >, romulus::AddrInfo const&)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __perf_event_task_sched_in
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] elf_get_dynamic_info (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] anon_vma_clone
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] inode_update_timestamps
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] file_update_time
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] xas_start
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x00007ddd36e1ac72
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] aa_file_perm
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rw_verify_area
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] security_file_permission
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] apparmor_file_permission
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __common_interrupt
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] handle_edge_irq
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] handle_irq_event
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] handle_dots
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] uprobe_mmap
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rb_prev
+     0.00%     0.00%  caspaxos  caspaxos                 [.] romulus::MemBlock::RegisterMemRegion(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, unsigned long, unsigned long)
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_reg_mr_iova2
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694b841
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_cmd_reg_mr
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ib_uverbs_reg_mr
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_ib_reg_user_mr
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_get_umem_mr
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] check_heap_object
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] is_file_shm_hugepages
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_map_segment (inlined)
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694deec
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ext4_file_open
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_open
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] vfs_open
+     0.00%     0.00%  caspaxos  libc.so.6                [.] call_init (inlined)
+     0.00%     0.00%  caspaxos  caspaxos                 [.] __cxx_global_var_init
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] malloc (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] security_vm_enough_memory_mm
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694bf5f
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] std::__cxx11::basic_stringbuf<char, std::char_traits<char>, std::allocator<char> >::_M_sync(char*, unsigned long, unsigned long)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] lru_add_drain_cpu
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] lru_add_drain
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __mod_memcg_lruvec_state
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __mod_lruvec_state
+     0.00%     0.00%  caspaxos  caspaxos                 [.] romulus::Device::Open(std::optional<std::basic_string_view<char, std::char_traits<char> > const>, std::optional<int>)
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] verbs_open_device
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694b438
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] lookup_get_idr_uobject.part.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rdma_lookup_get_uobject
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] lookup_get_idr_uobject
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __iommu_dma_unmap
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_en_free_tx_desc
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] dma_unmap_page_attrs
+     0.00%     0.00%  caspaxos  libgcc_s.so.1            [.] 0x00007ddd36ccc000
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __free_one_page
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] free_unref_page_list
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] free_pcppages_bulk
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] folio_add_file_rmap_ptes
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] call_init (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __init_misc
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __fdget
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_cleanup_rbuf
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] _raw_spin_unlock_bh
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] siphash_1u64
+     0.00%     0.00%  caspaxos  caspaxos                 [.] bool romulus::ConnectionRegistry::Register<Barrier>(std::basic_string_view<char, std::char_traits<char> >, Barrier const&)
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x000000000000ae60
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36deb130
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36dfd4ff
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __libc_connect
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x64_sys_connect
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __strlen_sse2
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __sys_connect
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __sys_connect_file
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] inet_stream_connect
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __inet_stream_connect
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_v4_connect
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36debe60
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_wp_page
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] wp_page_copy
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ptep_clear_flush
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] perf_ctx_disable
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __slab_free
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] free_pgtables
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] unlink_anon_vmas
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] kmem_cache_free
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] slab_update_freelist.isra.0
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694bfd7
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] get_timespec64
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rmqueue
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_msi_x_interrupt
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] vma_interval_tree_remove
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] vma_prepare
+     0.00%     0.00%  caspaxos  caspaxos                 [.] romulus::ConnectionRegistry::Fetch_and_Add(std::basic_string_view<char, std::char_traits<char> >, unsigned long, unsigned long*)
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] memcached_increment_with_initial
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] memcached_increment_with_initial_by_key
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36df1082
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36de820e
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36dfb736
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] mmap@plt
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] pick_next_task_idle
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] intel_iommu_iotlb_sync_map
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_spanning_rebalance.isra.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_store_gfp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_wr_spanning_store.isra.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ip_skb_dst_mtu
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] try_charge_memcg
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_vfs_ioctl
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] memmove
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_load_cache_lookup
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] memcpy (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __alloc_and_insert_iova_range
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_qp_alloc
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __mlx4_qp_alloc_icm
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_alloc_icm
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] dma_map_sg_attrs
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] std::istream& std::istream::_M_extract<unsigned int>(unsigned int&)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] perf_ctx_enable
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] radix_tree_next_chunk
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694c568
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_cmd_destroy_cq
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_poll
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] put_page
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __x64_sys_execve
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] do_execveat_common.isra.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] bprm_execve
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] bprm_execve.part.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] exec_binprm
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] search_binary_handler
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] load_elf_binary
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] _dl_runtime_resolve_xsave
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mutex_unlock
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __virt_addr_valid
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] iommu_map_sg
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::pair<std::__detail::_Node_iterator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, romulus::ReliableConnection>, false, true>, bool> std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, romulus::ReliableConnection>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, romulus::ReliableConnection> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_emplace<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, romulus::ReliableConnection>(std::integral_constant<bool, true>, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, romulus::ReliableConnection&&)
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, romulus::ReliableConnection>, true>* std::__detail::_Hashtable_alloc<std::allocator<std::__detail::_Hash_node<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, romulus::ReliableConnection>, true> > >::_M_allocate_node<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, romulus::ReliableConnection>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, romulus::ReliableConnection&&)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] uverbs_copy_to
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] atime_needs_update
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] pick_link
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] psi_flags_change
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __srcu_read_unlock
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_walk
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_find
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] uverbs_get_uobject_from_file
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] xa_load
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] vma_expand
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] _raw_read_lock
+     0.00%     0.00%  caspaxos  caspaxos                 [.] romulus::Device::~Device()
+     0.00%     0.00%  caspaxos  caspaxos                 [.] romulus::ContextDeleter::operator()(ibv_context*)
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_close_device
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36949d51
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] untrack_pfn
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] pat_pagerange_is_ram
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] walk_system_ram_range
+     0.00%     0.00%  caspaxos  ld-linux-x86-64.so.2     [.] rtld_timer_start (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __domain_mapping
+     0.00%     0.00%  caspaxos  [unknown]                [.] 0x00000000000013a4
+     0.00%     0.00%  caspaxos  [unknown]                [.] 0x0000000000001889
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __count_memcg_events
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mem_cgroup_commit_charge
+     0.00%     0.00%  caspaxos  [unknown]                [.] 0x00000000000017d7
+     0.00%     0.00%  caspaxos  [unknown]                [.] 0x0000000000000ad9
+     0.00%     0.00%  caspaxos  caspaxos                 [.] romulus::ConnectionRegistry::Compare_and_Swap(std::basic_string_view<char, std::char_traits<char> >, unsigned long, unsigned long)
+     0.00%     0.00%  caspaxos  [unknown]                [.] 0x0000000000001ed2
+     0.00%     0.00%  caspaxos  [unknown]                [.] 0x0000000000001c5e
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] iommu_dma_unmap_page
+     0.00%     0.00%  caspaxos  libmlx5.so.1.24.50.0     [.] 0x00007ddd36932b7c
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __handle_irq_event_percpu
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] intel_pmu_disable_all
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] elf_load
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] vm_mmap
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] vm_area_alloc
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] obj_cgroup_charge
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] dql_completed
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] poll@plt
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] iommu_get_dma_domain
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] sockfd_lookup_light
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] xa_find
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] xas_find
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_alloc_cmd_mailbox
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] kfree
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_free_cmd_mailbox
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x000000000000ad3d
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x00007ddd36e1ad3d
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x000000000000dcd1
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36deecd1
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] pud_val
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] aa_inet_msg_perm
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] security_socket_recvmsg
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] apparmor_socket_recvmsg
+     0.00%     0.00%  caspaxos  libc.so.6                [.] sysmalloc (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] pthread_mutex_lock@@GLIBC_2.2.5
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694bf95
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd36949a44
+     0.00%     0.00%  caspaxos  libc.so.6                [.] ___pthread_mutex_lock (inlined)
+     0.00%     0.00%  caspaxos  libc.so.6                [.] lll_mutex_lock_optimized (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] skb_do_copy_data_nocache
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] std::num_get<char, std::istreambuf_iterator<char, std::char_traits<char> > >::do_get(std::istreambuf_iterator<char, std::char_traits<char> >, std::istreambuf_iterator<char, std::char_traits<char> >, std::ios_base&, std::_Ios_Iostate&, unsigned long&) const
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] std::istream& std::istream::_M_extract<unsigned long>(unsigned long&)
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00000000000092ba
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_ib_umem_write_mtt
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] free_pages
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __free_pages
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] free_unref_page
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36dea2ba
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rmqueue_bulk
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] userfaultfd_unmap_complete
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __rmqueue_pcplist
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] skb_attempt_defer_free
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_schedule_loss_probe.part.0
+     0.00%     0.00%  caspaxos  caspaxos                 [.] memmove@plt
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::pair<std::__detail::_Node_iterator<std::pair<unsigned long const, std::vector<romulus::ReliableConnection*, std::allocator<romulus::ReliableConnection*> > >, false, false>, bool> std::_Hashtable<unsigned long, std::pair<unsigned long const, std::vector<romulus::ReliableConnection*, std::allocator<romulus::ReliableConnection*> > >, std::allocator<std::pair<unsigned long const, std::vector<romulus::ReliableConnection*, std::allocator<romulus::ReliableConnection*> > > >, std::__detail::_Select1st, std::equal_to<unsigned long>, std::hash<unsigned long>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::_M_emplace<unsigned long const&, std::vector<romulus::ReliableConnection*, std::allocator<romulus::ReliableConnection*> >&>(std::integral_constant<bool, true>, unsigned long const&, std::vector<romulus::ReliableConnection*, std::allocator<romulus::ReliableConnection*> >&)
+     0.00%     0.00%  caspaxos  caspaxos                 [.] std::__detail::_Hash_node<std::pair<unsigned long const, std::vector<romulus::ReliableConnection*, std::allocator<romulus::ReliableConnection*> > >, false>* std::__detail::_Hashtable_alloc<std::allocator<std::__detail::_Hash_node<std::pair<unsigned long const, std::vector<romulus::ReliableConnection*, std::allocator<romulus::ReliableConnection*> > >, false> > >::_M_allocate_node<unsigned long const&, std::vector<romulus::ReliableConnection*, std::allocator<romulus::ReliableConnection*> >&>(unsigned long const&, std::vector<romulus::ReliableConnection*, std::allocator<romulus::ReliableConnection*> >&)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] import_ubuf
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] std::ostreambuf_iterator<char, std::char_traits<char> > std::num_put<char, std::ostreambuf_iterator<char, std::char_traits<char> > >::_M_insert_int<unsigned long>(std::ostreambuf_iterator<char, std::char_traits<char> >, std::ios_base&, char, unsigned long) const
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] up
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] uverbs_copy_to_struct_or_zero
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_ib_db_map_user
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x000000000000d07b
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x00007ddd36e1d07b
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_update_skb_after_send
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] refill_stock
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x0000000000018465
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36df9465
+     0.00%     0.00%  caspaxos  [stack]                  [.] 0x00007fffe1e9c08f
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] std::basic_ios<char, std::char_traits<char> >::clear(std::_Ios_Iostate)
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x0000000000008e5d
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694de5d
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] ipv4_dst_check
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_options_write
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] clflush_cache_range
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] radix_tree_lookup
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] put_prev_task_fair
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] std::ios_base::~ios_base()
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_wr_store_setup.isra.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __update_idle_core
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] strscpy
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] percpu_counter_add_batch
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694a090
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x000000000000d3b0
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] 0x00007ddd36e1d3b0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] try_get_folio
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] pin_user_pages_fast
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] internal_get_user_pages_fast
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] lockless_pages_from_mm
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] gup_pgd_range
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] gup_pte_range
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] try_grab_folio_fast
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] dma_pool_free
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __get_free_pages
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] alloc_pages
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] vm_unmapped_area
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] get_unmapped_area
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] arch_get_unmapped_area_topdown
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] release_sock
+     0.00%     0.00%  caspaxos  libc.so.6                [.] memcpy@GLIBC_2.2.5
+     0.00%     0.00%  caspaxos  libstdc++.so.6.0.33      [.] std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_create(unsigned long&, unsigned long)
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36debef3
+     0.00%     0.00%  caspaxos  libc.so.6                [.] __memcpy_sse2_unaligned (inlined)
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] sg_next
+     0.00%     0.00%  caspaxos  libmlx4.so.1.0.50.0      [.] 0x00007ddd3694bec9
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_ib_port_link_layer
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] newidle_balance
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] post_alloc_hook
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] pick_next_task_fair
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __sk_dst_check
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rcu_note_context_switch
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mas_wr_walk
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] poll_freewait
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x0000000000007962
+     0.00%     0.00%  caspaxos  caspaxos                 [.] romulus::ConnectionRegistry::MakeInternalKey[abi:cxx11](std::basic_string_view<char, std::char_traits<char> >)
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36def57a
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36de8962
+     0.00%     0.00%  caspaxos  [heap]                   [.] 0x00005ff22c1f09eb
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __mlx4_cq_alloc_icm
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ioctl@plt
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_en_tx_irq
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_eq_int
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_rcv_space_adjust
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] pages_are_mergeable
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] sg_alloc_append_table_from_pages
+     0.00%     0.00%  caspaxos  libibverbs.so.1.14.50.0  [.] ibv_query_gid
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __get_xps_queue_idx
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __raw_read_lock_irqsave
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] netdev_core_pick_tx
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rdma_fill_sgid_attr
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_en_select_queue
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] rdma_get_gid_attr
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __mod_timer
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mlx4_cq_completion
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] hrtimer_init_sleeper
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] should_failslab.constprop.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] security_socket_sendmsg
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] is_vmalloc_addr
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] fq_codel_dequeue
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __qdisc_run
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] dequeue_skb
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] note_interrupt
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] perf_iterate_sb.constprop.0
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] setup_arg_pages
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] mprotect_fixup
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] pfn_to_dma_pte
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] tcp_recv_timestamp
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] __pollwait
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] dma_pool_alloc
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x0000000000018435
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36df9435
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] iommu_dma_free_iova
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00000000000091b0
+     0.00%     0.00%  caspaxos  libmemcached.so.11.0.0   [.] 0x00007ddd36dea1b0
+     0.00%     0.00%  caspaxos  caspaxos                 [.] bcmp@plt
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] entry_SYSCALL_64_after_hwframe
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] do_syscall_64
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] x64_sys_call
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] __x64_sys_execve
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] do_execveat_common.isra.0
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] bprm_execve
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] bprm_execve.part.0
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] exec_binprm
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] search_binary_handler
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] load_elf_binary
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] begin_new_exec
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] perf_event_exec
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] perf_event_enable_on_exec
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] asm_sysvec_apic_timer_interrupt
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] sysvec_apic_timer_interrupt
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] __update_blocked_fair
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] irq_exit_rcu
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] __irq_exit_rcu
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] handle_softirqs
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] run_rebalance_domains
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] update_blocked_averages
+     0.00%     0.00%  caspaxos  [kernel.kallsyms]        [k] memcpy_fromio
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] __smp_call_single_queue
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] __sysvec_apic_timer_interrupt
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] hrtimer_interrupt
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] __hrtimer_run_queues
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] tick_nohz_highres_handler
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] tick_sched_handle
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] update_process_times
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] scheduler_tick
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] trigger_load_balance
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] nohz_balancer_kick
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] kick_ilb
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] smp_call_function_single_async
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] irqentry_nmi_exit
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] native_write_msr
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] ctx_resched
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] perf_ctx_enable
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] x86_pmu_enable
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] intel_pmu_enable_all
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] __rcu_read_lock
+     0.00%     0.00%  perf-exe  [kernel.kallsyms]        [k] sched_clock_noinstr
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

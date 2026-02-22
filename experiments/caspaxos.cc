@@ -1,3 +1,9 @@
+#include <filesystem>
+#include <functional>
+#include <random>
+#include <string>
+
+#include "cfg.h"
 #include "romulus/cfg.h"
 #include "romulus/common.h"
 #include "romulus/connection_manager.h"
@@ -6,13 +12,6 @@
 #include "romulus/qp_pol.h"
 #include "romulus/stats.h"
 #include "romulus/util.h"
-
-#include <filesystem>
-#include <functional>
-#include <random>
-#include <string>
-
-#include "cfg.h"
 #include "state.h"
 #include "util.h"
 
@@ -53,61 +52,78 @@ int main(int argc, char* argv[]) {
   ROMULUS_INFO("!> [CONF] duration={}_ms", duration.count());
   ROMULUS_INFO("!> [CONF] system_size={}", system_size);
   ROMULUS_INFO("!> [CONF] output file={}", output_file);
-  
+
   INIT_CONSENSUS(transport_flag, buf_size, mach_map);
   FILL_PROPOSALS();
 
   std::function<void(void)> init = SYNC_NODES;
   std::function<void(void)> exec = EXEC_LATENCY;
   std::function<void(void)> done = DONE_LATENCY;
-  std::function<void(std::fstream&)> calc = CALC_LATENCY;
+  std::function<void(std::ofstream&)> calc = CALC_LATENCY;
   std::function<void(void)> reset = RESET;
 
   init();
 
   ROMULUS_INFO("Starting latency test");
   ROMULUS_INFO("MultiPaxos Optimization: {}", multipax_opt ? "ON" : "OFF");
+
+  std::atomic<bool> preprepare_running(true);
+
+#if defined(USE_VELOS)
+  ROMULUS_INFO("Using Velos, launching background thread...");
+  std::thread([&]() {
+    while (preprepare_running.load()) {
+      // Running on fixed leader (Node0)
+      if(id == 0){
+        paxos->Prepare(true);
+      }
+    }
+  }).detach();
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+#endif
+
   auto testtime_us =
       std::chrono::duration_cast<std::chrono::microseconds>(testtime);
   ROMULUS_STOPWATCH_BEGIN();
   while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
          static_cast<uint64_t>(testtime_us.count())) {
     for (uint32_t i = 0; i < loop; ++i) {
-      exec();
+#if defined(USE_MU)
+      if (id == 0) {
+        exec();
+        busy_wait(sleep);
+      }
+#elif defined(USE_VELOS)
+      if (id == 0) {
+        paxos->Promise(Value(i), true);
+      }
+#else
+      if (paxos->isLeaderStable() && !paxos->isLeader()) {
+        paxos->CatchUp();
+      } else {
+        exec();
+      }
       busy_wait(sleep);
+#endif
     }
   }
-  init(); // sync
-  // done();
-  calc(outfile);
-  
-  ROMULUS_DEBUG("Exiting normally!");
-  exit(0);
+  preprepare_running.store(false);
 
+  done();  // cleanup
 
+  init();  // sync
 
-  init = SYNC_NODES;
-  exec = EXEC_THROUGHPUT;
-  done = DONE_THROUGHPUT;
-  calc = CALC_THROUGHPUT;
+  ROMULUS_INFO("Is leader? {}", paxos->isLeader() ? "TRUE" : "FALSE");
 
-  [[maybe_unused]] int x = 0;
-  // bool first = true;
-  init();
-  ROMULUS_INFO("Starting throughput test");
-  ROMULUS_STOPWATCH_BEGIN();
-  ROMULUS_STOPWATCH_START();
-  while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
-         static_cast<uint64_t>(testtime_us.count())) {
-    for (uint32_t i = 0; i < loop; ++i) {
-      exec();
-      busy_wait(sleep);
-    }
+  if (latencies.size() > 50) {
+    calc(outfile);
+    calc = CALC_THROUGHPUT;
+    calc(outfile);
   }
-  done();
-  calc(outfile);
-  init();
-  paxos->CleanUp();
+
+  DUMP_LATENCIES();
+
   ROMULUS_INFO("Experiment is finished. Cleaning up...");
   outfile.close();
   for (auto& p : proposals) {

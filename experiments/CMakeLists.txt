@@ -15,6 +15,12 @@ foreach(SRC ${SRC_SOURCES})
   else()
     message(STATUS "Building WITHOUT Mu")
   endif()
+  if(USE_VELOS)
+    message(STATUS "Building WITH Velos enabled")
+    target_compile_definitions(${SRC_NAME} PRIVATE USE_VELOS)
+  else()
+    message(STATUS "Building WITHOUT Velos")
+  endif()
 
   target_link_libraries(${SRC_NAME}
     PRIVATE

@@ -154,10 +154,12 @@ function cl_run() {
 	NUM_MACHINES=${#MACHINES[@]}
 	for i in "${!MACHINES[@]}"; do
 		host="${MACHINES[$i]}"
-		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt"
+		# CMD="sudo perf record --call-graph dwarf -o perf_node${i}.data ./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt && sudo perf report --stdio -g -i perf_node${i}.data > perf_report_${i}.txt"
+		# CMD="sudo perf stat -e cycles,task-clock,cache-misses,LLC-load-misses -I 5000 -o perf_stat_${i}.txt ./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt"
+		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} ${EXTRA_ARGS}"
 		echo "$CMD"
 		cat >>"$tmp_screen" <<EOF
-screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}; bash
+screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}
 logfile logs/log_${i}.txt
 log on
 EOF
@@ -280,11 +282,16 @@ function reset() {
 # $1 : Name of the results file to retrieve
 function retrieve_results {
 	# random 4-char string
-	rand_str=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)
-	result_file="results_${rand_str}.csv"
-	scp ${USER}@${MACHINES[0]}.${DOMAIN}:"~/$1" results/$result_file &
+
+	last_valid_index=$((${#MACHINES[@]} - 1)) # The 0-indexed number of nodes
+	for i in $(seq 0 ${last_valid_index}); do
+		# rand_str=$(cat /dev/urandom | tr -dc '0-9' | fold -w 4 | head -n 1)
+		result_file="results_${i}.csv"
+		scp ${USER}@${MACHINES[$i]}.${DOMAIN}:"~/*csv" results/$result_file &
+		echo "Results retrieved to results/$result_file"
+	done
 	wait
-	echo "Results retrieved to results/$result_file"
+
 }
 
 function test_remus {
@@ -379,7 +386,7 @@ function run_mu {
 	for i in "${!MACHINES[@]}"; do
 		host="${MACHINES[$i]}"
 		ENV_ARGS="EXPER_PORT=${STARTING_PORT} SID=$((i + 1)) IDS=${IDS} DORY_REGISTRY_IP=${DORY_REGISTRY_IP} LD_LIBRARY_PATH=~/"
-		CMD="${ENV_ARGS} ./${EXE_NAME} --hostname ${host} --node-id ${i} --leader-fixed --output-file stats_${NUM_MACHINES}_nodes.csv ${ARGS}"
+		CMD="${ENV_ARGS} ./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file mu_stats_${NUM_MACHINES}.csv ${ARGS}"
 		echo "$CMD"
 		cat >>"$tmp_screen" <<EOF
 screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}
@@ -493,6 +500,8 @@ elif [[ "$cmd" == "reset-mu" && "$count" -eq 1 ]]; then
 	reset_mu
 elif [[ "$cmd" == "run-mu-debug" && "$count" -eq 2 ]]; then
 	run_mu_debug "$2"
+elif [[ "$cmd" == "retrieve-results" && "$count" -eq 1 ]]; then
+	retrieve_results
 elif [[ "$cmd" == "launch-experiment" && "$count" -eq 2 ]]; then
 	ORIG_MACHINES=("${MACHINES[@]}")
 	echo "Resetting memcached server..."
@@ -504,6 +513,19 @@ elif [[ "$cmd" == "launch-experiment" && "$count" -eq 2 ]]; then
 		reset $(basename "$2")
 		echo "Launching experiment with ${#MACHINES[@]} nodes..."
 		cl_run "$2"
+		cat logs/* > results/plain_dump${i}.txt
+	done
+	echo "Turning on Multi-paxos optimization..."
+	reset_memcached
+	for i in $(seq 3 ${#ORIG_MACHINES[@]}); do
+		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
+		load_cfg
+		echo "Resetting..."
+		reset $(basename "$2")
+		echo "Launching experiment with ${#MACHINES[@]} nodes..."
+		EXTRA_ARGS="--multipax-opt"
+		cl_run "$2"
+		cat logs/* > results/multi_dump${i}.txt
 	done
 elif [[ "$cmd" == "launch-experiment-mu" && "$count" -eq 2 ]]; then
 	ORIG_MACHINES=("${MACHINES[@]}")

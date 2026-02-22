@@ -44,22 +44,6 @@ static_assert(sizeof(Value) == sizeof(uint32_t));
 
 enum Step { kIdle, kReady, kCatchUp, kNextBallot, kPrepare, kPromise };
 
-/**
- * @brief A virtual class defining the capabilities required by a Paxos
- * implementation.
- */
-class Paxos {
- public:
-  virtual void Reset() = 0;
-  virtual void CatchUp() = 0;
-  virtual void Propose(uint32_t len, uint8_t* buf) = 0;
-  virtual void SyncNodes() = 0;
-  virtual void CleanUp() = 0;
-  virtual bool isLeaderStable() = 0;
-  virtual bool isLeader() = 0;
-  virtual ~Paxos() {}
-};
-
 static constexpr uint8_t kMaxBallotBits = sizeof(Ballot) * 8;
 static constexpr uint8_t kBallotBits = kMaxBallotBits;
 static constexpr uint8_t kValueBits = sizeof(Value) * 8;
@@ -138,4 +122,23 @@ struct State {
        << ">> (raw=" << raw << ")";
     return ss.str();
   }
+};
+
+
+/**
+ * @brief A virtual class defining the capabilities required by a Paxos
+ * implementation.
+ */
+class Paxos {
+ public:
+  virtual State* Prepare(bool x) = 0;
+  virtual bool Promise(Value v, bool x) = 0;
+  virtual void Reset() = 0;
+  virtual void CatchUp() = 0;
+  virtual void Propose(uint32_t len, uint8_t* buf) = 0;
+  virtual void SyncNodes() = 0;
+  virtual void CleanUp() = 0;
+  virtual bool isLeaderStable() = 0;
+  virtual bool isLeader() = 0;
+  virtual ~Paxos() {}
 };

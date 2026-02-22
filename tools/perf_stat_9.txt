@@ -1,0 +1,39 @@
+# started on Tue Feb  3 18:29:17 2026
+
+#           time             counts unit events
+     5.005032309      3,607,088,987      cycles                           #    2.731 GHz                       
+     5.005032309           1,320.68 msec task-clock                       #    0.264 CPUs utilized             
+     5.005032309            222,759      cache-misses                                                          
+     5.005032309             26,982      LLC-load-misses                                                       
+    10.010186708     14,499,482,076      cycles                           #    2.897 GHz                       
+    10.010186708           5,005.10 msec task-clock                       #    1.001 CPUs utilized             
+    10.010186708             55,581      cache-misses                                                          
+    10.010186708              6,059      LLC-load-misses                                                       
+    15.015253527     14,508,307,064      cycles                           #    2.899 GHz                       
+    15.015253527           5,005.04 msec task-clock                       #    1.001 CPUs utilized             
+    15.015253527             55,130      cache-misses                                                          
+    15.015253527              5,659      LLC-load-misses                                                       
+    20.020319039     14,500,815,849      cycles                           #    2.897 GHz                       
+    20.020319039           5,005.01 msec task-clock                       #    1.001 CPUs utilized             
+    20.020319039             54,545      cache-misses                                                          
+    20.020319039              5,375      LLC-load-misses                                                       
+    25.025393401     14,399,648,327      cycles                           #    2.896 GHz                       
+    25.025393401           4,971.76 msec task-clock                       #    0.994 CPUs utilized             
+    25.025393401             77,476      cache-misses                                                          
+    25.025393401              7,899      LLC-load-misses                                                       
+    30.030455417     14,507,669,832      cycles                           #    2.899 GHz                       
+    30.030455417           5,005.01 msec task-clock                       #    1.001 CPUs utilized             
+    30.030455417             54,406      cache-misses                                                          
+    30.030455417              5,240      LLC-load-misses                                                       
+    35.035525993     14,505,687,652      cycles                           #    2.898 GHz                       
+    35.035525993           5,005.03 msec task-clock                       #    1.001 CPUs utilized             
+    35.035525993             54,228      cache-misses                                                          
+    35.035525993              5,173      LLC-load-misses                                                       
+    40.040588553     14,503,683,372      cycles                           #    2.898 GHz                       
+    40.040588553           5,005.03 msec task-clock                       #    1.001 CPUs utilized             
+    40.040588553             54,317      cache-misses                                                          
+    40.040588553              5,227      LLC-load-misses                                                       
+    43.852403103     10,957,355,586      cycles                           #    2.897 GHz                       
+    43.852403103           3,781.78 msec task-clock                       #    0.756 CPUs utilized             
+    43.852403103             60,450      cache-misses                                                          
+    43.852403103             18,429      LLC-load-misses                                                       

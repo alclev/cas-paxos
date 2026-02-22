@@ -2,6 +2,7 @@
 #include <chrono>
 #include <fstream>
 #include <memory>
+#include <sstream>
 
 #include "cas_paxos_st.h"
 
@@ -12,29 +13,40 @@ std::unique_ptr<Paxos> paxos;
   auto registry =                                                              \
       std::make_unique<romulus::ConnectionRegistry>("PaxosTest", registry_ip); \
   paxos = std::make_unique<PAXOS_NS::CasPaxos>(args, remotes, transport_flag); \
-  reinterpret_cast<PAXOS_NS::CasPaxos*>(paxos.get())                           \
+  reinterpret_cast<PAXOS_NS::CasPaxos *>(paxos.get())                          \
       ->Init(dev_name, dev_port, std::move(registry), mach_map);
 
 std::vector<double> latencies;
 
+#define DUMP_LATENCIES()                                                       \
+  {                                                                            \
+    std::ostringstream oss;                                                    \
+    for (size_t i = 0; i < latencies.size(); ++i) {                            \
+      if (i > 0)                                                               \
+        oss << ",";                                                            \
+      oss << latencies[i];                                                     \
+    }                                                                          \
+    ROMULUS_INFO("Latencies: {}", oss.str());                                  \
+  }
+
 #define SYNC_NODES [&]() { paxos->SyncNodes(); };
 
-#define EXEC_LATENCY                                                      \
-  [&]() {                                                                 \
-    uint32_t i = latencies.size() % kNumProposals;                        \
-    auto start = std::chrono::steady_clock::now();                        \
-    paxos->Propose(proposals[i].first, proposals[i].second);              \
-    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>( \
-                       std::chrono::steady_clock::now() - start)          \
-                       .count();                                          \
-    double elapsed_us = static_cast<double>(elapsed);                     \
-    latencies.emplace_back(elapsed_us);                                   \
+#define EXEC_LATENCY                                                           \
+  [&]() {                                                                      \
+    uint32_t i = latencies.size() % kNumProposals;                             \
+    auto start = std::chrono::steady_clock::now();                             \
+    paxos->Propose(proposals[i].first, proposals[i].second);                   \
+    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(      \
+                       std::chrono::steady_clock::now() - start)               \
+                       .count();                                               \
+    double elapsed_us = static_cast<double>(elapsed);                          \
+    latencies.emplace_back(elapsed_us);                                        \
   };
 
-#define DONE_LATENCY []() { paxos->CatchUp(); };
+#define DONE_LATENCY []() { paxos->CleanUp(); };
 
 #define CALC_LATENCY                                                           \
-  [&](std::fstream& outfile) {                                                 \
+  [&](std::ofstream &outfile) {                                                 \
     double latency_avg = 0.0;                                                  \
     double latency_stddev = 0.0;                                               \
     double latency_50p = 0.0;                                                  \
@@ -42,6 +54,10 @@ std::vector<double> latencies;
     double latency_99_9p = 0.0;                                                \
     double latency_max = 0.0;                                                  \
     int latency_max_idx = 0;                                                   \
+    /* Get rid of the shutdown message latency */                              \
+    for (int i = 0; i < 50; ++i) {                                             \
+      latencies.pop_back();                                                    \
+    }                                                                          \
     if (latencies.size() > 0) {                                                \
       latency_avg = std::accumulate(latencies.begin(), latencies.end(), 0.0);  \
       latency_avg /= static_cast<double>(latencies.size());                    \
@@ -75,10 +91,10 @@ std::vector<double> latencies;
     ROMULUS_INFO("!> [LAT] lat_max_idx={}", latency_max_idx);                  \
   };
 
-#define RESET           \
-  [&]() {               \
-    paxos->Reset();     \
-    paxos->SyncNodes(); \
+#define RESET                                                                  \
+  [&]() {                                                                      \
+    paxos->Reset();                                                            \
+    paxos->SyncNodes();                                                        \
   };
 
 bool stopwatch_running = false;
@@ -88,41 +104,47 @@ uint64_t count = 0;
 
 #define INIT_THROUGHPUT [&]() { paxos->SyncNodes(); };
 
-#define EXEC_THROUGHPUT                                      \
-  [&]() {                                                    \
-    if (!stopwatch_running) {                                \
-      count = 0;                                             \
-      ROMULUS_STOPWATCH_START();                             \
-      stopwatch_running = true;                              \
-    }                                                        \
-    uint32_t i = count % proposals.size();                   \
-    paxos->Propose(proposals[i].first, proposals[i].second); \
-    ++count;                                                 \
+#define EXEC_THROUGHPUT                                                        \
+  [&]() {                                                                      \
+    if (!stopwatch_running) {                                                  \
+      count = 0;                                                               \
+      ROMULUS_STOPWATCH_START();                                               \
+      stopwatch_running = true;                                                \
+    }                                                                          \
+    uint32_t i = count % proposals.size();                                     \
+    paxos->Propose(proposals[i].first, proposals[i].second);                   \
+    ++count;                                                                   \
   };
 
-#define DONE_THROUGHPUT                                                  \
-  [&]() {                                                                \
-    if (stopwatch_running) {                                             \
-      runtimes.push_back(ROMULUS_STOPWATCH_SPLIT(ROMULUS_MICROSECONDS)); \
-      counts.push_back(count);                                           \
-      stopwatch_running = false;                                         \
-    }                                                                    \
-    paxos->CatchUp();                                                    \
+#define DONE_THROUGHPUT                                                        \
+  [&]() {                                                                      \
+    if (stopwatch_running) {                                                   \
+      runtimes.push_back(ROMULUS_STOPWATCH_SPLIT(ROMULUS_MICROSECONDS));       \
+      counts.push_back(count);                                                 \
+      stopwatch_running = false;                                               \
+    }                                                                          \
+    paxos->CatchUp();                                                          \
   };
 
-#define CALC_THROUGHPUT                                                      \
-  [&](std::fstream& outfile) {                                               \
-    double avg_throughput = 0.0;                                             \
-    uint32_t total_count = 0;                                                \
-    assert(runtimes.size() == counts.size());                                \
-    ROMULUS_INFO("Dumping counts and runtimes:");                            \
-    for (uint32_t i = 0; i < runtimes.size(); ++i) {                         \
-      ROMULUS_INFO("!> [THRU] count={} runtime={}", counts[i], runtimes[i]); \
-      avg_throughput += (counts[i] / runtimes[i]);                           \
-    }                                                                        \
-    total_count = std::accumulate(counts.begin(), counts.end(), 0);          \
-    avg_throughput /= runtimes.size();                                       \
-    outfile << avg_throughput << std::endl;                                  \
-    ROMULUS_INFO("!> [THRU] throughput={:4.2f}ops/us", avg_throughput);      \
-    ROMULUS_INFO("!> [THRU] count={}", total_count);                         \
+#define CALC_THROUGHPUT                                                        \
+  [&](std::ofstream &outfile) {                                                 \
+    double total_latency =                                                     \
+        std::accumulate(latencies.begin(), latencies.end(), 0.0);              \
+    double throughput = latencies.size() / total_latency * 1000000;            \
+    outfile << throughput << std::endl;                                        \
+    ROMULUS_INFO("!> [THRU] throughput={:4.2f}ops/us", throughput);            \
   };
+
+// double avg_throughput = 0.0;                                               \
+  //   uint32_t total_count = 0;                                                  \
+  //   assert(runtimes.size() == counts.size());                                  \
+  //   ROMULUS_INFO("Dumping counts and runtimes:");                              \
+  //   for (uint32_t i = 0; i < runtimes.size(); ++i) {                           \
+  //     ROMULUS_INFO("!> [THRU] count={} runtime={}", counts[i], runtimes[i]);   \
+  //     avg_throughput += (counts[i] / runtimes[i]);                             \
+  //   }                                                                          \
+  //   total_count = std::accumulate(counts.begin(), counts.end(), 0);            \
+  //   avg_throughput /= runtimes.size();                                         \
+  //   outfile << avg_throughput << std::endl;                                    \
+  //   ROMULUS_INFO("!> [THRU] throughput={:4.2f}ops/us", avg_throughput);        \
+  //   ROMULUS_INFO("!> [THRU] count={}", total_count);                           \
