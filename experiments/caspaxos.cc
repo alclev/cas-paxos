@@ -1,3 +1,4 @@
+#include <csignal>
 #include <filesystem>
 #include <functional>
 #include <random>
@@ -15,8 +16,10 @@
 #include "state.h"
 #include "util.h"
 
-#ifdef USE_MU
+#if defined(USE_MU)
 #include "mu/mu_impl.h"
+#elif defined(USE_VELOS)
+#include "velos/velos_impl.h"
 #else
 #include "cas_paxos_impl.h"
 #endif
@@ -24,7 +27,20 @@
 #define PAXOS_NS paxos_st
 constexpr uint32_t kNumProposals = 8092;
 
+void signal_handler(int signum) {
+  if (signum == SIGTSTP) {
+    write(STDOUT_FILENO, "SIGINT caught\n", 14);
+    dump_requested.store(true, std::memory_order_relaxed);
+  }
+}
+
 int main(int argc, char* argv[]) {
+  struct sigaction sa{};
+  sa.sa_handler = signal_handler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+  sigaction(SIGTSTP, &sa, nullptr);
+
   ROMULUS_STOPWATCH_DECLARE();
   romulus::INIT();
   auto args = std::make_shared<romulus::ArgMap>();
@@ -71,11 +87,12 @@ int main(int argc, char* argv[]) {
 
 #if defined(USE_VELOS)
   ROMULUS_INFO("Using Velos, launching background thread...");
+
   std::thread([&]() {
     while (preprepare_running.load()) {
       // Running on fixed leader (Node0)
-      if(id == 0){
-        paxos->Prepare(true);
+      if (id == 0) {
+        velos->Prepare();
       }
     }
   }).detach();
@@ -89,14 +106,10 @@ int main(int argc, char* argv[]) {
   while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
          static_cast<uint64_t>(testtime_us.count())) {
     for (uint32_t i = 0; i < loop; ++i) {
-#if defined(USE_MU)
+#if defined(USE_MU) || defined(USE_VELOS)
       if (id == 0) {
         exec();
         busy_wait(sleep);
-      }
-#elif defined(USE_VELOS)
-      if (id == 0) {
-        paxos->Promise(Value(i), true);
       }
 #else
       if (paxos->isLeaderStable() && !paxos->isLeader()) {
@@ -106,6 +119,11 @@ int main(int argc, char* argv[]) {
       }
       busy_wait(sleep);
 #endif
+      if (dump_requested.load(std::memory_order_relaxed)) {
+        ROMULUS_INFO("Shutdown requested, dumping logs...");
+        velos->DumpLogs();
+        exit(0);
+      }
     }
   }
   preprepare_running.store(false);
@@ -113,8 +131,6 @@ int main(int argc, char* argv[]) {
   done();  // cleanup
 
   init();  // sync
-
-  ROMULUS_INFO("Is leader? {}", paxos->isLeader() ? "TRUE" : "FALSE");
 
   if (latencies.size() > 50) {
     calc(outfile);

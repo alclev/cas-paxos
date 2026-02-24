@@ -131,8 +131,8 @@ struct State {
  */
 class Paxos {
  public:
-  virtual State* Prepare(bool x) = 0;
-  virtual bool Promise(Value v, bool x) = 0;
+  virtual State* Prepare() = 0;
+  virtual bool Promise(Value v) = 0;
   virtual void Reset() = 0;
   virtual void CatchUp() = 0;
   virtual void Propose(uint32_t len, uint8_t* buf) = 0;

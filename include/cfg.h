@@ -31,7 +31,7 @@ inline auto EXTRA_ARGS = {
     STR_ARG(HOSTNAME, "Hostname of this node."),
     U64_ARG_OPT(TESTTIME, "Experiment duration in seconds", 5),
     U64_ARG_OPT(LOOP, "Number of iterations between runtime checks.", 1000),
-    U64_ARG_OPT(CAPACITY, "Capacity of the replicated log.", (1ULL << 15)),
+    U64_ARG_OPT(CAPACITY, "Capacity of the replicated log.", (1ULL << 25)),
     U64_ARG_OPT(BUF_SIZE, "Buffer size for remote writes.", 64),
     U64_ARG_OPT(SLEEP, "Sleep interval between proposals in ms", 10),
     BOOL_ARG_OPT(STABLE_LEADER,

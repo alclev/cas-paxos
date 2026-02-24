@@ -159,7 +159,7 @@ function cl_run() {
 		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} ${EXTRA_ARGS}"
 		echo "$CMD"
 		cat >>"$tmp_screen" <<EOF
-screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}
+screen -t node${i} ssh -t ${USER}@${host}.${DOMAIN} ${CMD}
 logfile logs/log_${i}.txt
 log on
 EOF

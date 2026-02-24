@@ -1,5 +1,11 @@
 #pragma once
 
+#include <immintrin.h>
+
+constexpr auto kTimeout = std::chrono::nanoseconds(500'000'000);
+
+std::atomic<bool> dump_requested{false};
+
 template <typename Rep, typename Period>
 void busy_wait(std::chrono::duration<Rep, Period> d) {
   auto start = std::chrono::steady_clock::now();
@@ -84,3 +90,45 @@ void busy_wait(std::chrono::duration<Rep, Period> d) {
       proposals[i].second[j] = alphanum[rng(engine) % alphanum.size()];        \
     }                                                                          \
   }
+
+
+namespace {  // namespace anonymous
+
+template <typename Rep, typename Period>
+inline std::chrono::duration<Rep, Period> DoBackoff(
+    std::chrono::duration<Rep, Period> backoff) {
+  ROMULUS_DEBUG(
+      "Backing off for {} us",
+      std::chrono::duration_cast<std::chrono::microseconds>(backoff).count());
+
+  if (backoff < std::chrono::microseconds(50)) {
+    // if our backoff is small, we invoke pause instruction instead of heavier
+    // system call
+    auto start = std::chrono::steady_clock::now();
+    while (std::chrono::steady_clock::now() - start < backoff) {
+      _mm_pause();
+    }
+  } else {
+    std::this_thread::sleep_for(backoff);
+  }
+
+  return std::min(backoff * 2, kTimeout);
+}
+
+// Return the next higher unique ballot calculated by offsetting for this host
+// into the next chunk of ballots to use. If the peer ballot is lower than the
+// local ballot, then return the current ballot.
+inline uint32_t NextBallot(uint32_t local_ballot, uint32_t peer_ballot,
+                           uint8_t host_id, uint32_t sys_size) {
+  if (local_ballot < peer_ballot) {
+    return ((((peer_ballot - 1) / sys_size) + 1) * sys_size) + (host_id + 1);
+  } else {
+    return local_ballot;
+  }
+}
+
+bool PollCompletionsOnce(romulus::ReliableConnection* c, uint64_t wr_id) {
+  return c->TryProcessOutstanding() > 0 && c->CheckCompletionsForId(wr_id);
+}
+
+}  // namespace
