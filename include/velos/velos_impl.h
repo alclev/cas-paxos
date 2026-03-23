@@ -63,8 +63,18 @@ std::vector<double> latencies;
       latency_99_9p =                                                          \
           latencies[static_cast<uint32_t>((latencies.size() * .999))];         \
     }                                                                          \
-    outfile << latency_avg << "," << latency_50p << "," << latency_99p << ","  \
-            << latency_99_9p << ",";                                           \
+    std::stringstream ss;                                                      \
+    ss << latency_avg << "," << latency_50p << "," << latency_99p << ","       \
+       << latency_99_9p << '\n';                                               \
+    for (int i = 0; i < (int)latencies.size(); ++i) {                          \
+      ss << latencies[i];                                                      \
+      if (i != (int)latencies.size() - 1) {                                    \
+        ss << ", ";                                                            \
+      }                                                                        \
+    }                                                                          \
+    ss << std::endl;                                                           \
+    outfile << ss.str();                                                       \
+    ROMULUS_INFO("[PARSE] {}", ss.str());                                      \
     ROMULUS_INFO("!> [LAT] count={}", latencies.size());                       \
     ROMULUS_INFO("!> [LAT] lat_avg={:4.2f} ± {:4.2f} us", latency_avg,         \
                  latency_stddev);                                              \

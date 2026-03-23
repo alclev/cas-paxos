@@ -115,15 +115,19 @@ int main(int argc, char* argv[]) {
       if (paxos->isLeaderStable() && !paxos->isLeader()) {
         paxos->CatchUp();
       } else {
+        paxos->ConditionalReset();
         exec();
       }
       busy_wait(sleep);
 #endif
+
+#if defined(USE_VELOS)
       if (dump_requested.load(std::memory_order_relaxed)) {
         ROMULUS_INFO("Shutdown requested, dumping logs...");
         velos->DumpLogs();
         exit(0);
       }
+#endif
     }
   }
   preprepare_running.store(false);
@@ -137,8 +141,6 @@ int main(int argc, char* argv[]) {
     calc = CALC_THROUGHPUT;
     calc(outfile);
   }
-
-  DUMP_LATENCIES();
 
   ROMULUS_INFO("Experiment is finished. Cleaning up...");
   outfile.close();

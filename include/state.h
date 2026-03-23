@@ -140,5 +140,7 @@ class Paxos {
   virtual void CleanUp() = 0;
   virtual bool isLeaderStable() = 0;
   virtual bool isLeader() = 0;
+  virtual void ConditionalReset() = 0;
+  virtual uint32_t GetOffset() = 0;
   virtual ~Paxos() {}
 };

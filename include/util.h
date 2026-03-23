@@ -127,7 +127,7 @@ inline uint32_t NextBallot(uint32_t local_ballot, uint32_t peer_ballot,
   }
 }
 
-bool PollCompletionsOnce(romulus::ReliableConnection* c, uint64_t wr_id) {
+[[maybe_unused]] bool PollCompletionsOnce(romulus::ReliableConnection* c, uint64_t wr_id) {
   return c->TryProcessOutstanding() > 0 && c->CheckCompletionsForId(wr_id);
 }
 

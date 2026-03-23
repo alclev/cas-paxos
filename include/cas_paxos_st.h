@@ -13,6 +13,8 @@
 
 #define BATCH_SIZE 16
 
+#define kRingSize 1024
+
 // Compile time configurations for testing different optimizations
 // #define DYNO_NO_WRITEBUF
 // #define DYNO_NO_SENDALL
@@ -341,11 +343,12 @@ class CasPaxos : public Paxos {
   }
 
   bool BroadcastLeader(State* new_leader) {
-    uint32_t ok_count = 0;
+    // uint32_t ok_count = 0;
     std::vector<bool> ok(system_size_);
     auto laddr = memblock_.GetAddrInfo(kScratchRegionId);
     auto* laddr_raw = reinterpret_cast<uint8_t*>(laddr.addr);
 
+    std::vector<uint64_t> posted;
     // Write the new leader meta-data to everyone's slot, including my own
     for (int i = 0; i < system_size_; i++) {
       auto* c = contexts_[i];
@@ -366,19 +369,24 @@ class CasPaxos : public Paxos {
       // if (i != 0) {
       //   outstanding_[i - 1].append(&outstanding_[i]);
       // }
-      romulus::WorkRequest::BuildWrite(laddr, raddr, wr_id_, &c->wr);
+      uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
+                       (static_cast<uint64_t>(host_id_) << 32) |
+                       static_cast<uint64_t>(i);
+      posted.push_back(wr_id);
+      romulus::WorkRequest::BuildWrite(laddr, raddr, wr_id, &c->wr);
       ROMULUS_ASSERT(c->conn->Post(&c->wr, 1),
                      "Error posting in leader change.");
     }
+    contexts_.front()->conn->Poll(posted);
 
-    while (ok_count < system_size_) {
-      for (uint32_t i = 0; i < system_size_; ++i) {
-        if (ok[i]) continue;
-        auto* c = contexts_[i];
-        ok[i] = PollCompletionsOnce(c->conn, wr_id_) > 0;
-        if (ok[i]) ++ok_count;
-      }
-    }
+    // while (ok_count < system_size_) {
+    //   for (uint32_t i = 0; i < system_size_; ++i) {
+    //     if (ok[i]) continue;
+    //     auto* c = contexts_[i];
+    //     ok[i] = PollCompletionsOnce(c->conn, wr_id_) > 0;
+    //     if (ok[i]) ++ok_count;
+    //   }
+    // }
     return true;
   }
 
@@ -518,15 +526,16 @@ class CasPaxos : public Paxos {
 
     // Post READs to all remote peers.
     RemoteContext* c;
-    std::vector<bool> ok;
-    uint32_t ok_count = 0;
-    ok.resize(system_size_);
+    std::vector<uint64_t> posted;
     for (uint32_t i = 0; i < system_size_; ++i) {
-      ok[i] = false;
       c = contexts_[i];
       c->log_raddr.addr_info.offset = log_offset_ * kSlotSize;
-      romulus::WorkRequest::BuildRead(c->scratch_laddr, c->log_raddr, wr_id_,
+      uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
+                       (static_cast<uint64_t>(host_id_) << 32) |
+                       static_cast<uint64_t>(i);
+      romulus::WorkRequest::BuildRead(c->scratch_laddr, c->log_raddr, wr_id,
                                       &c->wr);
+      posted.push_back(wr_id);
       // StageLogRequest(c);
       ROMULUS_ASSERT(c->conn->Post(&c->wr, 1),
                      "<TryCatchUp> Failed to post requests.");
@@ -534,14 +543,15 @@ class CasPaxos : public Paxos {
 
     // Wait for a response from all nodes.
     //+ Timeout if this takes too long.
-    while (ok_count < system_size_) {
-      for (uint32_t i = 0; i < system_size_; ++i) {
-        if (ok[i]) continue;
-        c = contexts_[i];
-        ok[i] = PollCompletionsOnce(c->conn, wr_id_);
-        if (ok[i]) ++ok_count;
-      }
-    }
+    // while (ok_count < system_size_) {
+    //   for (uint32_t i = 0; i < system_size_; ++i) {
+    //     if (ok[i]) continue;
+    //     c = contexts_[i];
+    //     ok[i] = PollCompletionsOnce(c->conn, wr_id_);
+    //     if (ok[i]) ++ok_count;
+    //   }
+    // }
+    contexts_.front()->conn->Poll(posted);
 
     // Compare returned values to determine if this slot has been committed
     // already.
@@ -550,12 +560,12 @@ class CasPaxos : public Paxos {
     Value accepted_val;
     for (uint32_t i = 0; i < quorum_; ++i) {
       c_i = contexts_[i];
-      if (!ok[i] || c_i->scratch_state->GetBallot() == kNullBallot) continue;
+      if (c_i->scratch_state->GetBallot() == kNullBallot) continue;
       num_agreed = 1;
       accepted_val = c_i->scratch_state->GetValue();
       for (uint32_t j = i + 1; j < system_size_ && num_agreed < quorum_; ++j) {
         c_j = contexts_[j];
-        if (!ok[j] || c_j->scratch_state->GetBallot() == kNullBallot) continue;
+        if (c_j->scratch_state->GetBallot() == kNullBallot) continue;
         if (c_j->scratch_state->GetValue() == accepted_val) {
           ++num_agreed;
         }
@@ -580,7 +590,8 @@ class CasPaxos : public Paxos {
               "slot.");
 
           // Only expect a single outstanding completion.
-          while (!PollCompletionsOnce(loopback_context->conn, wr_id_));
+          std::vector<uint64_t> loopback_wr = {wr_id_};
+          loopback_context->conn->Poll(loopback_wr);
         }
         ROMULUS_DEBUG("<TryCatchUp> Caught up: log_offset={}, state={}",
                       log_offset_, log_[log_offset_].ToString());
@@ -608,7 +619,6 @@ class CasPaxos : public Paxos {
 
     std::fill(expected_.begin(), expected_.end(), State());
     std::fill(done_.begin(), done_.end(), false);
-    std::fill(polled_.begin(), polled_.end(), false);
 
     std::vector<State> swap(system_size_);
     std::vector<State> state(system_size_);
@@ -622,10 +632,8 @@ class CasPaxos : public Paxos {
     }
 
     while (done_count < quorum_) {
-      std::fill(polled_.begin(), polled_.end(), false);
       ++wr_id_;
-
-      uint32_t posted = 0;
+      std::vector<uint64_t> posted;
       // Post CAS ops.
       for (uint32_t i = 0; i < system_size_; ++i) {
         if (done_[i]) continue;
@@ -634,7 +642,7 @@ class CasPaxos : public Paxos {
         uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
                          (static_cast<uint64_t>(host_id_) << 32) |
                          static_cast<uint64_t>(i);
-        wr_ids_.at(i) = wr_id;
+        posted.push_back(wr_id);
         romulus::WorkRequest::BuildCAS(c->scratch_laddr, c->log_raddr,
                                        expected_[i].raw, swap[i].raw, wr_id,
                                        &c->wr);
@@ -645,20 +653,10 @@ class CasPaxos : public Paxos {
             expected_[i].raw, swap[i].raw, wr_id);
         ROMULUS_ASSERT(c->conn->Post(&c->wr, 1),
                        "<Prepare> Failed when posting requests.");
-        ++posted;
       }
 
       // Poll for completions
-      uint32_t completions = 0;
-      while (completions < posted) {
-        for (uint32_t i = 0; i < system_size_; ++i) {
-          if (done_[i] || polled_[i]) continue;
-          if (PollCompletionsOnce(contexts_[i]->conn, wr_ids_[i])) {
-            polled_[i] = true;
-            ++completions;
-          }
-        }
-      }
+      contexts_.front()->conn->Poll(posted);
 
       // Check return value of CAS.
       bool need_bump = false;
@@ -666,7 +664,7 @@ class CasPaxos : public Paxos {
       uint32_t winning_index = 0;
 
       for (uint32_t i = 0; i < system_size_; ++i) {
-        if (done_[i] || !polled_[i]) continue;
+        if (done_[i]) continue;
         State observed = *contexts_[i]->scratch_state;
 
         if (observed.raw == expected_[i].raw) {
@@ -735,9 +733,10 @@ class CasPaxos : public Paxos {
   }
 
   bool Promise(Value v) override {
-    // std::chrono::_V2::steady_clock::time_point t0, t1, t2, t3, t4;
-    // t0 = std::chrono::steady_clock::now();
-
+#ifdef PROMISE_BENCH
+    std::chrono::_V2::steady_clock::time_point t0, t1, t2, t3, t4;
+    t0 = std::chrono::steady_clock::now();
+#endif
     State* curr_proposal = &proposed_state_[log_offset_];
     Ballot curr_promise_ballot = curr_proposal->GetPromiseBallot();
     RemoteContext* c;
@@ -748,7 +747,6 @@ class CasPaxos : public Paxos {
     // Metadata to indicate whether a CAS for a given acceptor has been POLLED
     std::fill(expected_.begin(), expected_.end(), State());
     std::fill(done_.begin(), done_.end(), false);
-    std::fill(polled_.begin(), polled_.end(), false);
 
     // We install the chose value if it hasn't already been set
     if (curr_proposal->GetBallot() == 0) {
@@ -762,45 +760,49 @@ class CasPaxos : public Paxos {
     // sure that we write to the local log allows a follower to be certain
     // that if the slot is filled that the value is committed.
     while (done_count < quorum_) {
-      // t1 = std::chrono::steady_clock::now();
+#ifdef PROMISE_BENCH
+      t1 = std::chrono::steady_clock::now();
+#endif
       // Post CAS ops.
-      uint32_t posted = 0;
+      posted_.clear();
       for (uint32_t i = 0; i < system_size_; ++i) {
         // Already succeeded.
         if (done_[i]) continue;
         // Post a request
-        polled_[i] = false;
         c = contexts_[i];
         c->log_raddr.addr_info.offset = log_offset_ * kSlotSize;
 
         uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
                          (static_cast<uint64_t>(host_id_) << 32) |
                          static_cast<uint64_t>(i);
-        wr_ids_.at(i) = wr_id;
+        posted_.push_back(wr_id);
         romulus::WorkRequest::BuildCAS(c->scratch_laddr, c->log_raddr,
                                        expected_[i].raw, curr_proposal->raw,
                                        wr_id, &c->wr);
         ROMULUS_ASSERT(c->conn->Post(&c->wr, 1),
                        "<Promise> Failed when posting requests.");
-        ++posted;
       }
-      // t2 = std::chrono::steady_clock::now();
+#ifdef PROMISE_BENCH
+      t2 = std::chrono::steady_clock::now();
+#endif
       // Poll for completions
-      uint32_t completions = 0;
-      while (completions < posted) {
-        for (uint32_t i = 0; i < system_size_; ++i) {
-          if (done_[i] || polled_[i]) continue;
-          c = contexts_[i];
-          if (PollCompletionsOnce(c->conn, wr_ids_[i])) {
-            polled_[i] = true;
-            ++completions;
-          }
-        }
-      }
-      // t3 = std::chrono::steady_clock::now();
-
+      contexts_.front()->conn->Poll(posted_);
+      // uint32_t completions = 0;
+      // while (completions < posted) {
+      //   for (uint32_t i = 0; i < system_size_; ++i) {
+      //     if (done_[i] || polled_[i]) continue;
+      //     c = contexts_[i];
+      //     if (PollCompletionsOnce(c->conn, wr_ids_[i])) {
+      //       polled_[i] = true;
+      //       ++completions;
+      //     }
+      //   }
+      // }
+#ifdef PROMISE_BENCH
+      t3 = std::chrono::steady_clock::now();
+#endif
       for (uint32_t i = 0; i < system_size_; ++i) {
-        if (done_[i] || !polled_[i]) continue;
+        if (done_[i]) continue;
         c = contexts_[i];
         // This will the result of the previous CAS
         State observed = *c->scratch_state;
@@ -832,15 +834,19 @@ class CasPaxos : public Paxos {
           expected_[i] = observed;
         }
       }
-      // t4 = std::chrono::steady_clock::now();
+#ifdef PROMISE_BENCH
+      t4 = std::chrono::steady_clock::now();
+#endif
       ++wr_id_;
     }
-    // if (log_offset_ % 200) {
-    //   ROMULUS_INFO(
-    //       "Promise: init={}ns post={}ns poll={}ns check={}ns total={}ns",
-    //       (t1 - t0).count(), (t2 - t1).count(), (t3 - t2).count(),
-    //       (t4 - t3).count(), (t4 - t0).count());
-    // }
+#ifdef PROMISE_BENCH
+    if (log_offset_ % 200) {
+      ROMULUS_INFO(
+          "Promise: init={}ns post={}ns poll={}ns check={}ns total={}ns",
+          (t1 - t0).count(), (t2 - t1).count(), (t3 - t2).count(),
+          (t4 - t3).count(), (t4 - t0).count());
+    }
+#endif
     log_[log_offset_] = *curr_proposal;
     return true;
   }
@@ -878,6 +884,59 @@ class CasPaxos : public Paxos {
     // truncate the first 48 bits of the word
     return static_cast<Ballot>(epoch);
   }
+
+  void ConditionalReset() override {
+    if (log_offset_ >= kRingSize) {
+      log_offset_ = 0;
+      Ballot winning_ballot = proposed_state_[0].GetPromiseBallot();
+
+      for (uint32_t i = 0; i < kRingSize; ++i) {
+        proposed_state_[i] = State(winning_ballot, kNullBallot, kNullValue);
+        log_[i] = State(0, kNullBallot, kNullValue);
+      }
+      
+      for (int i = 0; i < system_size_; i++) {
+        auto* c = contexts_[i];
+        auto laddr = memblock_.GetAddrInfo(kScratchRegionId);
+        auto laddr_st = reinterpret_cast<State*>(laddr.addr);
+        *laddr_st = State(winning_ballot, kNullBallot, kNullValue);
+
+        for (uint32_t slot = 0; slot < kRingSize; ++slot) {
+          auto raddr = remote_addrs_[i][kProposedRegionId];
+          raddr.addr_info.offset = slot * kSlotSize;
+          raddr.addr_info.length = kSlotSize;
+          uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
+                           (static_cast<uint64_t>(host_id_) << 32) |
+                           static_cast<uint64_t>(slot);
+          romulus::WorkRequest::BuildWrite(laddr, raddr, wr_id, &c->wr);
+          ROMULUS_ASSERT(
+              c->conn->Post(&c->wr, 1),
+              "<ConditionalReset> Failed to post requests when resetting "
+              "proposed region.");
+          c->conn->Poll({wr_id});
+        }
+
+        *laddr_st = State(0, kNullBallot, kNullValue);
+
+        for (uint32_t slot = 0; slot < kRingSize; ++slot) {
+          auto raddr = remote_addrs_[i][kLogRegionId];
+          raddr.addr_info.offset = slot * kSlotSize;
+          raddr.addr_info.length = kSlotSize;
+          uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
+                           (static_cast<uint64_t>(host_id_) << 32) |
+                           static_cast<uint64_t>(slot);
+          romulus::WorkRequest::BuildWrite(laddr, raddr, wr_id, &c->wr);
+          ROMULUS_ASSERT(
+              c->conn->Post(&c->wr, 1),
+              "<ConditionalReset> Failed to post requests when resetting "
+              "log region.");
+          c->conn->Poll({wr_id});
+        }
+      }
+    }
+  }
+
+  uint32_t GetOffset() override { return log_offset_; }
 
   // Member variables.
  private:
@@ -941,6 +1000,8 @@ class CasPaxos : public Paxos {
   // Metadata to indicate whether a CAS for a given acceptor has been POLLED
   std::vector<bool> polled_;
   std::vector<uint64_t> wr_ids_;
+
+  std::vector<uint64_t> posted_;
 
   // RDMA related members.
   romulus::Device device_;

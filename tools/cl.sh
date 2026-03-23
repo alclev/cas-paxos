@@ -458,6 +458,7 @@ load_cfg
 if [[ "$cmd" == "install-deps" && "$count" -eq 1 ]]; then
 	cl_install_deps
 elif [[ "$cmd" == "build-run" && "$count" -eq 3 ]]; then
+EXTRA_ARGS="--multipax-opt"
 	if [[ "$2" != "debug" && "$2" != "release" ]]; then
 		usage
 		exit 1
@@ -503,9 +504,8 @@ elif [[ "$cmd" == "run-mu-debug" && "$count" -eq 2 ]]; then
 elif [[ "$cmd" == "retrieve-results" && "$count" -eq 1 ]]; then
 	retrieve_results
 elif [[ "$cmd" == "launch-experiment" && "$count" -eq 2 ]]; then
+	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' > results/caspaxos.csv
 	ORIG_MACHINES=("${MACHINES[@]}")
-	echo "Resetting memcached server..."
-	reset_memcached
 	for i in $(seq 3 ${#ORIG_MACHINES[@]}); do
 		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
 		load_cfg
@@ -513,7 +513,7 @@ elif [[ "$cmd" == "launch-experiment" && "$count" -eq 2 ]]; then
 		reset $(basename "$2")
 		echo "Launching experiment with ${#MACHINES[@]} nodes..."
 		cl_run "$2"
-		cat logs/* > results/plain_dump${i}.txt
+		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >> results/caspaxos.csv
 	done
 	echo "Turning on Multi-paxos optimization..."
 	reset_memcached
@@ -525,11 +525,26 @@ elif [[ "$cmd" == "launch-experiment" && "$count" -eq 2 ]]; then
 		echo "Launching experiment with ${#MACHINES[@]} nodes..."
 		EXTRA_ARGS="--multipax-opt"
 		cl_run "$2"
-		cat logs/* > results/multi_dump${i}.txt
+		cat logs/* > logs/all_logs.tmp
+		grep -oP '\[PARSE\] \K.*' logs/all_logs.tmp >> results/caspaxos.csv
+		rm logs/all_logs.tmp
 	done
-elif [[ "$cmd" == "launch-experiment-mu" && "$count" -eq 2 ]]; then
+elif [[ "$cmd" == "launch-experiment-velos" && "$count" -eq 2 ]]; then
+	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' > results/velos.csv
 	ORIG_MACHINES=("${MACHINES[@]}")
 	for i in $(seq 3 ${#ORIG_MACHINES[@]}); do
+		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
+		load_cfg
+		echo "Resetting..."
+		reset $(basename "$2")
+		echo "Launching experiment with ${#MACHINES[@]} nodes..."
+		cl_run "$2"
+		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >> results/velos.csv
+	done
+elif [[ "$cmd" == "launch-experiment-mu" && "$count" -eq 2 ]]; then
+	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' > results/mu.csv
+	ORIG_MACHINES=("${MACHINES[@]}")
+	for i in $(seq 6 ${#ORIG_MACHINES[@]}); do
 		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
 		load_cfg
 		echo "Resetting..."
@@ -537,6 +552,7 @@ elif [[ "$cmd" == "launch-experiment-mu" && "$count" -eq 2 ]]; then
 		sleep 5
 		echo "Launching experiment with ${#MACHINES[@]} nodes..."
 		run_mu "$2"
+		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >> results/mu.csv
 	done
 else
 	usage
