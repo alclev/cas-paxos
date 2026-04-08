@@ -4,7 +4,7 @@
 
 constexpr auto kTimeout = std::chrono::nanoseconds(500'000'000);
 
-std::atomic<bool> dump_requested{false};
+inline std::atomic<bool> dump_requested{false};
 
 template <typename Rep, typename Period>
 void busy_wait(std::chrono::duration<Rep, Period> d) {

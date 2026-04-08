@@ -1,0 +1,119 @@
+==> ../logs/log_0.txt <==
+romulus::DEBUG is true
+[INFO] Node 1 of 10 is apt094
+[INFO] Experimental Configuration:
+[INFO] !> [CONF] hostname=apt094
+[INFO] !> [CONF] host id=0
+[INFO] !> [CONF] registry ip=10.10.1.1
+[INFO] !> [CONF] output file=stats_0.csv
+[INFO] !> [CONF] testtime=5_s
+[INFO] !> [CONF] device name=mlx4_0
+[INFO] !> [CONF] device port=1
+
+==> ../logs/log_1.txt <==
+romulus::DEBUG is true
+[INFO] Node 2 of 10 is apt102
+[INFO] Experimental Configuration:
+[INFO] !> [CONF] hostname=apt102
+[INFO] !> [CONF] host id=1
+[INFO] !> [CONF] registry ip=10.10.1.1
+[INFO] !> [CONF] output file=stats_1.csv
+[INFO] !> [CONF] testtime=5_s
+[INFO] !> [CONF] device name=mlx4_0
+[INFO] !> [CONF] device port=1
+
+==> ../logs/log_2.txt <==
+romulus::DEBUG is true
+[INFO] Node 3 of 10 is apt115
+[INFO] Experimental Configuration:
+[INFO] !> [CONF] hostname=apt115
+[INFO] !> [CONF] host id=2
+[INFO] !> [CONF] registry ip=10.10.1.1
+[INFO] !> [CONF] output file=stats_2.csv
+[INFO] !> [CONF] testtime=5_s
+[INFO] !> [CONF] device name=mlx4_0
+[INFO] !> [CONF] device port=1
+
+==> ../logs/log_3.txt <==
+romulus::DEBUG is true
+[INFO] Node 4 of 10 is apt119
+[INFO] Experimental Configuration:
+[INFO] !> [CONF] hostname=apt119
+[INFO] !> [CONF] host id=3
+[INFO] !> [CONF] registry ip=10.10.1.1
+[INFO] !> [CONF] output file=stats_3.csv
+[INFO] !> [CONF] testtime=5_s
+[INFO] !> [CONF] device name=mlx4_0
+[INFO] !> [CONF] device port=1
+
+==> ../logs/log_4.txt <==
+romulus::DEBUG is true
+[INFO] Node 5 of 10 is apt111
+[INFO] Experimental Configuration:
+[INFO] !> [CONF] hostname=apt111
+[INFO] !> [CONF] host id=4
+[INFO] !> [CONF] registry ip=10.10.1.1
+[INFO] !> [CONF] output file=stats_4.csv
+[INFO] !> [CONF] testtime=5_s
+[INFO] !> [CONF] device name=mlx4_0
+[INFO] !> [CONF] device port=1
+
+==> ../logs/log_5.txt <==
+romulus::DEBUG is true
+[INFO] Node 6 of 10 is apt117
+[INFO] Experimental Configuration:
+[INFO] !> [CONF] hostname=apt117
+[INFO] !> [CONF] host id=5
+[INFO] !> [CONF] registry ip=10.10.1.1
+[INFO] !> [CONF] output file=stats_5.csv
+[INFO] !> [CONF] testtime=5_s
+[INFO] !> [CONF] device name=mlx4_0
+[INFO] !> [CONF] device port=1
+
+==> ../logs/log_6.txt <==
+romulus::DEBUG is true
+[INFO] Node 7 of 10 is apt097
+[INFO] Experimental Configuration:
+[INFO] !> [CONF] hostname=apt097
+[INFO] !> [CONF] host id=6
+[INFO] !> [CONF] registry ip=10.10.1.1
+[INFO] !> [CONF] output file=stats_6.csv
+[INFO] !> [CONF] testtime=5_s
+[INFO] !> [CONF] device name=mlx4_0
+[INFO] !> [CONF] device port=1
+
+==> ../logs/log_7.txt <==
+romulus::DEBUG is true
+[INFO] Node 8 of 10 is apt118
+[INFO] Experimental Configuration:
+[INFO] !> [CONF] hostname=apt118
+[INFO] !> [CONF] host id=7
+[INFO] !> [CONF] registry ip=10.10.1.1
+[INFO] !> [CONF] output file=stats_7.csv
+[INFO] !> [CONF] testtime=5_s
+[INFO] !> [CONF] device name=mlx4_0
+[INFO] !> [CONF] device port=1
+
+==> ../logs/log_8.txt <==
+romulus::DEBUG is true
+[INFO] Node 9 of 10 is apt101
+[INFO] Experimental Configuration:
+[INFO] !> [CONF] hostname=apt101
+[INFO] !> [CONF] host id=8
+[INFO] !> [CONF] registry ip=10.10.1.1
+[INFO] !> [CONF] output file=stats_8.csv
+[INFO] !> [CONF] testtime=5_s
+[INFO] !> [CONF] device name=mlx4_0
+[INFO] !> [CONF] device port=1
+
+==> ../logs/log_9.txt <==
+romulus::DEBUG is true
+[INFO] Node 10 of 10 is apt120
+[INFO] Experimental Configuration:
+[INFO] !> [CONF] hostname=apt120
+[INFO] !> [CONF] host id=9
+[INFO] !> [CONF] registry ip=10.10.1.1
+[INFO] !> [CONF] output file=stats_9.csv
+[INFO] !> [CONF] testtime=5_s
+[INFO] !> [CONF] device name=mlx4_0
+[INFO] !> [CONF] device port=1

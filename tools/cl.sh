@@ -156,7 +156,7 @@ function cl_run() {
 		host="${MACHINES[$i]}"
 		# CMD="sudo perf record --call-graph dwarf -o perf_node${i}.data ./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt && sudo perf report --stdio -g -i perf_node${i}.data > perf_report_${i}.txt"
 		# CMD="sudo perf stat -e cycles,task-clock,cache-misses,LLC-load-misses -I 5000 -o perf_stat_${i}.txt ./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt"
-		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} ${EXTRA_ARGS}"
+		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt ${EXTRA_ARGS}"
 		echo "$CMD"
 		cat >>"$tmp_screen" <<EOF
 screen -t node${i} ssh -t ${USER}@${host}.${DOMAIN} ${CMD}
@@ -220,17 +220,16 @@ function reset_memcached() {
 }
 
 function reset_mu() {
+	for m in ${MACHINES[*]}; do
+			scp "lib/libcrashconsensus.so" "${USER}@${m}.${DOMAIN}:libcrashconsensus.so" &
+	done
+	wait
 	FILES_SENT=$(ssh ${USER}@${MACHINES[0]}.${DOMAIN} "test -f /users/${USER}/libcrashconsensus.so && echo true || echo false")
-
 	if [[ "$FILES_SENT" == "false" ]]; then
 		echo "Critical files do not exist on remote. Sending over now..."
 		# Set up memcached on node0
 		scp "lib/memcached" "${USER}@${MACHINES[0]}.${DOMAIN}:memcached"
 		scp "lib/libevent-2.1.so.6" "${USER}@${MACHINES[0]}.${DOMAIN}:~/"
-		for m in ${MACHINES[*]}; do
-			scp "lib/libcrashconsensus.so" "${USER}@${m}.${DOMAIN}:libcrashconsensus.so" &
-		done
-		wait
 	fi
 	# Reset the memcached server
 	ssh ${USER}@${MACHINES[0]}.${DOMAIN} "sudo pkill memcached"
@@ -458,7 +457,6 @@ load_cfg
 if [[ "$cmd" == "install-deps" && "$count" -eq 1 ]]; then
 	cl_install_deps
 elif [[ "$cmd" == "build-run" && "$count" -eq 3 ]]; then
-EXTRA_ARGS="--multipax-opt"
 	if [[ "$2" != "debug" && "$2" != "release" ]]; then
 		usage
 		exit 1
@@ -544,7 +542,7 @@ elif [[ "$cmd" == "launch-experiment-velos" && "$count" -eq 2 ]]; then
 elif [[ "$cmd" == "launch-experiment-mu" && "$count" -eq 2 ]]; then
 	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' > results/mu.csv
 	ORIG_MACHINES=("${MACHINES[@]}")
-	for i in $(seq 6 ${#ORIG_MACHINES[@]}); do
+	for i in $(seq 7 ${#ORIG_MACHINES[@]}); do
 		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
 		load_cfg
 		echo "Resetting..."

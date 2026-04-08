@@ -57,6 +57,9 @@ class APArraySlice {
                   "Invalid arguments: start ({}) >= end ({})", start_, end_);
   }
   T& operator[](uint32_t index) {
+    if(start_ + index >= end_) {
+      __builtin_trap();
+    }
     ROMULUS_ASSERT(start_ + index < end_,
                   "Index out of bounds: start ({}) + index ({}) >= end ({})",
                   start_, index, end_);

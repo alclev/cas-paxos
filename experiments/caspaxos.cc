@@ -100,6 +100,8 @@ int main(int argc, char* argv[]) {
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 #endif
 
+  paxos->FailureDetector();
+
   auto testtime_us =
       std::chrono::duration_cast<std::chrono::microseconds>(testtime);
   ROMULUS_STOPWATCH_BEGIN();
@@ -132,9 +134,9 @@ int main(int argc, char* argv[]) {
   }
   preprepare_running.store(false);
 
-  done();  // cleanup
-
   init();  // sync
+
+  done();  // cleanup
 
   if (latencies.size() > 50) {
     calc(outfile);

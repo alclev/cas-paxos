@@ -47,7 +47,9 @@ target_include_directories(${PROJECT_NAME}
 
 option(USE_MU "Enable Mu" OFF)
 option(USE_VELOS "Enable Velos" OFF)
+
 # add_compile_definitions(SYSDUMP)
+# add_compile_definitions(PROMISE_BENCH)
 
 add_subdirectory(experiments)
 

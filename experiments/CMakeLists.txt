@@ -2,6 +2,18 @@ cmake_minimum_required(VERSION 3.10)
 
 file(GLOB SRC_SOURCES *.cc)
 
+file(GLOB CORE_SOURCES ../src/*.cc)
+add_library(CoreLib STATIC ${CORE_SOURCES})
+
+target_link_libraries(CoreLib 
+  PUBLIC 
+  ${PROJECT_NAME}
+  rdmacm
+  ibverbs
+  pthread
+  memcached
+)
+
 foreach(SRC ${SRC_SOURCES})
   get_filename_component(SRC_NAME ${SRC} NAME_WE)
   add_executable(${SRC_NAME} ${SRC})
@@ -24,10 +36,6 @@ foreach(SRC ${SRC_SOURCES})
 
   target_link_libraries(${SRC_NAME}
     PRIVATE
-    ${PROJECT_NAME}
-    rdmacm
-    ibverbs
-    pthread
-    memcached
+    CoreLib
   )
 endforeach()
