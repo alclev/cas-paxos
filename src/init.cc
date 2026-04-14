@@ -23,11 +23,13 @@ void CasPaxos::Init(std::string_view dev_name, int dev_port,
   ROMULUS_ASSERT(buf_size_ % kSlotSize == 0,
                  "Buf size not being a multiple of {} is not supported!",
                  kSlotSize);
-  ROMULUS_ASSERT(num_qps_ > 1, "This experiment requires at least 2 qp's.");
+  ROMULUS_ASSERT(num_qps_ == system_size_ + 1,
+                 "This experiment requires {} qp's.", system_size_ + 1);
 
   // NB: the following configuration assumes STANDALONE
-  std::size_t remote_len = scratch_len + extra_scratch_len + proposal_len +
-                           log_len + leader_len + heartbeat_len;
+  std::size_t remote_len = (scratch_len * NUM_LOOPBACK_QPS) +
+                           (system_size_ * kSlotSize) + proposal_len + log_len +
+                           leader_len + heartbeat_len;
   raw_ =
       new romulus::APArray<State, kSlotSize, CACHE_PREFETCH_SIZE>(remote_len);
   std::memset(raw_->Get(), 0, raw_->GetTotalBytes());
@@ -38,21 +40,26 @@ void CasPaxos::Init(std::string_view dev_name, int dev_port,
       kBlockId, pd, reinterpret_cast<uint8_t*>(raw_->Get()), remote_len);
 
   // Registering memblock regions
-  memblock_.RegisterMemRegion(kScratchRegionId, 0, scratch_len);
-  memblock_.RegisterMemRegion(kScratchExtraRegionId, scratch_len,
-                              extra_scratch_len);
-  memblock_.RegisterMemRegion(kProposedRegionId,
-                              scratch_len + extra_scratch_len, proposal_len);
-  memblock_.RegisterMemRegion(
-      kLogRegionId, (scratch_len + extra_scratch_len + proposal_len), log_len);
-  memblock_.RegisterMemRegion(
-      kLeaderRegionId, scratch_len + extra_scratch_len + proposal_len + log_len,
-      leader_len);
-  memblock_.RegisterMemRegion(
-      kHeartBeatRegionId,
-      scratch_len + extra_scratch_len + proposal_len + log_len + leader_len,
-      heartbeat_len);
-
+  int current_offset = 0;
+  for (int i = 0; i < NUM_LOOPBACK_QPS; ++i) {
+    memblock_.RegisterMemRegion(kScratchRegionId + "_" + std::to_string(i),
+                                current_offset, scratch_len);
+    current_offset += scratch_len;
+  }
+  for (int i = 0; i < system_size_; ++i) {
+    memblock_.RegisterMemRegion(
+        kFailureDetectorId + "_thread_" + std::to_string(i),
+        current_offset + i * kSlotSize, kSlotSize);
+    current_offset += kSlotSize;
+  }
+  memblock_.RegisterMemRegion(kProposedRegionId, current_offset, proposal_len);
+  current_offset += proposal_len;
+  memblock_.RegisterMemRegion(kLogRegionId, current_offset, log_len);
+  current_offset += log_len;
+  memblock_.RegisterMemRegion(kLeaderRegionId, current_offset, leader_len);
+  current_offset += leader_len;
+  memblock_.RegisterMemRegion(kHeartBeatRegionId, current_offset,
+                              heartbeat_len);
   // Optionally set up AParray for fast access to local views of log memory
 #ifndef STANDALONE
   // Not implemented...
@@ -60,12 +67,13 @@ void CasPaxos::Init(std::string_view dev_name, int dev_port,
 
   // Set up local view of log memory
   scratch_ = romulus::APArraySlice(raw_, 0, scratch_len);
-  proposed_state_ =
-      romulus::APArraySlice(raw_, scratch_len + extra_scratch_len,
-                            scratch_len + extra_scratch_len + proposal_len);
+  proposed_state_ = romulus::APArraySlice(
+      raw_, (scratch_len * 3) + (system_size_ * kSlotSize),
+      scratch_len + extra_scratch_len + (system_size_ * kSlotSize) +
+          proposal_len);
   log_ = romulus::APArraySlice(
-      raw_, scratch_len + extra_scratch_len + proposal_len,
-      scratch_len + extra_scratch_len + proposal_len + log_len);
+      raw_, (scratch_len * 3) + (system_size_ * kSlotSize) + proposal_len,
+      (scratch_len * 3) + (system_size_ * kSlotSize) + proposal_len + log_len);
 
   // Initialize proposed state (remote peers read this). +1 because 0 is a
   // special value in the state.
@@ -103,9 +111,15 @@ void CasPaxos::Init(std::string_view dev_name, int dev_port,
                  "Failed to register or connect log memory");
   // At this point, we need to cache the connections and addresses
   romulus::RemoteAddr remote_addr;
-  std::vector<std::string> regions = {kScratchRegionId,  kScratchExtraRegionId,
-                                      kProposedRegionId, kLogRegionId,
-                                      kLeaderRegionId,   kHeartBeatRegionId};
+  std::vector<std::string> regions;
+  for (int i = 0; i < 3; ++i) {
+    regions.push_back(kScratchRegionId + "_" + std::to_string(i));
+  }
+  for (int i = 0; i < system_size_; ++i) {
+    regions.push_back(kFailureDetectorId + "_thread_" + std::to_string(i));
+  }
+  regions.insert(regions.end(), {kProposedRegionId, kLogRegionId,
+                                 kLeaderRegionId, kHeartBeatRegionId});
   for (auto& m : mach_map) {
     // <region_id, remote_addr>
     std::unordered_map<std::string, romulus::RemoteAddr> tmp_addrs;
@@ -126,10 +140,10 @@ void CasPaxos::Init(std::string_view dev_name, int dev_port,
       conns.push_back(conn_manager_->GetConnection(m.first, 0));
       conns.push_back(conn_manager_->GetConnection(
           m.first, std::numeric_limits<uint64_t>::max()));
-      ROMULUS_DEBUG("Loopback #1 cq: {}",
-                    reinterpret_cast<uintptr_t>(conns[0]->GetCQ()));
-      ROMULUS_DEBUG("Loopback #2 cq: {}",
-                    reinterpret_cast<uintptr_t>(conns[1]->GetCQ()));
+      // ROMULUS_DEBUG("Loopback #1 cq: {}",
+      //               reinterpret_cast<uintptr_t>(conns[0]->GetCQ()));
+      // ROMULUS_DEBUG("Loopback #2 cq: {}",
+      //               reinterpret_cast<uintptr_t>(conns[1]->GetCQ()));
     } else {
       for (int q = 1; q < (int)num_qps_ + 1; ++q) {
         auto conn = conn_manager_->GetConnection(m.first, q);
@@ -138,6 +152,16 @@ void CasPaxos::Init(std::string_view dev_name, int dev_port,
     }
     remote_conns_.emplace(m.first, conns);
   }
+
+  for (int i = 0; i < system_size_; ++i) {
+    cached_conns_[i] = remote_conns_[i][0];
+    auto raddr = remote_addrs_[i][kLogRegionId];
+    raddr.addr_info.length = kSlotSize;
+    cached_raddrs_[i] = raddr;
+  }
+  cached_laddr_ = memblock_.GetAddrInfo(kScratchRegionId + "_0");
+  cached_laddr_.length = kSlotSize;
+
   // Initialize the contexts with the cached addresses
   contexts_.reserve(system_size_);
   for (int i = 0; i < system_size_; ++i) {
@@ -146,7 +170,7 @@ void CasPaxos::Init(std::string_view dev_name, int dev_port,
     context->proposed_state = &proposed_state_[0];
 
     context->conn = remote_conns_[i].front();
-    context->scratch_laddr = memblock_.GetAddrInfo(kScratchRegionId);
+    context->scratch_laddr = memblock_.GetAddrInfo(kScratchRegionId + "_0");
     context->scratch_laddr.offset = kSlotSize * i;
     context->scratch_laddr.length = sizeof(State);
 

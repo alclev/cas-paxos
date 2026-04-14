@@ -50,6 +50,7 @@ option(USE_VELOS "Enable Velos" OFF)
 
 # add_compile_definitions(SYSDUMP)
 # add_compile_definitions(PROMISE_BENCH)
+# add_compile_definitions(VERBOSE)
 
 add_subdirectory(experiments)
 

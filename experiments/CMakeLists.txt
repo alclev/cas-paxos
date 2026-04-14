@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 3.10)
 file(GLOB SRC_SOURCES *.cc)
 
 file(GLOB CORE_SOURCES ../src/*.cc)
-add_library(CoreLib STATIC ${CORE_SOURCES})
+add_library(corelib STATIC ${CORE_SOURCES})
 
-target_link_libraries(CoreLib 
+target_link_libraries(corelib 
   PUBLIC 
   ${PROJECT_NAME}
   rdmacm
@@ -13,6 +13,7 @@ target_link_libraries(CoreLib
   pthread
   memcached
 )
+
 
 foreach(SRC ${SRC_SOURCES})
   get_filename_component(SRC_NAME ${SRC} NAME_WE)
@@ -36,6 +37,6 @@ foreach(SRC ${SRC_SOURCES})
 
   target_link_libraries(${SRC_NAME}
     PRIVATE
-    CoreLib
+    corelib
   )
 endforeach()

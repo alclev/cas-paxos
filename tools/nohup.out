@@ -1,0 +1,934 @@
+Starting iteration 0...
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Must be connected to a terminal.
+Killing caspaxos on apt192 after 8s delay
+grep: logs/log_0.txt: No such file or directory
+Warning: No failover time found
+Starting iteration 0...
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Bad session name 'tmp/tmp.xQvwg4bvIw'
+Starting iteration 0...
+Killing caspaxos on apt192 after 8s delay
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Bad session name 'tmp/tmp.BjbU9Yw6HC'
+grep: logs/log_0.txt: No such file or directory
+Warning: No failover time found
+Killing caspaxos on apt192 after 8s delay
+grep: logs/log_0.txt: No such file or directory
+Warning: No failover time found
+Starting iteration 0...
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 1...
+Killing caspaxos on apt192 after 8s delay
+grep: logs/log_0.txt: No such file or directory
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 2...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Failover time: 3 us
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 3...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Failover time: 2 us
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 4...
+Starting iteration 0...
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 1...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Connection to apt174.apt.emulab.net closed by remote host.
+Connection to apt174.apt.emulab.net closed by remote host.
+Connection to apt182.apt.emulab.net closed by remote host.
+Connection to apt182.apt.emulab.net closed by remote host.
+Connection to apt186.apt.emulab.net closed by remote host.
+Connection to apt186.apt.emulab.net closed by remote host.
+Connection to apt180.apt.emulab.net closed by remote host.
+Connection to apt180.apt.emulab.net closed by remote host.
+Connection to apt173.apt.emulab.net closed by remote host.
+Connection to apt173.apt.emulab.net closed by remote host.
+Connection to apt181.apt.emulab.net closed by remote host.
+Connection to apt181.apt.emulab.net closed by remote host.
+Connection to apt179.apt.emulab.net closed by remote host.
+Connection to apt179.apt.emulab.net closed by remote host.
+Connection to apt177.apt.emulab.net closed by remote host.
+Connection to apt177.apt.emulab.net closed by remote host.
+Connection to apt192.apt.emulab.net closed by remote host.
+Connection to apt192.apt.emulab.net closed by remote host.
+Connection to apt183.apt.emulab.net closed by remote host.
+Connection to apt183.apt.emulab.net closed by remote host.
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 2...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Connection to apt192.apt.emulab.net closed by remote host.
+Connection to apt179.apt.emulab.net closed by remote host.
+Connection to apt173.apt.emulab.net closed by remote host.
+Connection to apt181.apt.emulab.net closed by remote host.
+Connection to apt177.apt.emulab.net closed by remote host.
+Connection to apt174.apt.emulab.net closed by remote host.
+Connection to apt180.apt.emulab.net closed by remote host.
+Connection to apt186.apt.emulab.net closed by remote host.
+Connection to apt183.apt.emulab.net closed by remote host.
+Connection to apt182.apt.emulab.net closed by remote host.
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 3...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Connection to apt192.apt.emulab.net closed by remote host.
+Connection to apt179.apt.emulab.net closed by remote host.
+Connection to apt186.apt.emulab.net closed by remote host.
+Connection to apt183.apt.emulab.net closed by remote host.
+Connection to apt174.apt.emulab.net closed by remote host.
+Connection to apt182.apt.emulab.net closed by remote host.
+Connection to apt177.apt.emulab.net closed by remote host.
+Connection to apt181.apt.emulab.net closed by remote host.
+Connection to apt173.apt.emulab.net closed by remote host.
+Connection to apt180.apt.emulab.net closed by remote host.
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 4...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Connection to apt177.apt.emulab.net closed by remote host.
+Connection to apt192.apt.emulab.net closed by remote host.
+Connection to apt179.apt.emulab.net closed by remote host.
+Connection to apt186.apt.emulab.net closed by remote host.
+Connection to apt183.apt.emulab.net closed by remote host.
+Connection to apt173.apt.emulab.net closed by remote host.
+Connection to apt180.apt.emulab.net closed by remote host.
+Connection to apt182.apt.emulab.net closed by remote host.
+Connection to apt181.apt.emulab.net closed by remote host.
+Connection to apt174.apt.emulab.net closed by remote host.
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 5...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Connection to apt186.apt.emulab.net closed by remote host.
+Connection to apt192.apt.emulab.net closed by remote host.
+Connection to apt177.apt.emulab.net closed by remote host.
+Connection to apt179.apt.emulab.net closed by remote host.
+Connection to apt183.apt.emulab.net closed by remote host.
+Connection to apt181.apt.emulab.net closed by remote host.
+Connection to apt174.apt.emulab.net closed by remote host.
+Connection to apt180.apt.emulab.net closed by remote host.
+Connection to apt173.apt.emulab.net closed by remote host.
+Connection to apt182.apt.emulab.net closed by remote host.
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 6...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Starting iteration 0...
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 1...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 2...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 3...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 4...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 5...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 6...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 7...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 8...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 9...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 10...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 11...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 12...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 13...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 14...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 15...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 16...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found
+./caspaxos --hostname apt183 --node-id 0 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt186 --node-id 1 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt181 --node-id 2 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt173 --node-id 3 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt182 --node-id 4 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt177 --node-id 5 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt174 --node-id 6 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt180 --node-id 7 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt179 --node-id 8 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+./caspaxos --hostname apt192 --node-id 9 --remotes apt183,apt186,apt181,apt173,apt182,apt177,apt174,apt180,apt179,apt192 --multipax-opt 
+Starting iteration 17...
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+scp: dest open "caspaxos": Failure
+scp: failed to upload file build/experiments/caspaxos to caspaxos
+Killing caspaxos on apt192 after 8s delay
+Nodes have been reset.
+Warning: No failover time found

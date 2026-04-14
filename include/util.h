@@ -4,13 +4,17 @@
 
 constexpr auto kTimeout = std::chrono::nanoseconds(500'000'000);
 
-inline std::atomic<bool> dump_requested{false};
+inline std::atomic<bool> dump_requested_ = false; 
+inline std::atomic<bool> failure_detector_running_ = true;
 
 template <typename Rep, typename Period>
-void busy_wait(std::chrono::duration<Rep, Period> d) {
+void busy_wait(std::chrono::duration<Rep, Period> d, std::atomic<bool>* stop_flag = nullptr) {
   auto start = std::chrono::steady_clock::now();
-  while (std::chrono::steady_clock::now() - start < d)
-    ;
+  while (std::chrono::steady_clock::now() - start < d) {
+    if (stop_flag && stop_flag->load(std::memory_order_relaxed)) {
+      break;
+    }
+  }
 }
 
 #define INGEST_ARGS(args)                                                      \
@@ -69,8 +73,7 @@ void busy_wait(std::chrono::duration<Rep, Period> d) {
           duration.count(), testtime.count());                                 \
     }                                                                          \
   }                                                                            \
-  [[maybe_unused]] auto multipax_opt = args->bget(romulus::MULTIPAX_OPT);      \
-  [[maybe_unused]] auto verbose = args->bget(romulus::VERBOSE);
+  [[maybe_unused]] auto multipax_opt = args->bget(romulus::MULTIPAX_OPT);     
 
 #define FILL_PROPOSALS()                                                       \
   /* Populate some proposals. */                                               \

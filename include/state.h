@@ -80,7 +80,8 @@ struct State {
    */
   State() : raw(0) {}
   State(uint16_t promise_ballot, uint16_t accepted, Value value) {
-    raw = (static_cast<uint64_t>(promise_ballot) << (kTotalBits - kMaxBallotBits)) |
+    raw = (static_cast<uint64_t>(promise_ballot)
+           << (kTotalBits - kMaxBallotBits)) |
           (static_cast<uint64_t>(accepted) << kValueBits) |
           static_cast<uint64_t>(value.raw());
   }
@@ -98,8 +99,8 @@ struct State {
 
   // Setters
   inline void SetPromiseBallot(Ballot promise_ballot) {
-    raw = (raw & (~kMaxBallotMask)) |
-          (static_cast<uint64_t>(promise_ballot) << (kTotalBits - kMaxBallotBits));
+    raw = (raw & (~kMaxBallotMask)) | (static_cast<uint64_t>(promise_ballot)
+                                       << (kTotalBits - kMaxBallotBits));
   }
   inline void SetBallot(Ballot ballot) {
     raw =
@@ -116,14 +117,18 @@ struct State {
 
   std::string ToString() const {
     std::stringstream ss;
-    ss << "<promise_ballot=" << GetPromiseBallot() << ", <ballot=" << GetBallot()
-       << ", value=(" << static_cast<uint32_t>(GetValue().id()) << ", "
-       << GetValue().offset() << ")"
+    ss << "<promise_ballot=" << GetPromiseBallot()
+       << ", <ballot=" << GetBallot() << ", value=("
+       << static_cast<uint32_t>(GetValue().id()) << ", " << GetValue().offset()
+       << ")"
        << ">> (raw=" << raw << ")";
     return ss.str();
   }
 };
 
+inline bool operator==(const State& a, const State& b) {
+  return a.raw == b.raw;
+}
 
 /**
  * @brief A virtual class defining the capabilities required by a Paxos
@@ -141,7 +146,8 @@ class Paxos {
   virtual bool isLeaderStable() = 0;
   virtual bool isLeader() = 0;
   virtual void ConditionalReset() = 0;
-  virtual void FailureDetector() = 0;
+  virtual std::vector<std::thread> FailureDetector() = 0;
   virtual uint32_t GetOffset() = 0;
+  virtual std::atomic<bool>* isFailureDetected() = 0;
   virtual ~Paxos() {}
 };

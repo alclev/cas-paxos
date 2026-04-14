@@ -12,7 +12,6 @@ constexpr const char* SLEEP = "--sleep";
 constexpr const char* STABLE_LEADER = "--stable-leader";
 constexpr const char* DURATION = "--duration";
 constexpr const char* MULTIPAX_OPT = "--multipax-opt";
-constexpr const char* VERBOSE = "--verbose";
 
 
 // Cloudlab notes:
@@ -33,11 +32,10 @@ inline auto EXTRA_ARGS = {
     U64_ARG_OPT(LOOP, "Number of iterations between runtime checks.", 1000),
     U64_ARG_OPT(CAPACITY, "Capacity of the replicated log.", (1ULL << 12)),
     U64_ARG_OPT(BUF_SIZE, "Buffer size for remote writes.", 64),
-    U64_ARG_OPT(SLEEP, "Sleep interval between proposals in ms", 0),
+    U64_ARG_OPT(SLEEP, "Sleep interval between proposals in ms", 10),
     BOOL_ARG_OPT(STABLE_LEADER,
                  "If true, only a single node proposes commands."),
     U64_ARG_OPT(DURATION, "Duration of leadership in rotating policy in ms.",
                 100),
-    BOOL_ARG_OPT(MULTIPAX_OPT, "Enable the multipaxos optimization"),
-    BOOL_ARG_OPT(VERBOSE, "Enable verbose mode")};
+    BOOL_ARG_OPT(MULTIPAX_OPT, "Enable the multipaxos optimization")};
 };  // namespace romulus

@@ -1,4 +1,5 @@
 #include "cas_paxos_st.h"
+#include "util.h"
 
 using namespace paxos_st;
 
@@ -32,8 +33,25 @@ Ballot CasPaxos::GlobalBallot() {
   return static_cast<Ballot>(epoch);
 }
 
+uint64_t CasPaxos::ExtractId(State& st) {
+  return st.GetPromiseBallot() % system_size_;
+}
+
 void CasPaxos::ConditionalReset() {
   if (log_offset_ >= kRingSize) {
+    reset_in_progress_ = true;
+    // count number of true in detected_
+    int detected_count = 0;
+    for (bool d : detected_) {
+      if (d) detected_count++;
+    }
+    ROMULUS_DEBUG(
+        "<ConditionalReset> Reached log capacity. Resetting logs. Waiting on "
+        "{} nodes to reach barrier.",
+        system_size_ - detected_count);
+    conn_manager_->arrive_strict_barrier(system_size_ - detected_count);
+    ROMULUS_DEBUG("<ConditionalReset> Post-barrier.");
+
     log_offset_ = 0;
     Ballot winning_ballot = proposed_state_[0].GetPromiseBallot();
 
@@ -42,45 +60,54 @@ void CasPaxos::ConditionalReset() {
       log_[i] = State(0, kNullBallot, kNullValue);
     }
 
-    for (int i = 0; i < system_size_; i++) {
-      auto* c = contexts_[i];
-      if (detected_[i]) continue;
-      auto laddr = memblock_.GetAddrInfo(kScratchRegionId);
-      auto laddr_st = reinterpret_cast<State*>(laddr.addr);
-      *laddr_st = State(winning_ballot, kNullBallot, kNullValue);
+    // Only reset the remote logs if we are either the leader in a stable
+    // setting or node 0 in an unstable setting. The leader in a stable setting
+    // is responsible
+    if ((stable_leader_ && is_leader_) || (!stable_leader_ && host_id_ == 0)) {
+      for (int i = 0; i < system_size_; i++) {
+        auto* c = contexts_[i];
+        if (detected_[i]) continue;
+        auto laddr = memblock_.GetAddrInfo(kScratchRegionId + "_0");
+        auto laddr_st = reinterpret_cast<State*>(laddr.addr);
+        *laddr_st = State(winning_ballot, kNullBallot, kNullValue);
 
-      for (uint32_t slot = 0; slot < kRingSize; ++slot) {
-        auto raddr = remote_addrs_[i][kProposedRegionId];
-        raddr.addr_info.offset = slot * kSlotSize;
-        raddr.addr_info.length = kSlotSize;
-        uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
-                         (static_cast<uint64_t>(host_id_) << 32) |
-                         static_cast<uint64_t>(slot);
-        romulus::WorkRequest::BuildWrite(laddr, raddr, wr_id, &c->wr);
-        ROMULUS_ASSERT(
-            c->conn->Post(&c->wr, 1),
-            "<ConditionalReset> Failed to post requests when resetting "
-            "proposed region.");
-        c->conn->PollBatch({wr_id});
-      }
+        for (uint32_t slot = 0; slot < kRingSize; ++slot) {
+          auto raddr = remote_addrs_[i][kProposedRegionId];
+          raddr.addr_info.offset = slot * kSlotSize;
+          raddr.addr_info.length = kSlotSize;
+          uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
+                           (static_cast<uint64_t>(host_id_) << 32) |
+                           static_cast<uint64_t>(slot);
+          c->conn->Write(laddr, raddr, wr_id);
+          ROMULUS_ASSERT(
+              c->conn->ProcessCompletions(1) == 1,
+              "<ConditionalReset> Failed to post requests when resetting "
+              "proposed region.");
+        }
 
-      *laddr_st = State(0, kNullBallot, kNullValue);
+        *laddr_st = State(0, kNullBallot, kNullValue);
 
-      for (uint32_t slot = 0; slot < kRingSize; ++slot) {
-        auto raddr = remote_addrs_[i][kLogRegionId];
-        raddr.addr_info.offset = slot * kSlotSize;
-        raddr.addr_info.length = kSlotSize;
-        uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
-                         (static_cast<uint64_t>(host_id_) << 32) |
-                         static_cast<uint64_t>(slot);
-        romulus::WorkRequest::BuildWrite(laddr, raddr, wr_id, &c->wr);
-        ROMULUS_ASSERT(
-            c->conn->Post(&c->wr, 1),
-            "<ConditionalReset> Failed to post requests when resetting "
-            "log region.");
-        c->conn->PollBatch({wr_id});
+        for (uint32_t slot = 0; slot < kRingSize; ++slot) {
+          auto raddr = remote_addrs_[i][kLogRegionId];
+          raddr.addr_info.offset = slot * kSlotSize;
+          raddr.addr_info.length = kSlotSize;
+          uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
+                           (static_cast<uint64_t>(host_id_) << 32) |
+                           static_cast<uint64_t>(slot);
+          c->conn->Write(laddr, raddr, wr_id);
+          ROMULUS_ASSERT(
+              c->conn->ProcessCompletions(1) == 1,
+              "<ConditionalReset> Failed to post requests when resetting log "
+              "region.");
+        }
       }
     }
+    ROMULUS_DEBUG(
+        "<ConditionalReset> Reached log capacity. Resetting logs. Waiting on "
+        "{} nodes to reach barrier.",
+        system_size_ - detected_count);
+    conn_manager_->arrive_strict_barrier(system_size_ - detected_count);
+    ROMULUS_DEBUG("<ConditionalReset> Post-barrier.");
   }
 }
 
@@ -96,7 +123,7 @@ void CasPaxos::ClearLogs() {
     if (detected_[i]) continue;
 
     auto conn = remote_conns_[i][1];
-    auto laddr = memblock_.GetAddrInfo(kScratchExtraRegionId);
+    auto laddr = memblock_.GetAddrInfo(kScratchRegionId + "_1");
     auto laddr_st = reinterpret_cast<State*>(laddr.addr);
     *laddr_st = State(0, kNullBallot, kNullValue);
 
@@ -129,10 +156,10 @@ void CasPaxos::ClearLogs() {
 }
 
 void CasPaxos::CleanUp() {
-  ROMULUS_INFO("Cleaning up...");
 #ifdef PROMISE_BENCH
   // calculate the average time for each phase
-  std::vector<double> avg_times(5, 0);
+  std::vector<double> avg_times(promise_bench_times_.size(), 0);
+  
   for (const auto& times : promise_bench_times_) {
     for (size_t i = 0; i < times.size(); ++i) {
       avg_times[i] += times[i];
@@ -147,12 +174,12 @@ void CasPaxos::CleanUp() {
 
 #endif
 
-  running_.store(false);
-  if (is_leader_) {
-    State shutdown_msg(0, 0, Value(kShutdown));
-    BroadcastLeader(&shutdown_msg);
-  }
-  CatchUp();
+  failure_detector_running_.store(false);
+  // if (is_leader_) {
+  //   State shutdown_msg(0, 0, Value(kShutdown));
+  //   BroadcastLeader(&shutdown_msg);
+  // }
+
   // ROMULUS_COUNTER_ACC("p1_aborts");
   // ROMULUS_COUNTER_ACC("p2_aborts");
   // ROMULUS_COUNTER_ACC("attempts");
@@ -166,9 +193,9 @@ void CasPaxos::CleanUp() {
 }
 
 void CasPaxos::SyncNodes() {
-  ROMULUS_DEBUG("Syncing nodes");
+  ROMULUS_INFO("Syncing nodes");
   conn_manager_->arrive_strict_barrier();
-  ROMULUS_DEBUG("Nodes synced.");
+  ROMULUS_INFO("Nodes synced.");
 }
 
 void CasPaxos::Reset() {

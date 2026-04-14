@@ -369,7 +369,7 @@ class Velos {
     }
 
     while (done_count < quorum_) {
-      if (dump_requested.load(std::memory_order_relaxed)) return nullptr;
+      if (dump_requested_.load(std::memory_order_relaxed)) return nullptr;
       std::fill(polled.begin(), polled.end(), false);
       ++wr_id_;
 
@@ -522,7 +522,7 @@ class Velos {
     // sure that we write to the local log allows a follower to be certain
     // that if the slot is filled that the value is committed.
     while (done_count < quorum_) {
-      if (dump_requested.load(std::memory_order_relaxed)) return false;
+      if (dump_requested_.load(std::memory_order_relaxed)) return false;
       // t1 = std::chrono::steady_clock::now();
       // Post CAS ops.
       uint32_t posted = 0;

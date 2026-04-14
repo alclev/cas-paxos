@@ -4,12 +4,20 @@ using namespace paxos_st;
 
 void CasPaxos::CatchUp() {
   if (is_leader_) return;
-  ROMULUS_DEBUG("<CatchUp> Catching up");
+  auto start = std::chrono::steady_clock::now();
+  int iterations = 0;
   while (TryCatchUp()) {
-    ROMULUS_COUNTER_INC("skipped");
+    iterations++;
+    if (failover_detected_) {
+      auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+                         std::chrono::steady_clock::now() - start)
+                         .count();
+      ROMULUS_INFO(
+          "<CatchUp> Broke out due to failover after {} iterations, {} us",
+          iterations, elapsed);
+      break;
+    }
   }
-  // Stuck, re-read leader in case it changed
-  leader_ = ReadLeaderSlot();
 }
 
 /// @brief Issues RMDA-reads to all replicas, busy-waits until all reads
@@ -17,39 +25,27 @@ void CasPaxos::CatchUp() {
 /// ammend local log with RDMA CAS
 /// @return bool
 bool CasPaxos::TryCatchUp() {
-  ROMULUS_DEBUG("<TryCatchUp> Catching up slot: {}", log_offset_);
-  if (failover_detected_) {
-    ROMULUS_DEBUG("<TryCatchUp> Failover detected, bailing catchup.");
-    return false;
-  }
+  // ROMULUS_DEBUG("<TryCatchUp> Catching up slot: {}", log_offset_);
   // Post READs to all remote peers.
-  std::vector<uint64_t> posted;
-  posted.reserve(system_size_);
   RemoteContext* c;
   for (uint32_t i = 0; i < system_size_; ++i) {
     if (detected_[i]) continue;
+    if (failover_detected_) return false;
+
     c = contexts_[i];
+
     c->log_raddr.addr_info.offset = log_offset_ * kSlotSize;
     uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
                      (static_cast<uint64_t>(host_id_) << 32) |
                      static_cast<uint64_t>(i);
-    romulus::WorkRequest::BuildRead(c->scratch_laddr, c->log_raddr, wr_id,
-                                    &c->wr);
-    // StageLogRequest(c);
-    ROMULUS_ASSERT(c->conn->Post(&c->wr, 1),
-                   "<TryCatchUp> Failed to post requests.");
-    if (i == host_id_) {
-      ROMULUS_ASSERT(c->conn->ProcessCompletions(1) == 1,
-                     "<TryCatchUp> Failed to poll for local read completion.");
-    } else {
-      posted.push_back(wr_id);
+
+    c->conn->Read(c->scratch_laddr, c->log_raddr, wr_id);
+    if (c->conn->ProcessCompletions(1) != 1) {
+      ROMULUS_DEBUG("<TryCatchUp> Failed to poll for completion of RDMA read");
+      return false;
     }
   }
-  uint64_t not_me = (host_id_ + 1) % system_size_;
-  while (detected_[not_me]) {
-    not_me = (not_me + 1) % system_size_;
-  }
-  contexts_[not_me]->conn->PollBatch(posted);
+
 
   // Wait for a response from all nodes.
   //+ Timeout if this takes too long.
@@ -68,6 +64,7 @@ bool CasPaxos::TryCatchUp() {
   uint32_t num_agreed = 0;
   Value accepted_val;
   for (uint32_t i = 0; i < quorum_; ++i) {
+    if (failover_detected_) return false;
     c_i = contexts_[i];
     if (c_i->scratch_state->GetBallot() == kNullBallot) continue;
     num_agreed = 1;
@@ -87,19 +84,11 @@ bool CasPaxos::TryCatchUp() {
       if (log_[log_offset_].GetValue() != accepted_val) {
         auto loopback_context = contexts_[host_id_];
         loopback_context->log_raddr.addr_info.offset = log_offset_ * kSlotSize;
-        romulus::WorkRequest::BuildCAS(
-            loopback_context->scratch_laddr, loopback_context->log_raddr,
-            log_[log_offset_].raw, c_i->scratch_state->raw, wr_id_,
-            &loopback_context->wr);
-        // StageLogRequest(loopback_context);
-        ROMULUS_ASSERT(
-            loopback_context->conn->Post(&loopback_context->wr, 1),
-            "<TryCatchUp> Failed to post requests when updating local "
-            "slot.");
-
-        // Only expect a single outstanding completion.
-        std::vector<uint64_t> loopback_wr = {wr_id_};
-        loopback_context->conn->PollBatch(loopback_wr);
+        loopback_context->conn->Read(loopback_context->scratch_laddr,
+                                     loopback_context->log_raddr, wr_id_);
+        ROMULUS_ASSERT(loopback_context->conn->ProcessCompletions(1) == 1,
+                       "<TryCatchUp> Failed to poll for completion of loopback "
+                       "RDMA read.");
       }
       ROMULUS_DEBUG("<TryCatchUp> Caught up: log_offset={}, state={}",
                     log_offset_, log_[log_offset_].ToString());

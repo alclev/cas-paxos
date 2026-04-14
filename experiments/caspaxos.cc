@@ -30,7 +30,7 @@ constexpr uint32_t kNumProposals = 8092;
 void signal_handler(int signum) {
   if (signum == SIGTSTP) {
     write(STDOUT_FILENO, "SIGINT caught\n", 14);
-    dump_requested.store(true, std::memory_order_relaxed);
+    dump_requested_.store(true, std::memory_order_relaxed);
   }
 }
 
@@ -100,54 +100,107 @@ int main(int argc, char* argv[]) {
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 #endif
 
-  paxos->FailureDetector();
+  auto fd_threads = paxos->FailureDetector();
 
   auto testtime_us =
       std::chrono::duration_cast<std::chrono::microseconds>(testtime);
   ROMULUS_STOPWATCH_BEGIN();
   while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
          static_cast<uint64_t>(testtime_us.count())) {
-    for (uint32_t i = 0; i < loop; ++i) {
-#if defined(USE_MU) || defined(USE_VELOS)
-      if (id == 0) {
-        exec();
-        busy_wait(sleep);
-      }
-#else
-      if (paxos->isLeaderStable() && !paxos->isLeader()) {
-        paxos->CatchUp();
-      } else {
-        paxos->ConditionalReset();
-        exec();
-      }
-      busy_wait(sleep);
-#endif
+    //     for (uint32_t i = 0; i < loop; ++i) {
+    // #if defined(USE_MU) || defined(USE_VELOS)
+    //       if (id == 0) {
+    //         exec();
+    //         busy_wait(sleep);
+    //       }
+    // #else
+    //       paxos->ConditionalReset();
+    //       if (paxos->isLeaderStable() && !paxos->isLeader()) {
+    //         paxos->CatchUp();
+    //       } else if ((!paxos->isLeaderStable() && paxos->isFailureDetected())
+    //       ||
+    //                  (!paxos->isLeaderStable() || paxos->isLeader())) {
+    //         exec();
+    //       }
+    //       busy_wait(sleep);
+    // #endif
 
-#if defined(USE_VELOS)
-      if (dump_requested.load(std::memory_order_relaxed)) {
-        ROMULUS_INFO("Shutdown requested, dumping logs...");
-        velos->DumpLogs();
-        exit(0);
-      }
+    // #if defined(USE_VELOS)
+    //       if (dump_requested_.load(std::memory_order_relaxed)) {
+    //         ROMULUS_INFO("Shutdown requested, dumping logs...");
+    //         velos->DumpLogs();
+    //         exit(0);
+    //       }
+    // #endif
+    //     }
+    auto* failure_detected = paxos->isFailureDetected();
+
+    for (uint32_t i = 0; i < loop; ++i) {
+#ifdef VERBOSE
+      ROMULUS_INFO(
+          "<Main> Loop i={}, log_offset={}, isLeader={}, isLeaderStable={}", i,
+          paxos->GetOffset(), paxos->isLeader(), paxos->isLeaderStable());
 #endif
+      paxos->ConditionalReset();
+#ifdef VERBOSE
+      ROMULUS_INFO("<Main> After ConditionalReset");
+#endif
+      if (paxos->isLeaderStable() && !paxos->isLeader()) {
+#ifdef VERBOSE
+        ROMULUS_INFO("<Main> Follower path - calling CatchUp");
+#endif
+        paxos->CatchUp();
+      } else if ((!paxos->isLeaderStable() && failure_detected->load()) ||
+                 (!paxos->isLeaderStable() || paxos->isLeader())) {
+#ifdef VERBOSE
+        ROMULUS_INFO("<Main> Leader path - calling exec");
+#endif
+        exec();
+#ifdef VERBOSE
+        ROMULUS_INFO("<Main> exec returned");
+#endif
+      } else {
+#ifdef VERBOSE
+        ROMULUS_INFO(
+            "<Main> NEITHER BRANCH TAKEN! isLeader={}, isLeaderStable={}, "
+            "isFailureDetected={}",
+            paxos->isLeader(), paxos->isLeaderStable(),
+            failure_detected->load());
+#endif
+      }
+#ifdef VERBOSE
+      ROMULUS_INFO("<Main> About to busy_wait");
+#endif
+      busy_wait(sleep, failure_detected);
     }
+#ifdef VERBOSE
+    ROMULUS_INFO("<Main> For loop completed, checking while condition");
+#endif
   }
+
   preprepare_running.store(false);
 
   init();  // sync
 
+  ROMULUS_INFO("Experiment is finished. Cleaning up...");
+
   done();  // cleanup
 
-  if (latencies.size() > 50) {
+  for (auto& t : fd_threads) {
+    t.join();
+  }
+
+  if (paxos->isLeader()) {
     calc(outfile);
     calc = CALC_THROUGHPUT;
     calc(outfile);
   }
 
-  ROMULUS_INFO("Experiment is finished. Cleaning up...");
   outfile.close();
+
   for (auto& p : proposals) {
     delete[] p.second;
   }
+
   return 0;
 }

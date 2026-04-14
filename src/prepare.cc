@@ -13,10 +13,6 @@ State* CasPaxos::Prepare() {
   curr_proposal->SetPromiseBallot(curr_promise_ballot);
 
   auto backoff = std::chrono::nanoseconds(std::rand() % kMaxStartingBackoff);
-  RemoteContext* c;
-
-  std::fill(expected_.begin(), expected_.end(), State());
-  std::fill(done_.begin(), done_.end(), false);
 
   std::vector<State> swap(system_size_);
   std::vector<State> state(system_size_);
@@ -24,16 +20,18 @@ State* CasPaxos::Prepare() {
 
   // Init
   for (uint32_t i = 0; i < system_size_; ++i) {
-    // expected[i] = State();
+    expected_[i] = State();
+    done_[i] = false;
     swap[i] = State(curr_promise_ballot, 0, Value(0));
     state[i] = State();
   }
-
+  uint64_t wr_id_base = (static_cast<uint64_t>(wr_id_) << 48) |
+                        (static_cast<uint64_t>(host_id_) << 32);
+  uint32_t cached_offset = log_offset_ * kSlotSize;
   while (done_count < quorum_) {
     ++wr_id_;
     // Post CAS ops.
-    std::vector<uint64_t> posted;
-    posted.reserve(system_size_);
+    int posted = 0;
     for (uint32_t i = 0; i < system_size_; ++i) {
       if (done_[i]) continue;
       if (detected_[i]) {
@@ -41,34 +39,19 @@ State* CasPaxos::Prepare() {
         ++done_count;
         continue;
       }
-      c = contexts_[i];
-      c->log_raddr.addr_info.offset = log_offset_ * kSlotSize;
-      uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
-                       (static_cast<uint64_t>(host_id_) << 32) |
-                       static_cast<uint64_t>(i);
+      
+      uint64_t wr_id = wr_id_base | static_cast<uint64_t>(i);
 
-      romulus::WorkRequest::BuildCAS(c->scratch_laddr, c->log_raddr,
-                                     expected_[i].raw, swap[i].raw, wr_id,
-                                     &c->wr);
-      ROMULUS_DEBUG(
-          "Prepare CAS: scratch_laddr={}, log_raddr={}, expected_i={}, "
-          "swap_i={}, wr_id={}",
-          c->scratch_laddr.addr, c->log_raddr.addr_info.addr, expected_[i].raw,
-          swap[i].raw, wr_id);
-      ROMULUS_ASSERT(c->conn->Post(&c->wr, 1),
-                     "<Prepare> Failed when posting requests.");
-      if (i == host_id_) {
-        ROMULUS_ASSERT(c->conn->PollBatch({wr_id}) == 1,
-                       "<Prepare> Failed when polling for completions.");
-      } else {
-        posted.push_back(wr_id);
-      }
+      auto& conn = cached_conns_[i];
+      auto& raddr = cached_raddrs_[i];
+      raddr.addr_info.offset = cached_offset;
+      auto& laddr = cached_laddr_;
+      laddr.offset = i * kSlotSize;
+      
+      conn->CompareAndSwap(laddr, raddr, expected_[i].raw, swap[i].raw, wr_id);
+      ++posted;
     }
-    uint64_t not_me = (host_id_ + 1) % system_size_;
-    while (detected_[not_me]) {
-      not_me = (not_me + 1) % system_size_;
-    }
-    contexts_[not_me]->conn->PollBatch(posted);
+    remote_conns_[0][0]->ProcessCompletions(posted);
 
     // Check return value of CAS.
     bool need_bump = false;
@@ -85,6 +68,10 @@ State* CasPaxos::Prepare() {
         done_[i] = true;
         ++done_count;
       } else {
+        ROMULUS_DEBUG(
+            "Prepare: cas failed but promise ballot still good. observed={}, "
+            "expected={}",
+            observed.ToString(), expected_[i].ToString());
         expected_[i] = observed;
         swap[i] = State(curr_promise_ballot, observed.GetBallot(),
                         observed.GetValue());

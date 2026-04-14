@@ -169,6 +169,48 @@ EOF
 	rm "$tmp_screen"
 }
 
+function cl_run_perf() {
+	# check if file exists
+	EXE_NAME=$(basename "$1")
+	if [[ ! -f "build/$1" ]]; then
+		echo "Executable not found: $1"
+		exit 1
+	fi
+	for m in ${MACHINES[*]}; do
+		scp "build/$1" "${USER}@${m}.${DOMAIN}:${EXE_NAME}" &
+	done
+	wait
+	rm -rf logs
+	mkdir logs
+	# Set up a screen script for running the program on all MACHINES
+	tmp_screen="$(mktemp)" || exit 1
+	make_screen "$tmp_screen"
+	NUM_MACHINES=${#MACHINES[@]}
+	OUTFILE="perf_report.txt"
+	for i in "${!MACHINES[@]}"; do
+		host="${MACHINES[$i]}"
+		# CMD="sudo perf stat -e cycles,task-clock,cache-misses,LLC-load-misses -I 5000 -o perf_stat_${i}.txt ./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt"
+		# CMD="sudo perf record -e cycles:u -F 50 -g ./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt ${EXTRA_ARGS}; sudo perf report -i perf.data --stdio --no-children -g none | head -100 > perf_${i}.txt; sudo perf annotate -i perf.data --stdio CasPaxos::Promise >> perf_${i}.txt; sudo chmod 644 perf_${i}.txt perf.data"
+		# CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt ${EXTRA_ARGS}"
+		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} ${ARGS} --multipax-opt ${EXTRA_ARGS}"
+		RECORD="sudo perf record -F 250 -e cycles:pp,cache-misses,LLC-load-misses --call-graph dwarf -o perf.data ${CMD}"
+
+		ANALYZE="sudo perf annotate --stdio -i perf.data > ${OUTFILE}"
+		echo "$RECORD"
+		cat >>"$tmp_screen" <<EOF
+screen -t node${i} ssh -t ${USER}@${host}.${DOMAIN} "${RECORD}"; "${ANALYZE}"
+logfile logs/log_${i}.txt
+log on
+EOF
+	done
+
+	screen -c "$tmp_screen"
+	rm "$tmp_screen"
+
+	scp ${USER}@${MACHINES[$((NUM_MACHINES - 1))]}.${DOMAIN}:${OUTFILE} .
+
+}
+
 # $1 : Relative path of exe
 function cl_debug() {
 	EXE_NAME=$(basename "$1")
@@ -221,7 +263,7 @@ function reset_memcached() {
 
 function reset_mu() {
 	for m in ${MACHINES[*]}; do
-			scp "lib/libcrashconsensus.so" "${USER}@${m}.${DOMAIN}:libcrashconsensus.so" &
+		scp "lib/libcrashconsensus.so" "${USER}@${m}.${DOMAIN}:libcrashconsensus.so" &
 	done
 	wait
 	FILES_SENT=$(ssh ${USER}@${MACHINES[0]}.${DOMAIN} "test -f /users/${USER}/libcrashconsensus.so && echo true || echo false")
@@ -465,6 +507,8 @@ elif [[ "$cmd" == "build-run" && "$count" -eq 3 ]]; then
 	cl_run "$3"
 elif [[ "$cmd" == "run" && "$count" -eq 2 ]]; then
 	cl_run "$2"
+elif [[ "$cmd" == "run-perf" && "$count" -eq 2 ]]; then
+	cl_run_perf "$2"
 elif [[ "$cmd" == "run-experiment" && "$count" -eq 2 ]]; then
 	cl_run "$2"
 	retrieve_results
@@ -502,7 +546,7 @@ elif [[ "$cmd" == "run-mu-debug" && "$count" -eq 2 ]]; then
 elif [[ "$cmd" == "retrieve-results" && "$count" -eq 1 ]]; then
 	retrieve_results
 elif [[ "$cmd" == "launch-experiment" && "$count" -eq 2 ]]; then
-	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' > results/caspaxos.csv
+	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' >results/caspaxos.csv
 	ORIG_MACHINES=("${MACHINES[@]}")
 	for i in $(seq 3 ${#ORIG_MACHINES[@]}); do
 		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
@@ -511,7 +555,7 @@ elif [[ "$cmd" == "launch-experiment" && "$count" -eq 2 ]]; then
 		reset $(basename "$2")
 		echo "Launching experiment with ${#MACHINES[@]} nodes..."
 		cl_run "$2"
-		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >> results/caspaxos.csv
+		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >>results/caspaxos.csv
 	done
 	echo "Turning on Multi-paxos optimization..."
 	reset_memcached
@@ -523,12 +567,12 @@ elif [[ "$cmd" == "launch-experiment" && "$count" -eq 2 ]]; then
 		echo "Launching experiment with ${#MACHINES[@]} nodes..."
 		EXTRA_ARGS="--multipax-opt"
 		cl_run "$2"
-		cat logs/* > logs/all_logs.tmp
-		grep -oP '\[PARSE\] \K.*' logs/all_logs.tmp >> results/caspaxos.csv
+		cat logs/* >logs/all_logs.tmp
+		grep -oP '\[PARSE\] \K.*' logs/all_logs.tmp >>results/caspaxos.csv
 		rm logs/all_logs.tmp
 	done
 elif [[ "$cmd" == "launch-experiment-velos" && "$count" -eq 2 ]]; then
-	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' > results/velos.csv
+	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' >results/velos.csv
 	ORIG_MACHINES=("${MACHINES[@]}")
 	for i in $(seq 3 ${#ORIG_MACHINES[@]}); do
 		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
@@ -537,10 +581,10 @@ elif [[ "$cmd" == "launch-experiment-velos" && "$count" -eq 2 ]]; then
 		reset $(basename "$2")
 		echo "Launching experiment with ${#MACHINES[@]} nodes..."
 		cl_run "$2"
-		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >> results/velos.csv
+		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >>results/velos.csv
 	done
 elif [[ "$cmd" == "launch-experiment-mu" && "$count" -eq 2 ]]; then
-	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' > results/mu.csv
+	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' >results/mu.csv
 	ORIG_MACHINES=("${MACHINES[@]}")
 	for i in $(seq 7 ${#ORIG_MACHINES[@]}); do
 		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
@@ -550,8 +594,10 @@ elif [[ "$cmd" == "launch-experiment-mu" && "$count" -eq 2 ]]; then
 		sleep 5
 		echo "Launching experiment with ${#MACHINES[@]} nodes..."
 		run_mu "$2"
-		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >> results/mu.csv
+		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >>results/mu.csv
 	done
+elif [[ "$cmd" == "launch-experiment-failure" && "$count" -eq 2 ]]; then
+	source tools/experiments/failover.sh $2
 else
 	usage
 fi

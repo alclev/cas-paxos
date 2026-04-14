@@ -18,10 +18,7 @@
 
 #define BATCH_SIZE 16
 
-#define kRingSize 1024
-
-#define FAILURE_THRESHOLD 100
-#define WR_FAILIRE_THRESHOLD 10
+#define kRingSize 2048
 
 // Compile time configurations for testing different optimizations
 // #define DYNO_NO_WRITEBUF
@@ -34,7 +31,8 @@ const std::string kRegistryName = "CasPaxos";
 const std::string kPdId = "PdId";
 const std::string kBlockId = "LogBlock";
 const std::string kScratchRegionId = "ScratchRegion";
-const std::string kScratchExtraRegionId = "ScratchExtraRegion";
+const std::string kExtraScratchRegionId = "ExtraScratchRegion";
+const std::string kFailureDetectorId = "FailureDetectorRegion";
 const std::string kProposedRegionId = "ProposedRegion";
 const std::string kLogRegionId = "LogRegion";
 const std::string kBufRegionPrefix = "BufRegion";
@@ -121,6 +119,8 @@ class CasPaxos : public Paxos {
     done_.resize(system_size_);
     polled_.resize(system_size_);
     wr_ids_.resize(system_size_);
+    cached_conns_.resize(system_size_);
+    cached_raddrs_.resize(system_size_);
   }
 
   ~CasPaxos() {
@@ -143,12 +143,18 @@ class CasPaxos : public Paxos {
 
   void CleanUp() override;
 
-  void FailureDetector() override;
+  std::vector<std::thread> FailureDetector() override;
+
+  void Failover(int node_id);
 
  private:
   bool BroadcastLeader(State* new_leader);
 
-  State ReadLeaderSlot();
+  void ReadLeaderSlot();
+
+  void peer_heartbeat(int tid);
+
+  void loopback_heartbeat();
 
   void ProposeInternal(Value& v);
 
@@ -162,9 +168,13 @@ class CasPaxos : public Paxos {
 
   void ClearLogs();
 
+  uint64_t ExtractId(State& st);
+
   State* Prepare() override;
 
   bool Promise(Value v) override;
+
+  std::atomic<bool>* isFailureDetected() override { return &failover_detected_; }
 
   bool isLeaderStable() override { return stable_leader_; }
 
@@ -238,7 +248,8 @@ class CasPaxos : public Paxos {
   std::vector<bool> polled_;
   std::vector<uint64_t> wr_ids_;
 
-  std::atomic<bool> running_ = true;
+  bool reset_in_progress_ = false;
+  
 
   // Metrics for a one-off failover test
   std::atomic<bool> failover_detected_ = false;
@@ -248,6 +259,10 @@ class CasPaxos : public Paxos {
 
   std::vector<std::vector<double>> promise_bench_times_;
   std::vector<std::atomic<bool>> detected_;
+
+  std::vector<romulus::ReliableConnection*> cached_conns_;
+  std::vector<romulus::RemoteAddr> cached_raddrs_;
+  romulus::AddrInfo cached_laddr_;
 
   // RDMA related members.
   romulus::Device device_;
