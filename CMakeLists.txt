@@ -16,7 +16,9 @@ endif()
 if(BUILD_MODE STREQUAL "DEBUG")
   message(STATUS "Building in Debug mode")
   set(CMAKE_BUILD_TYPE Debug)
-  add_compile_options(-g -O0)
+  add_compile_options(-g -O2 -fno-omit-frame-pointer) 
+  # -fsanitize=address
+  # add_link_options(-fsanitize=address)
   add_compile_options(-U ROMULUS_LOG_LEVEL -D ROMULUS_LOG_LEVEL=DEBUG)
   # add_compile_definitions(LOG_DUMP)
 elseif(BUILD_MODE STREQUAL "RELEASE")
@@ -29,7 +31,7 @@ else()
 endif()
 
 # Set global compiler flags
-add_compile_options(-Wall -Wextra -Wwrite-strings -Werror)
+add_compile_options(-Wall -Wextra -Wwrite-strings -Werror )
 #######################################################################################################################
 # Setup
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -47,8 +49,20 @@ target_include_directories(${PROJECT_NAME}
 
 option(USE_MU "Enable Mu" OFF)
 option(USE_VELOS "Enable Velos" OFF)
+option(USE_LEASE "Enable Lease" OFF)
 
-# add_compile_definitions(SYSDUMP)
+if(USE_MU)
+    add_compile_definitions(USE_MU)
+elseif(USE_VELOS)
+    add_compile_definitions(USE_VELOS)
+elseif(USE_LEASE)
+    add_compile_definitions(USE_LEASE)
+else()
+    add_compile_definitions(DEFAULT)
+endif()
+
+# add_compile_definitions(FAILOVER)
+add_compile_definitions(SYSDUMP)
 # add_compile_definitions(PROMISE_BENCH)
 # add_compile_definitions(VERBOSE)
 

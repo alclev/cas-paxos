@@ -34,7 +34,7 @@ bool CasPaxos::TryCatchUp() {
 
     c = contexts_[i];
 
-    c->log_raddr.addr_info.offset = log_offset_ * kSlotSize;
+    c->log_raddr.addr_info.offset = prom_offset_.load() * kSlotSize;
     uint64_t wr_id = (static_cast<uint64_t>(wr_id_) << 48) |
                      (static_cast<uint64_t>(host_id_) << 32) |
                      static_cast<uint64_t>(i);
@@ -81,9 +81,9 @@ bool CasPaxos::TryCatchUp() {
     if (num_agreed >= quorum_) {
       // If the local log does not reflect the accepted value then CAS it
       // in.
-      if (log_[log_offset_].GetValue() != accepted_val) {
+      if (log_[prom_offset_.load()].GetValue() != accepted_val) {
         auto loopback_context = contexts_[host_id_];
-        loopback_context->log_raddr.addr_info.offset = log_offset_ * kSlotSize;
+        loopback_context->log_raddr.addr_info.offset = prom_offset_.load() * kSlotSize;
         loopback_context->conn->Read(loopback_context->scratch_laddr,
                                      loopback_context->log_raddr, wr_id_);
         ROMULUS_ASSERT(loopback_context->conn->ProcessCompletions(1) == 1,
@@ -91,13 +91,13 @@ bool CasPaxos::TryCatchUp() {
                        "RDMA read.");
       }
       ROMULUS_DEBUG("<TryCatchUp> Caught up: log_offset={}, state={}",
-                    log_offset_, log_[log_offset_].ToString());
-      ++log_offset_;
+                    prom_offset_.load(), log_[prom_offset_.load()].ToString());
+      ++prom_offset_;
       ++wr_id_;
       return true;
     }
   }
   ++wr_id_;
-  ROMULUS_DEBUG("<TryCatchUp> Failed. log_offset={}", log_offset_);
+  ROMULUS_DEBUG("<TryCatchUp> Failed. log_offset={}", prom_offset_.load());
   return false;
 }

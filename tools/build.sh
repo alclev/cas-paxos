@@ -2,8 +2,8 @@
 # This script builds the project in debug mode using clang-18.
 
 function usage() {
-	echo "Usage: $0 <debug|release> <use_mu>"
-	exit 1
+    echo "Usage: $0 <debug|release> <default|mu|lease|velos>"
+    exit 1
 }
 
 # Parse arguments -----------------------------------------------------------------------------------+
@@ -14,20 +14,29 @@ fi
 
 # Convert first arg to all caps
 BUILD_MODE=$(echo "$1" | tr '[:lower:]' '[:upper:]')
+MODE=$(echo "$2" | tr '[:lower:]' '[:upper:]')
+
 echo "Building in $BUILD_MODE mode..."
 # Ensure build mode is valid
 if [[ "$BUILD_MODE" != "DEBUG" && "$BUILD_MODE" != "RELEASE" ]]; then
 	usage
 fi
 
+if [[ "$MODE" != "DEFAULT" && "$MODE" != "MU" && "$MODE" != "LEASE" && "$MODE" != "VELOS" ]]; then
+    usage
+fi
+
+
 CONDITIONAL_ARGS="-DBUILD_MODE=${BUILD_MODE}"
 # If the second arg exists
-if [[ -n "$2" ]]; then
-	MU_TOGGLE=$(echo "$2" | tr '[:lower:]' '[:upper:]')
-	echo "Building with MU option: $MU_TOGGLE"
-	if [[ "$MU_TOGGLE" == "MU" ]]; then
-		CONDITIONAL_ARGS="${CONDITIONAL_ARGS} -DUSE_MU=ON"
-	fi
+if [[ "$MODE" == "MU" ]]; then
+    CONDITIONAL_ARGS="${CONDITIONAL_ARGS} -DUSE_MU=ON -DUSE_VELOS=OFF -DUSE_LEASE=OFF"
+elif [[ "$MODE" == "LEASE" ]]; then
+    CONDITIONAL_ARGS="${CONDITIONAL_ARGS} -DUSE_MU=OFF -DUSE_VELOS=OFF -DUSE_LEASE=ON"
+elif [[ "$MODE" == "DEFAULT" ]]; then
+    CONDITIONAL_ARGS="${CONDITIONAL_ARGS} -DUSE_MU=OFF -DUSE_VELOS=OFF -DUSE_LEASE=OFF"
+elif [[ "$MODE" == "VELOS" ]]; then
+    CONDITIONAL_ARGS="${CONDITIONAL_ARGS} -DUSE_MU=OFF -DUSE_VELOS=ON -DUSE_LEASE=OFF"
 fi
 
 # Go into root dir

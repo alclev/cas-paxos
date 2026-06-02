@@ -1,33 +1,15 @@
-#pragma once
+#include "mu_squared.h"
 
-#include "velos/velos_mt.h"
-
-std::unique_ptr<Velos> velos;
-
-#define INIT_CONSENSUS(transport_flag, buf_sz, mach_map)                       \
-  ROMULUS_INFO("Initializing Velos");                                          \
-  auto registry =                                                              \
-      std::make_unique<romulus::ConnectionRegistry>("VelosTest", registry_ip); \
-  velos = std::make_unique<Velos>(args, remotes, transport_flag);              \
-  velos->Init(dev_name, dev_port, std::move(registry), mach_map);
-
-std::vector<double> latencies;
-
-#define EXEC_LATENCY                                                          \
-  [&]() {                                                                     \
-    uint32_t i = latencies.size() % kNumProposals;                            \
-    auto start = std::chrono::steady_clock::now();                            \
-    velos->Promise(Value(*reinterpret_cast<uint32_t*>(proposals[i].second))); \
-    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(     \
-                       std::chrono::steady_clock::now() - start)              \
-                       .count();                                              \
-    double elapsed_us = static_cast<double>(elapsed);                         \
-    latencies.emplace_back(elapsed_us);                                       \
+#define LEASE_EXEC_LATENCY                                             \
+  [&]() {                                                              \
+    uint32_t i = 1 + latencies.size() % kNumProposals;                 \
+    mu_squared->LeasePropose(proposals[i].first, proposals[i].second); \
   };
 
-#define SYNC_NODES [&]() { velos->SyncNodes(); };
+#define LEASE_SYNC_NODES [&]() { mu_squared->SyncNodes(); };
 
-#define DONE_LATENCY []() { velos->CleanUp(); };
+#define LEASE_DONE [&]() { mu_squared->Cleanup(); };
+
 #define CALC_LAT                                                               \
   [&](std::tuple<double, double, double, double>* result,                      \
       std::vector<double>& latencies) {                                        \
@@ -64,29 +46,4 @@ std::vector<double> latencies;
       *result = std::make_tuple(latency_avg, latency_50p, latency_99p,         \
                                 latency_99_9p);                                \
     }                                                                          \
-  }
-
-#define RESET           \
-  [&]() {               \
-    velos->Reset();     \
-    velos->SyncNodes(); \
-  };
-
-#define CALC_THROUGHPUT                                             \
-  [&](std::ofstream& outfile) {                                     \
-    double total_latency =                                          \
-        std::accumulate(latencies.begin(), latencies.end(), 0.0);   \
-    double throughput = latencies.size() / total_latency * 1000000; \
-    outfile << throughput << std::endl;                             \
-    ROMULUS_INFO("!> [THRU] throughput={:4.2f}ops/us", throughput); \
-  };
-
-#define DUMP_LATENCIES()                            \
-  {                                                 \
-    std::ostringstream oss;                         \
-    for (size_t i = 0; i < latencies.size(); ++i) { \
-      if (i > 0) oss << ",";                        \
-      oss << latencies[i];                          \
-    }                                               \
-    ROMULUS_INFO("Latencies: {}", oss.str());       \
   }

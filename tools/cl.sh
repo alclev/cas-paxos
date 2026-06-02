@@ -156,10 +156,13 @@ function cl_run() {
 		host="${MACHINES[$i]}"
 		# CMD="sudo perf record --call-graph dwarf -o perf_node${i}.data ./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt && sudo perf report --stdio -g -i perf_node${i}.data > perf_report_${i}.txt"
 		# CMD="sudo perf stat -e cycles,task-clock,cache-misses,LLC-load-misses -I 5000 -o perf_stat_${i}.txt ./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt"
-		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt ${EXTRA_ARGS}"
+		# gdb -ex \"catch throw\" -ex \"r\" --args
+		# CMD="perf record -e cycles:pp -F 99999 -g ./${EXE_NAME} --hostname ${host} --node-id ${i} ${ARGS} --multipax-opt ${EXTRA_ARGS}"
+		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} ${ARGS} ${EXTRA_ARGS}"
+
 		echo "$CMD"
 		cat >>"$tmp_screen" <<EOF
-screen -t node${i} ssh -t ${USER}@${host}.${DOMAIN} ${CMD}
+screen -t node${i} ssh -t ${USER}@${host}.${DOMAIN} "${CMD}"
 logfile logs/log_${i}.txt
 log on
 EOF
@@ -259,26 +262,6 @@ function reset_memcached() {
 	# Reset the application
 	# NOTE: race condition with deletion and creation of memcached server
 	ssh ${USER}@${MACHINES[0]}.${DOMAIN} "sudo pkill ${APPLICATION}; sleep 1; nohup ${APPLICATION} -vv -d -l 10.10.1.1 -p 9999 > memcached.log 2>&1 &"
-}
-
-function reset_mu() {
-	for m in ${MACHINES[*]}; do
-		scp "lib/libcrashconsensus.so" "${USER}@${m}.${DOMAIN}:libcrashconsensus.so" &
-	done
-	wait
-	FILES_SENT=$(ssh ${USER}@${MACHINES[0]}.${DOMAIN} "test -f /users/${USER}/libcrashconsensus.so && echo true || echo false")
-	if [[ "$FILES_SENT" == "false" ]]; then
-		echo "Critical files do not exist on remote. Sending over now..."
-		# Set up memcached on node0
-		scp "lib/memcached" "${USER}@${MACHINES[0]}.${DOMAIN}:memcached"
-		scp "lib/libevent-2.1.so.6" "${USER}@${MACHINES[0]}.${DOMAIN}:~/"
-	fi
-	# Reset the memcached server
-	ssh ${USER}@${MACHINES[0]}.${DOMAIN} "sudo pkill memcached"
-	sleep 1
-	# Launch the memcached server
-	MEMCACHED_ARGS="-vv -p 9999"
-	ssh ${USER}@${MACHINES[0]}.${DOMAIN} "nohup env LD_LIBRARY_PATH=/users/${USER} ./memcached ${MEMCACHED_ARGS} > memcached.log 2>&1 &"
 }
 
 # Connect to CloudLab nodes (e.g., for debugging)
@@ -403,85 +386,6 @@ function test_perftest {
 	echo "Done."
 }
 
-function run_mu {
-	# check if file exists
-	EXE_NAME=$(basename "$1")
-	if [[ ! -f "build/$1" ]]; then
-		echo "Executable not found: $1"
-		exit 1
-	fi
-	for m in ${MACHINES[*]}; do
-		scp "build/$1" "${USER}@${m}.${DOMAIN}:${EXE_NAME}" &
-	done
-	wait
-	rm -rf logs
-	mkdir logs
-	# Set up a screen script for running the program on all MACHINES
-	tmp_screen="$(mktemp)" || exit 1
-	make_screen "$tmp_screen"
-
-	IDS=$(seq 1 $((${#MACHINES[@]})) | paste -sd, -)
-	STARTING_PORT="6379"
-	DORY_REGISTRY_IP="10.10.1.1:9999"
-	NUM_MACHINES=${#MACHINES[@]}
-	for i in "${!MACHINES[@]}"; do
-		host="${MACHINES[$i]}"
-		ENV_ARGS="EXPER_PORT=${STARTING_PORT} SID=$((i + 1)) IDS=${IDS} DORY_REGISTRY_IP=${DORY_REGISTRY_IP} LD_LIBRARY_PATH=~/"
-		CMD="${ENV_ARGS} ./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file mu_stats_${NUM_MACHINES}.csv ${ARGS}"
-		echo "$CMD"
-		cat >>"$tmp_screen" <<EOF
-screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}
-logfile logs/log_${i}.txt
-log on
-EOF
-	done
-
-	screen -c "$tmp_screen"
-	rm "$tmp_screen"
-}
-
-function run_mu_debug {
-	# check if file exists
-	EXE_NAME=$(basename "$1")
-	if [[ ! -f "build/$1" ]]; then
-		echo "Executable not found: $1"
-		exit 1
-	fi
-	for m in ${MACHINES[*]}; do
-		scp "build/$1" "${USER}@${m}.${DOMAIN}:${EXE_NAME}" &
-	done
-	wait
-	rm -rf logs
-	mkdir logs
-	# Set up a screen script for running the program on all MACHINES
-	tmp_screen="$(mktemp)" || exit 1
-	make_screen "$tmp_screen"
-
-	IDS=$(seq 0 $((${#MACHINES[@]} - 1)) | paste -sd, -)
-	STARTING_PORT="6379"
-	DORY_REGISTRY_IP="10.10.1.1:9999"
-	GDB_ARGS=""
-	for i in "${!MACHINES[@]}"; do
-		if [[ $i -eq 0 ]]; then
-			GDB_ARGS="gdb -ex \"catch throw\" -ex \"r\" --args"
-		else
-			GDB_ARGS=""
-		fi
-		host="${MACHINES[$i]}"
-		ENV_ARGS="EXPER_PORT=${STARTING_PORT} SID=${i} IDS=${IDS} DORY_REGISTRY_IP=${DORY_REGISTRY_IP} LD_LIBRARY_PATH=~/"
-		CMD="${ENV_ARGS} ${GDB_ARGS} ./${EXE_NAME} --hostname ${host} --node-id ${i} --leader-fixed ${ARGS}"
-		echo "$CMD"
-		cat >>"$tmp_screen" <<EOF
-screen -t node${i} ssh ${USER}@${host}.${DOMAIN} ${CMD}; bash
-logfile gdb-logs/gdb_${i}.log
-log on
-EOF
-	done
-
-	screen -c "$tmp_screen"
-	rm "$tmp_screen"
-}
-
 # Get the important stuff out of the command-line args
 cmd=$1   # The requested command
 count=$# # The number of command-line args
@@ -498,13 +402,13 @@ load_cfg
 
 if [[ "$cmd" == "install-deps" && "$count" -eq 1 ]]; then
 	cl_install_deps
-elif [[ "$cmd" == "build-run" && "$count" -eq 3 ]]; then
+elif [[ "$cmd" == "build-run" && "$count" -eq 4 ]]; then
 	if [[ "$2" != "debug" && "$2" != "release" ]]; then
 		usage
 		exit 1
 	fi
-	source tools/build.sh "$2"
-	cl_run "$3"
+	source tools/build.sh "$2" "$3"
+	cl_run "$4"
 elif [[ "$cmd" == "run" && "$count" -eq 2 ]]; then
 	cl_run "$2"
 elif [[ "$cmd" == "run-perf" && "$count" -eq 2 ]]; then
@@ -526,23 +430,10 @@ elif [[ "$cmd" == "reset" && "$count" -eq 2 ]]; then
 	reset $2
 elif [[ "$cmd" == "reset-all" && "$count" -eq 1 ]]; then
 	reset-all
+elif [[ "$cmd" == "perftest" && "$count" -eq 2 ]]; then
+	source tools/perftest.sh "$2"
 elif [[ "$cmd" == "do-all" && "$count" -eq 2 ]]; then
 	do_all "$2"
-elif [[ "$cmd" == "build-mu" && "$count" -eq 2 ]]; then
-	if [[ "$2" != "debug" && "$2" != "release" ]]; then
-		usage
-		exit 1
-	fi
-	source tools/build.sh "$2" "MU"
-elif [[ "$cmd" == "run-mu" && "$count" -eq 2 ]]; then
-	run_mu "$2"
-elif [[ "$cmd" == "build-run-mu" && "$count" -eq 3 ]]; then
-	source tools/build.sh "$2" "MU"
-	run_mu "$3"
-elif [[ "$cmd" == "reset-mu" && "$count" -eq 1 ]]; then
-	reset_mu
-elif [[ "$cmd" == "run-mu-debug" && "$count" -eq 2 ]]; then
-	run_mu_debug "$2"
 elif [[ "$cmd" == "retrieve-results" && "$count" -eq 1 ]]; then
 	retrieve_results
 elif [[ "$cmd" == "launch-experiment" && "$count" -eq 2 ]]; then
@@ -598,6 +489,13 @@ elif [[ "$cmd" == "launch-experiment-mu" && "$count" -eq 2 ]]; then
 	done
 elif [[ "$cmd" == "launch-experiment-failure" && "$count" -eq 2 ]]; then
 	source tools/experiments/failover.sh $2
+elif [[ "$cmd" == "experiment" && "$count" -eq 3 ]]; then
+	# check if tools/experiments/"$2".sh exists
+	if [[ ! -f "tools/experiments/${2}.sh" ]]; then
+		echo "Experiment script not found: tools/experiments/${2}.sh"
+		exit 1
+	fi
+	source tools/experiments/"$2".sh "$3"
 else
 	usage
 fi

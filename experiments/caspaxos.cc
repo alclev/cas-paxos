@@ -15,33 +15,38 @@
 #include "romulus/util.h"
 #include "state.h"
 #include "util.h"
+#include "workload.h"
 
-#if defined(USE_MU)
-#include "mu/mu_impl.h"
-#elif defined(USE_VELOS)
-#include "velos/velos_impl.h"
-#else
+#ifdef DEFAULT
 #include "cas_paxos_impl.h"
+#endif
+#ifdef USE_MU
+#include "mu/mu_impl.h"
+#endif
+#ifdef USE_VELOS
+#include "velos/velos_impl.h"
+#endif
+#ifdef USE_LEASE
+#include "cas_paxos_impl.h"
+#include "lease_impl.h"
+#include "mu_squared.h"
+#endif
+
+#if (defined(DEFAULT) && defined(USE_MU)) ||    \
+    (defined(DEFAULT) && defined(USE_VELOS)) || \
+    (defined(DEFAULT) && defined(USE_LEASE)) || \
+    (defined(USE_MU) && defined(USE_VELOS)) ||  \
+    (defined(USE_MU) && defined(USE_LEASE)) ||  \
+    (defined(USE_VELOS) && defined(USE_LEASE))
+#error "Conflicting options: only one mode can be selected at a time"
 #endif
 
 #define PAXOS_NS paxos_st
 constexpr uint32_t kNumProposals = 8092;
 
-void signal_handler(int signum) {
-  if (signum == SIGTSTP) {
-    write(STDOUT_FILENO, "SIGINT caught\n", 14);
-    dump_requested_.store(true, std::memory_order_relaxed);
-  }
-}
-
 int main(int argc, char* argv[]) {
-  struct sigaction sa{};
-  sa.sa_handler = signal_handler;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags = 0;
-  sigaction(SIGTSTP, &sa, nullptr);
-
   ROMULUS_STOPWATCH_DECLARE();
+
   romulus::INIT();
   auto args = std::make_shared<romulus::ArgMap>();
   args->import(romulus::ARGS);
@@ -68,24 +73,147 @@ int main(int argc, char* argv[]) {
   ROMULUS_INFO("!> [CONF] duration={}_ms", duration.count());
   ROMULUS_INFO("!> [CONF] system_size={}", system_size);
   ROMULUS_INFO("!> [CONF] output file={}", output_file);
+  if (sleep.count() > 0)
+    ROMULUS_INFO(
+        "!> [WARNING] sleep={}_ms -- Do not run throughput tests with sleep "
+        "enabled",
+        sleep.count());
 
   INIT_CONSENSUS(transport_flag, buf_size, mach_map);
-  FILL_PROPOSALS();
+  WorkloadGenerator wg(args, key_range, kNumProposals, system_size);
+  wg.generate();
+  auto& proposals = wg.get_ops();
+  // wg.print(0, 10);
 
-  std::function<void(void)> init = SYNC_NODES;
+  std::function<void(void)> sync = SYNC_NODES;
   std::function<void(void)> exec = EXEC_LATENCY;
   std::function<void(void)> done = DONE_LATENCY;
-  std::function<void(std::ofstream&)> calc = CALC_LATENCY;
+  std::function<void(std::tuple<double, double, double, double>*,
+                     std::vector<double>&)>
+      calc = CALC_LAT;
   std::function<void(void)> reset = RESET;
 
-  init();
-
   ROMULUS_INFO("Starting latency test");
-  ROMULUS_INFO("MultiPaxos Optimization: {}", multipax_opt ? "ON" : "OFF");
 
+#ifdef DEFAULT
+  ROMULUS_INFO("MultiPaxos Optimization: {}", multipax_opt ? "ON" : "OFF");
+#ifdef FAILOVER
+  auto fd_threads = paxos->FailureDetector();
+  auto iterations = 0;
+  auto testtime_us =
+      std::chrono::duration_cast<std::chrono::microseconds>(testtime);
+  uint64_t total_work_us = 0;
+  paxos->Warmup();
+  ROMULUS_STOPWATCH_BEGIN();
+  while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
+         static_cast<uint64_t>(testtime_us.count())) {
+    auto* failure_detected = paxos->isFailureDetected();
+
+    for (uint32_t i = 0; i < loop; ++i) {
+      ROMULUS_VERBOSE(
+          "<Main> Loop i={}, log_offset={}, isLeader={}, isLeaderStable={}", i,
+          paxos->GetOffset(), paxos->isLeader(), paxos->isLeaderStable());
+      paxos->ConditionalReset();
+      ROMULUS_VERBOSE("<Main> After ConditionalReset");
+      if (paxos->isLeaderStable() && !paxos->isLeader()) {
+        ROMULUS_VERBOSE("<Main> Follower path - calling CatchUp");
+        paxos->CatchUp();
+      } else if ((!paxos->isLeaderStable() && failure_detected->load()) ||
+                 (!paxos->isLeaderStable() || paxos->isLeader())) {
+        ROMULUS_VERBOSE("<Main> Leader path - calling exec");
+        auto work_start = std::chrono::steady_clock::now();
+        exec();
+        auto work_end = std::chrono::steady_clock::now();
+        iterations++;
+        total_work_us += std::chrono::duration_cast<std::chrono::microseconds>(
+                             work_end - work_start)
+                             .count();
+        ROMULUS_VERBOSE("<Main> exec returned");
+      } else {
+        ROMULUS_VERBOSE(
+            "<Main> NEITHER BRANCH TAKEN! isLeader={}, isLeaderStable={}, "
+            "isFailureDetected={}",
+            paxos->isLeader(), paxos->isLeaderStable(),
+            failure_detected->load());
+      }
+
+      ROMULUS_VERBOSE("<Main> About to busy_wait");
+
+      busy_wait(sleep, failure_detected);
+    }
+    ROMULUS_VERBOSE("<Main> For loop completed, checking while condition");
+  }
+#endif
+  // Regular path (no failover)
+  // Warmup before starting the timer
+  paxos->Warmup();
+
+  auto election_start = std::chrono::steady_clock::now();
+  // Assumption -- the first exec is the election round and will be successful
+  if (paxos->MaybeLeaderId() == id) exec();
+  [[maybe_unused]] auto election_lat =
+      std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::steady_clock::now() - election_start);
+
+  // Give preparer thread plenty of time to run ahead
+  paxos->Preprepare();
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  // exit(0);
+
+  auto testtime_us =
+      std::chrono::duration_cast<std::chrono::microseconds>(testtime);
+  uint64_t total_work_us = 0;
+  size_t iterations = 0;
+  ROMULUS_STOPWATCH_BEGIN();
+  while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
+         static_cast<uint64_t>(testtime_us.count())) {
+    for (uint32_t i = 0; i < loop; ++i) {
+      if (paxos->MaybeLeaderId() == id && paxos->GetOffset() < capacity) {
+        exec();
+        iterations++;
+      }
+    }
+  }
+
+  if (paxos->isLeader()) {
+    std::tuple<double, double, double, double> result;
+    auto election_lat = latencies.front();
+    calc(&result, latencies);
+    std::stringstream ss;
+    ss << system_size << "," << total_work_us << "," << iterations << ","
+       << election_lat << "," << std::get<0>(result) << ","
+       << std::get<1>(result) << "," << std::get<2>(result) << ","
+       << std::get<3>(result);
+    ss << std::endl;
+    ROMULUS_INFO(
+      "Work time (us): {}\tTotal ops: {}\nLease election latency (ns): {}\nAvg "
+      "latency (ns): {}\nP50 latency (ns): {}\nP99 latency (ns): {}\nP99.9 "
+      "latency (ns): {}",
+      total_work_us, iterations, election_lat, std::get<0>(result),
+      std::get<1>(result), std::get<2>(result),
+      std::get<3>(result));
+    ROMULUS_INFO("[PARSE] {}", ss.str());
+    // system_size, worktime_us, total_ops, election_lat, lat_avg, lat_50p,
+    // lat_99p, lat_99_9p calc = CALC_THROUGHPUT; calc(outfile);
+  }
+
+  sync();
+
+  ROMULUS_INFO("Experiment is finished. Cleaning up...");
+  done();  // cleanup
+
+#ifdef FAILOVER
+  for (auto& t : fd_threads) {
+    t.join();
+  }
+#endif
+
+#endif
+
+#ifdef USE_VELOS
   std::atomic<bool> preprepare_running(true);
 
-#if defined(USE_VELOS)
   ROMULUS_INFO("Using Velos, launching background thread...");
 
   std::thread([&]() {
@@ -98,106 +226,176 @@ int main(int argc, char* argv[]) {
   }).detach();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-#endif
-
-  auto fd_threads = paxos->FailureDetector();
 
   auto testtime_us =
       std::chrono::duration_cast<std::chrono::microseconds>(testtime);
   ROMULUS_STOPWATCH_BEGIN();
   while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
          static_cast<uint64_t>(testtime_us.count())) {
-    //     for (uint32_t i = 0; i < loop; ++i) {
-    // #if defined(USE_MU) || defined(USE_VELOS)
-    //       if (id == 0) {
-    //         exec();
-    //         busy_wait(sleep);
-    //       }
-    // #else
-    //       paxos->ConditionalReset();
-    //       if (paxos->isLeaderStable() && !paxos->isLeader()) {
-    //         paxos->CatchUp();
-    //       } else if ((!paxos->isLeaderStable() && paxos->isFailureDetected())
-    //       ||
-    //                  (!paxos->isLeaderStable() || paxos->isLeader())) {
-    //         exec();
-    //       }
-    //       busy_wait(sleep);
-    // #endif
-
-    // #if defined(USE_VELOS)
-    //       if (dump_requested_.load(std::memory_order_relaxed)) {
-    //         ROMULUS_INFO("Shutdown requested, dumping logs...");
-    //         velos->DumpLogs();
-    //         exit(0);
-    //       }
-    // #endif
-    //     }
-    auto* failure_detected = paxos->isFailureDetected();
-
     for (uint32_t i = 0; i < loop; ++i) {
-#ifdef VERBOSE
-      ROMULUS_INFO(
-          "<Main> Loop i={}, log_offset={}, isLeader={}, isLeaderStable={}", i,
-          paxos->GetOffset(), paxos->isLeader(), paxos->isLeaderStable());
-#endif
-      paxos->ConditionalReset();
-#ifdef VERBOSE
-      ROMULUS_INFO("<Main> After ConditionalReset");
-#endif
-      if (paxos->isLeaderStable() && !paxos->isLeader()) {
-#ifdef VERBOSE
-        ROMULUS_INFO("<Main> Follower path - calling CatchUp");
-#endif
-        paxos->CatchUp();
-      } else if ((!paxos->isLeaderStable() && failure_detected->load()) ||
-                 (!paxos->isLeaderStable() || paxos->isLeader())) {
-#ifdef VERBOSE
-        ROMULUS_INFO("<Main> Leader path - calling exec");
-#endif
-        exec();
-#ifdef VERBOSE
-        ROMULUS_INFO("<Main> exec returned");
-#endif
-      } else {
-#ifdef VERBOSE
-        ROMULUS_INFO(
-            "<Main> NEITHER BRANCH TAKEN! isLeader={}, isLeaderStable={}, "
-            "isFailureDetected={}",
-            paxos->isLeader(), paxos->isLeaderStable(),
-            failure_detected->load());
-#endif
-      }
-#ifdef VERBOSE
-      ROMULUS_INFO("<Main> About to busy_wait");
-#endif
-      busy_wait(sleep, failure_detected);
+      exec();
+      busy_wait(sleep);
     }
-#ifdef VERBOSE
-    ROMULUS_INFO("<Main> For loop completed, checking while condition");
-#endif
   }
-
   preprepare_running.store(false);
-
-  init();  // sync
+  sync();
 
   ROMULUS_INFO("Experiment is finished. Cleaning up...");
+  done();  // cleanup
+#endif
 
+#ifdef USE_MU
+  ROMULUS_INFO("Waiting for all nodes to be up...");
+  std::this_thread::sleep_for(std::chrono::seconds(2 + system_size - id));
+
+  auto testtime_us =
+      std::chrono::duration_cast<std::chrono::microseconds>(testtime);
+  ROMULUS_STOPWATCH_BEGIN();
+  uint64_t total_work_us = 0;
+  size_t iterations = 0;
+  while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
+         static_cast<uint64_t>(testtime_us.count())) {
+    // ROMULUS_INFO("Am I the leader? {}", is_leader.load() ? "Yes" : "No");
+    // Lowest leader id will be elected first...
+#ifndef FAILOVER
+    if (id == 0) {
+      // ROMULUS_INFO("[LEADER] Executing iteration {}", iterations);
+      auto work_start = std::chrono::steady_clock::now();
+      exec();
+      iterations++;
+      auto work_end = std::chrono::steady_clock::now();
+      total_work_us += std::chrono::duration_cast<std::chrono::microseconds>(
+                           work_end - work_start)
+                           .count();
+    }
+#else
+    if (id == 0) {
+      if (iterations > 100) {
+        ROMULUS_INFO("Stalling leader... ");
+        std::abort();
+        goto stall_leader;
+      }
+      ROMULUS_INFO("[LEADER] Executing iteration {}", iterations);
+      exec();
+    }
+    if (id != 0 && is_leader.load()) {
+      auto failover_end_time = std::chrono::steady_clock::now();
+      if (failover_start_time == std::chrono::steady_clock::time_point()) {
+        ROMULUS_INFO("Failover start time was not set!");
+      }
+      auto failover_duration =
+          std::chrono::duration_cast<std::chrono::microseconds>(
+              failover_end_time - failover_start_time);
+      ROMULUS_INFO("[FAILOVER]: {} us", failover_duration.count());
+      goto stall_leader;
+    }
+    ++iterations;
+#endif
+    // busy_wait(sleep);
+  }
+#ifdef FAILOVER
+stall_leader:
+#endif
+  sync();
+
+  if (is_leader.load()) {
+    std::tuple<double, double, double, double> result;
+    calc(&result, latencies);
+    std::stringstream ss;
+    ss << system_size << "," << total_work_us << "," << iterations << "," << 0
+       << "," << std::get<0>(result) << "," << std::get<1>(result) << ","
+       << std::get<2>(result) << "," << std::get<3>(result);
+    ss << std::endl;
+    ROMULUS_INFO("[PARSE] {}", ss.str());
+  }
+
+  ROMULUS_INFO("Experiment is finished. Cleaning up...");
+  done();  // cleanup
+#endif
+
+#ifdef USE_LEASE
+
+  ROMULUS_INFO("Using Mu^2...");
+  auto* cas = dynamic_cast<paxos_st::CasPaxos*>(paxos.release());
+  auto mu_squared =
+      std::make_unique<paxos_st::MuSquared>(std::move(*cas), proposals);
+
+  exec = LEASE_EXEC_LATENCY;
+  done = LEASE_DONE;
+  sync = LEASE_SYNC_NODES;
+
+  pin_thread_to_core(0);
+
+  ROMULUS_INFO("Warming up...");
+  mu_squared->Warmup();
+
+  // First proposal is reserved for the lease
+  auto lease_start = std::chrono::steady_clock::now();
+  mu_squared->LeasePropose(proposals[0].first, proposals[0].second, true);
+  auto lease_elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                           std::chrono::steady_clock::now() - lease_start)
+                           .count();
+  // mu_squared->StartCommitThreads();
+  ROMULUS_INFO("Lease election latency: {} ns", lease_elapsed);
+  uint64_t total_work_us = 0;
+  uint64_t rounds = 0;
+
+  auto testtime_us =
+      std::chrono::duration_cast<std::chrono::microseconds>(testtime);
+  ROMULUS_STOPWATCH_BEGIN();
+  while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
+         static_cast<uint64_t>(testtime_us.count())) {
+    // first entry is the lease msg
+    int i = 1 + (rounds % kNumProposals);
+    auto work_start = std::chrono::high_resolution_clock::now();
+    mu_squared->LeasePropose(proposals[i].first, proposals[i].second);
+    auto work_end = std::chrono::high_resolution_clock::now();
+    total_work_us += std::chrono::duration_cast<std::chrono::microseconds>(
+                         work_end - work_start)
+                         .count();
+    busy_wait(sleep);
+    rounds++;
+  }
+  sync();
+  uint64_t total_ops = mu_squared->GetTotalOps();
+  latencies = mu_squared->AggregateLatencies();
+  std::tuple<double, double, double, double> latency_stats;
+  // dump latencies
+  std::stringstream csv_ss;
+
+  // for (size_t i = 0; i < latencies.size(); ++i) {
+  //   csv_ss << latencies[i];
+  //   if (i != latencies.size() - 1) {
+  //     csv_ss << ",";
+  //   }
+  // }
+  // csv_ss << std::endl;
+  // ROMULUS_INFO("[LATENCIES] {}", csv_ss.str());
+  CALC_LAT(&latency_stats, latencies);
+  // system_size, worktime_us, total_ops, election_lat, lat_avg, lat_50p,
+  // lat_99p, lat_99_9p
+  csv_ss.str("");
+  csv_ss.clear();
+  csv_ss << system_size << "," << total_work_us << "," << total_ops << ","
+         << lease_elapsed << "," << std::get<0>(latency_stats) << ","
+         << std::get<1>(latency_stats) << "," << std::get<2>(latency_stats)
+         << "," << std::get<3>(latency_stats);
+  csv_ss << std::endl;
+  ROMULUS_INFO(
+      "Work time (us): {}\tTotal ops: {}\nLease election latency (ns): {}\nAvg "
+      "latency (ns): {}\nP50 latency (ns): {}\nP99 latency (ns): {}\nP99.9 "
+      "latency (ns): {}",
+      total_work_us, total_ops, lease_elapsed, std::get<0>(latency_stats),
+      std::get<1>(latency_stats), std::get<2>(latency_stats),
+      std::get<3>(latency_stats));
+  ROMULUS_INFO("[PARSE] {}", csv_ss.str());
+
+  ROMULUS_INFO("Experiment is finished. Cleaning up...");
   done();  // cleanup
 
-  for (auto& t : fd_threads) {
-    t.join();
-  }
-
-  if (paxos->isLeader()) {
-    calc(outfile);
-    calc = CALC_THROUGHPUT;
-    calc(outfile);
-  }
+#endif
 
   outfile.close();
-
   for (auto& p : proposals) {
     delete[] p.second;
   }

@@ -37,6 +37,7 @@ class Consensus {
       std::function<void(bool leader, uint8_t *buf, size_t len)> committer);
 
   ProposeError propose(uint8_t *buf, size_t len);
+  bool isLeader();
   int potentialLeader();
   bool blockedResponse();
   std::pair<uint64_t, uint64_t> proposedReplicatedRange();

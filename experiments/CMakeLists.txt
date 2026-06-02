@@ -21,6 +21,7 @@ foreach(SRC ${SRC_SOURCES})
   if(USE_MU)
     message(STATUS "Building WITH Mu enabled")
     target_compile_definitions(${SRC_NAME} PRIVATE USE_MU)
+
     target_link_libraries(${SRC_NAME}
       PRIVATE
       ${CMAKE_SOURCE_DIR}/lib/libcrashconsensus.so
@@ -33,6 +34,11 @@ foreach(SRC ${SRC_SOURCES})
     target_compile_definitions(${SRC_NAME} PRIVATE USE_VELOS)
   else()
     message(STATUS "Building WITHOUT Velos")
+  endif()
+  if(USE_LEASE)
+    message(STATUS "Building WITH Lease enabled")
+  else()
+    message(STATUS "Building WITHOUT Lease")
   endif()
 
   target_link_libraries(${SRC_NAME}

@@ -198,7 +198,14 @@ void CasPaxos::ReadLeaderSlot() {
     raddr.addr_info.length = kSlotSize;
 
     // Should be loopback #3
-    auto* loopback_conn = remote_conns_[host_id_].back();
+    romulus::ReliableConnection* loopback_conn;
+    try{
+      loopback_conn = remote_conns_[host_id_].at(2);
+    } catch (const std::out_of_range& e) {
+      ROMULUS_FATAL("Loopback connection for failure detector not found: {}",
+                    e.what());
+      return;
+    }
 
     while (failure_detector_running_.load()) {
       loopback_conn->Read(laddr, raddr, wr_id_);

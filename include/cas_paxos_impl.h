@@ -35,36 +35,30 @@ std::vector<double> latencies;
     uint32_t i = latencies.size() % kNumProposals;                        \
     auto start = std::chrono::steady_clock::now();                        \
     paxos->Propose(proposals[i].first, proposals[i].second);              \
-    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>( \
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>( \
                        std::chrono::steady_clock::now() - start)          \
                        .count();                                          \
-    double elapsed_us = static_cast<double>(elapsed);                     \
-    latencies.emplace_back(elapsed_us);                                   \
-    /* ROMULUS_INFO("Proposed at log offset {}, latency={}us",            \
-                 paxos->GetOffset(), elapsed_us);       */                \
+    double elapsed_ns = static_cast<double>(elapsed);                     \
+    latencies.emplace_back(elapsed_ns);                                   \
+    /* ROMULUS_INFO("Proposed at log offset {}, latency={}ns",            \
+                 paxos->GetOffset(), elapsed_ns);       */                \
   };
+
 
 #define DONE_LATENCY []() { paxos->CleanUp(); };
 
-#define CALC_LATENCY                                                           \
-  [&](std::ofstream& outfile) {                                                \
-    std::stringstream ss;                                                      \
-    for (int i = 0; i < (int)latencies.size(); ++i) {                          \
-      ss << latencies[i];                                                      \
-      if (i != (int)latencies.size() - 1) {                                    \
-        ss << ", ";                                                            \
-      }                                                                        \
-    }                                                                          \
-    ss << std::endl;                                                           \
-    ROMULUS_INFO("[LATENCY]: {}", ss.str());                                   \
-    /* ADJUSTMENT for warm-up period */                                        \
-    latencies.erase(latencies.begin(), latencies.begin() + 100);               \
+#define CALC_LAT                                                               \
+  [&](std::tuple<double, double, double, double>* result,                      \
+      std::vector<double>& latencies) {                                        \
+        /* remove the first 25% of latencies as warmup */                       \
+    latencies.erase(latencies.begin(),                                         \
+                    latencies.begin() + latencies.size() / 4);                 \
     double latency_avg = 0.0;                                                  \
     double latency_stddev = 0.0;                                               \
     double latency_50p = 0.0;                                                  \
     double latency_99p = 0.0;                                                  \
     double latency_99_9p = 0.0;                                                \
-    double latency_max = 0.0;                                                  \
+    [[maybe_unused]] double latency_max = 0.0;                                 \
     int latency_max_idx = 0;                                                   \
     if (latencies.size() > 0) {                                                \
       latency_avg = std::accumulate(latencies.begin(), latencies.end(), 0.0);  \
@@ -86,23 +80,10 @@ std::vector<double> latencies;
           latencies[static_cast<uint32_t>((latencies.size() * .99))];          \
       latency_99_9p =                                                          \
           latencies[static_cast<uint32_t>((latencies.size() * .999))];         \
+      *result = std::make_tuple(latency_avg, latency_50p, latency_99p,         \
+                                latency_99_9p);                                \
     }                                                                          \
-    ss.str("");                                                                \
-    ss.clear();                                                                \
-    ss << latency_avg << "," << latency_50p << "," << latency_99p << ","       \
-       << latency_99_9p;                                                       \
-    ss << std::endl;                                                           \
-    outfile << ss.str();                                                       \
-    ROMULUS_INFO("[PARSE] {}", ss.str());                                      \
-    ROMULUS_INFO("!> [LAT] count={}", latencies.size());                       \
-    ROMULUS_INFO("!> [LAT] lat_avg={:4.2f} ± {:4.2f} us", latency_avg,         \
-                 latency_stddev);                                              \
-    ROMULUS_INFO("!> [LAT] lat_50p={:4.2f} us", latency_50p);                  \
-    ROMULUS_INFO("!> [LAT] lat_99p={:4.2f} us", latency_99p);                  \
-    ROMULUS_INFO("!> [LAT] lat_99_9p={:4.2f} us", latency_99_9p);              \
-    ROMULUS_INFO("!> [LAT] lat_max={:4.2f} us", latency_max);                  \
-    ROMULUS_INFO("!> [LAT] lat_max_idx={}", latency_max_idx);                  \
-  };
+  }
 
 #define RESET           \
   [&]() {               \

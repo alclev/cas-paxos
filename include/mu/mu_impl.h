@@ -5,24 +5,29 @@
 #include <fstream>
 
 #include "crash-consensus.h"
+#include "external.h"
 
-#define INIT_CONSENSUS(transport_flag, buf_sz, mach_map) \
-  ROMULUS_INFO("Initializing Mu");                       \
-  std::vector<int> remote_ids;                           \
-  for (int i = 1; i < (int)system_size + 1; ++i) {       \
-    if (i != id + 1) {                                   \
-      remote_ids.push_back(i);                           \
-      ROMULUS_INFO("remote: {}", i);                     \
-    }                                                    \
-  }                                                      \
-  dory::Consensus mu(id + 1, remote_ids);                \
-  mu.commitHandler([]([[maybe_unused]] bool leader,      \
-                      [[maybe_unused]] uint8_t* buf,     \
-                      [[maybe_unused]] size_t len) {});
+#define INIT_CONSENSUS(transport_flag, buf_sz, mach_map)                       \
+  ROMULUS_INFO("Initializing Mu");                                             \
+  std::vector<int> remote_ids;                                                 \
+  for (int i = 1; i < (int)system_size + 1; ++i) {                             \
+    if (i != id + 1) {                                                         \
+      remote_ids.push_back(i);                                                 \
+      ROMULUS_INFO("remote: {}", i);                                           \
+    }                                                                          \
+  }                                                                            \
+  dory::Consensus mu(id + 1, remote_ids);                                      \
+  mu.commitHandler([]([[maybe_unused]] bool leader,                            \
+                      [[maybe_unused]] uint8_t* buf,                           \
+                      [[maybe_unused]] size_t len) {});                        \
+  auto registry =                                                              \
+      std::make_unique<romulus::ConnectionRegistry>("MuTest", registry_ip); \
+  auto conn_manager = std::make_unique<romulus::ConnectionManager>(            \
+      hostname, registry.get(), id, system_size, num_qps);
 
 std::vector<double> latencies;
 
-#define SYNC_NODES [&]() {};
+#define SYNC_NODES [&]() { conn_manager->arrive_strict_barrier(); };
 
 #define EXEC_LATENCY                                                        \
   [&]() {                                                                   \
@@ -62,24 +67,28 @@ std::vector<double> latencies;
               "errors here");                                               \
       }                                                                     \
     } else {                                                                \
-      auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>( \
+      auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>( \
                          std::chrono::steady_clock::now() - start)          \
                          .count();                                          \
-      double elapsed_us = static_cast<double>(elapsed);                     \
-      latencies.emplace_back(elapsed_us);                                   \
+      double elapsed_ns = static_cast<double>(elapsed);                     \
+      latencies.emplace_back(elapsed_ns);                                   \
     }                                                                       \
   };
 
-#define DONE_LATENCY []() {};
+#define DONE_LATENCY [&]() { outfile.close(); };
 
-#define CALC_LATENCY                                                           \
-  [&](std::ofstream& outfile) {                                                \
+#define CALC_LAT                                                               \
+  [&](std::tuple<double, double, double, double>* result,                      \
+      std::vector<double>& latencies) {                                        \
+        /* remove the first 25% of latencies as warmup */                       \
+    latencies.erase(latencies.begin(),                                         \
+                    latencies.begin() + latencies.size() / 4);                 \
     double latency_avg = 0.0;                                                  \
     double latency_stddev = 0.0;                                               \
     double latency_50p = 0.0;                                                  \
     double latency_99p = 0.0;                                                  \
     double latency_99_9p = 0.0;                                                \
-    double latency_max = 0.0;                                                  \
+    [[maybe_unused]] double latency_max = 0.0;                                 \
     int latency_max_idx = 0;                                                   \
     if (latencies.size() > 0) {                                                \
       latency_avg = std::accumulate(latencies.begin(), latencies.end(), 0.0);  \
@@ -101,28 +110,10 @@ std::vector<double> latencies;
           latencies[static_cast<uint32_t>((latencies.size() * .99))];          \
       latency_99_9p =                                                          \
           latencies[static_cast<uint32_t>((latencies.size() * .999))];         \
+      *result = std::make_tuple(latency_avg, latency_50p, latency_99p,         \
+                                latency_99_9p);                                \
     }                                                                          \
-    std::stringstream ss;                                                      \
-    ss << latency_avg << "," << latency_50p << "," << latency_99p << ","       \
-       << latency_99_9p << '\n';                                               \
-    for (int i = 0; i < (int)latencies.size(); ++i) {                          \
-      ss << latencies[i];                                                      \
-      if (i != (int)latencies.size() - 1) {                                    \
-        ss << ", ";                                                            \
-      }                                                                        \
-    }                                                                          \
-    ss << std::endl;                                                           \
-    outfile << ss.str();                                                       \
-    ROMULUS_INFO("[PARSE] {}", ss.str());                                      \
-    ROMULUS_INFO("!> [LAT] count={}", latencies.size());                       \
-    ROMULUS_INFO("!> [LAT] lat_avg={:4.2f} ± {:4.2f} us", latency_avg,         \
-                 latency_stddev);                                              \
-    ROMULUS_INFO("!> [LAT] lat_50p={:4.2f} us", latency_50p);                  \
-    ROMULUS_INFO("!> [LAT] lat_99p={:4.2f} us", latency_99p);                  \
-    ROMULUS_INFO("!> [LAT] lat_99_9p={:4.2f} us", latency_99_9p);              \
-    ROMULUS_INFO("!> [LAT] lat_max={:4.2f} us", latency_max);                  \
-    ROMULUS_INFO("!> [LAT] lat_max_idx={}", latency_max_idx);                  \
-  };
+  }
 
 #define RESET [&]() {};
 

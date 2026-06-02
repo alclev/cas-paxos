@@ -37,9 +37,34 @@ uint64_t CasPaxos::ExtractId(State& st) {
   return st.GetPromiseBallot() % system_size_;
 }
 
+void CasPaxos::Warmup() {
+  for (int i = 0; i < (int)kNumWarmupIters; ++i) {
+    // Post the CAS
+    // auto start = std::chrono::high_resolution_clock::now();
+    for (int n = 0; n < system_size_; ++n) {
+      auto& conn = cached_conns_[n];
+      auto& raddr = cached_raddrs_[n];
+      raddr.addr_info.offset = host_id_ * kSlotSize;
+      cached_laddr_.offset = n * kSlotSize;
+      conn->CompareAndSwap(cached_laddr_, raddr, 0, 0, wr_id_);
+    }
+    // auto t1 = std::chrono::high_resolution_clock::now();
+    remote_conns_[0][0]->ProcessCompletions(system_size_);
+    // auto end = std::chrono::high_resolution_clock::now();
+
+    // ROMULUS_INFO(
+    //     "Warmup iteration {}: Post={} ns Poll={} ns", i,
+    //     std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - start)
+    //         .count(),
+    //     std::chrono::duration_cast<std::chrono::nanoseconds>(end - t1)
+    //         .count());
+    std::this_thread::sleep_for(std::chrono::microseconds(50));
+  }
+}
+
+#if 0
 void CasPaxos::ConditionalReset() {
   if (log_offset_ >= kRingSize) {
-    reset_in_progress_ = true;
     // count number of true in detected_
     int detected_count = 0;
     for (bool d : detected_) {
@@ -154,12 +179,20 @@ void CasPaxos::ClearLogs() {
     }
   }
 }
+#endif
 
 void CasPaxos::CleanUp() {
+  if (multi_paxos_opt_) {
+    threads_running_.store(false);
+    preprepare_sem_.release();
+    preparer_thread_.join();
+    failure_detector_running_.store(false);
+  }
+
 #ifdef PROMISE_BENCH
   // calculate the average time for each phase
   std::vector<double> avg_times(promise_bench_times_.size(), 0);
-  
+
   for (const auto& times : promise_bench_times_) {
     for (size_t i = 0; i < times.size(); ++i) {
       avg_times[i] += times[i];
@@ -171,25 +204,7 @@ void CasPaxos::CleanUp() {
   ROMULUS_INFO(
       "Average Promise times (ns): init={} post={} poll={} check={} total={}",
       avg_times[0], avg_times[1], avg_times[2], avg_times[3], avg_times[4]);
-
 #endif
-
-  failure_detector_running_.store(false);
-  // if (is_leader_) {
-  //   State shutdown_msg(0, 0, Value(kShutdown));
-  //   BroadcastLeader(&shutdown_msg);
-  // }
-
-  // ROMULUS_COUNTER_ACC("p1_aborts");
-  // ROMULUS_COUNTER_ACC("p2_aborts");
-  // ROMULUS_COUNTER_ACC("attempts");
-  // ROMULUS_COUNTER_ACC("skipped");
-  // ROMULUS_COUNTER_ACC("proposed");
-  // ROMULUS_INFO("!> p1_aborts={}", ROMULUS_COUNTER_GET("p1_aborts"));
-  // ROMULUS_INFO("!> p2_aborts={}", ROMULUS_COUNTER_GET("p2_aborts"));
-  // ROMULUS_INFO("!> attempts={}", ROMULUS_COUNTER_GET("attempts"));
-  // ROMULUS_INFO("!> skipped={}", ROMULUS_COUNTER_GET("skipped"));
-  // ROMULUS_INFO("!> proposed={}", ROMULUS_COUNTER_GET("proposed"));
 }
 
 void CasPaxos::SyncNodes() {
@@ -199,6 +214,6 @@ void CasPaxos::SyncNodes() {
 }
 
 void CasPaxos::Reset() {
-  log_offset_ = 0;
-  buf_offset_ = 0;
+  prom_offset_.store(0);
+  prep_offset_.store(0);
 }
