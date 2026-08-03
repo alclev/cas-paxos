@@ -2,18 +2,18 @@
 
 #include <romulus/cli.h>
 
-namespace romulus {
+using namespace romulus;
+
 constexpr const char* HOSTNAME = "--hostname";
 constexpr const char* TESTTIME = "--testtime";
 constexpr const char* LOOP = "--loop";
 constexpr const char* CAPACITY = "--capacity";
-constexpr const char* BUF_SIZE = "--buf-size";
 constexpr const char* SLEEP = "--sleep";
-constexpr const char* STABLE_LEADER = "--stable-leader";
 constexpr const char* DURATION = "--duration";
-constexpr const char* MULTIPAX_OPT = "--multipax-opt";
 constexpr const char* KEY_RANGE = "--key-range";
-
+constexpr const char* NUM_SHARDS = "--num-shards";
+constexpr const char* PIPELINE_DEPTH = "--pipeline-depth";
+constexpr const char* TXN_SIZE = "--txn-size";
 
 // Cloudlab notes:
 // r320
@@ -29,17 +29,12 @@ constexpr const char* KEY_RANGE = "--key-range";
 
 inline auto EXTRA_ARGS = {
     STR_ARG(HOSTNAME, "Hostname of this node."),
-    U64_ARG_OPT(TESTTIME, "Experiment duration in seconds", 10),
+    U64_ARG_OPT(TESTTIME, "Experiment duration in seconds", 5),
     U64_ARG_OPT(LOOP, "Number of iterations between runtime checks.", 1000),
     U64_ARG_OPT(CAPACITY, "Capacity of the replicated log.", (1ULL << 20)),
-    U64_ARG_OPT(BUF_SIZE, "Buffer size for remote writes.", 64),
     U64_ARG_OPT(SLEEP, "Sleep interval between proposals in ms", 0),
-    BOOL_ARG_OPT(STABLE_LEADER,
-                 "If true, only a single node proposes commands."),
-    U64_ARG_OPT(DURATION, "Duration of leadership in rotating policy in ms.",
-                100),
-    BOOL_ARG_OPT(MULTIPAX_OPT, "Enable the multipaxos optimization"),
     U64_ARG_OPT(KEY_RANGE, "Key range for the workload.", 256),
+    U64_ARG_OPT(NUM_SHARDS, "Number of shards for the workload.", 20),
+    U64_ARG_OPT(PIPELINE_DEPTH, "Consensus pipeline depth.", 10),
+    U64_ARG_OPT(TXN_SIZE, "Transaction size in terms of number of keys", 1)
 };
-
-};  // namespace romulus

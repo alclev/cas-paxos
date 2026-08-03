@@ -97,7 +97,7 @@ function cl_install_deps() {
 	last_valid_index=$((${#MACHINES[@]} - 1)) # The 0-indexed number of nodes
 
 	# Names of packages that we need to install on CloudLab
-	package_deps="librdmacm-dev ibverbs-utils libnuma-dev gdb libgtest-dev libibverbs-dev libmemcached-dev memcached libevent-dev libhugetlbfs-dev numactl libgflags-dev libssl-dev"
+	package_deps="librdmacm-dev ibverbs-utils libnuma-dev gdb libgtest-dev libibverbs-dev libmemcached-dev memcached libevent-dev libhugetlbfs-dev numactl libgflags-dev libssl-dev llvm"
 	# First-time SSH
 	cl_first_connect
 
@@ -158,7 +158,10 @@ function cl_run() {
 		# CMD="sudo perf stat -e cycles,task-clock,cache-misses,LLC-load-misses -I 5000 -o perf_stat_${i}.txt ./${EXE_NAME} --hostname ${host} --node-id ${i} --output-file stats_${i}.csv ${ARGS} --multipax-opt"
 		# gdb -ex \"catch throw\" -ex \"r\" --args
 		# CMD="perf record -e cycles:pp -F 99999 -g ./${EXE_NAME} --hostname ${host} --node-id ${i} ${ARGS} --multipax-opt ${EXTRA_ARGS}"
+		# if i is 0,
 		CMD="./${EXE_NAME} --hostname ${host} --node-id ${i} ${ARGS} ${EXTRA_ARGS}"
+		# Leader will optionally run with DEBUG_ARGS
+		CMD="${DEBUG_ARGS} ${CMD}"
 
 		echo "$CMD"
 		cat >>"$tmp_screen" <<EOF
@@ -417,85 +420,34 @@ elif [[ "$cmd" == "run-experiment" && "$count" -eq 2 ]]; then
 	cl_run "$2"
 	retrieve_results
 elif [[ "$cmd" == "run-debug" && ("$count" -eq 2 || "$count" -eq 3) ]]; then
-	cl_debug "$2" "${*:3}"
+	CUSTOM_ARG="${*:3}"
+	DEBUG_ARGS="gdb -ex 'set pagination off' -ex 'set confirm off' -ex '${CUSTOM_ARG}' -ex 'r' --args"
+	cl_run "$2"
 elif [[ "$cmd" == "reset-memcached" && "$count" -eq 1 ]]; then
 	reset_memcached
-elif [[ "$cmd" == "build-debug" && "$count" -eq 1 ]]; then
-	source tools/build.sh debug
-elif [[ "$cmd" == "build-release" && "$count" -eq 1 ]]; then
-	source tools/build.sh release
+elif [[ "$cmd" == "build-debug" && "$count" -eq 2 ]]; then
+	source tools/build.sh debug "$2"
+elif [[ "$cmd" == "build-release" && "$count" -eq 2 ]]; then
+	source tools/build.sh release "$2"
 elif [[ "$cmd" == "connect" && "$count" -eq 1 ]]; then
 	cl_connect
 elif [[ "$cmd" == "reset" && "$count" -eq 2 ]]; then
 	reset $2
 elif [[ "$cmd" == "reset-all" && "$count" -eq 1 ]]; then
 	reset-all
-elif [[ "$cmd" == "perftest" && "$count" -eq 2 ]]; then
-	source tools/perftest.sh "$2"
 elif [[ "$cmd" == "do-all" && "$count" -eq 2 ]]; then
 	do_all "$2"
-elif [[ "$cmd" == "retrieve-results" && "$count" -eq 1 ]]; then
-	retrieve_results
-elif [[ "$cmd" == "launch-experiment" && "$count" -eq 2 ]]; then
-	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' >results/caspaxos.csv
-	ORIG_MACHINES=("${MACHINES[@]}")
-	for i in $(seq 3 ${#ORIG_MACHINES[@]}); do
-		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
-		load_cfg
-		echo "Resetting..."
-		reset $(basename "$2")
-		echo "Launching experiment with ${#MACHINES[@]} nodes..."
-		cl_run "$2"
-		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >>results/caspaxos.csv
-	done
-	echo "Turning on Multi-paxos optimization..."
-	reset_memcached
-	for i in $(seq 3 ${#ORIG_MACHINES[@]}); do
-		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
-		load_cfg
-		echo "Resetting..."
-		reset $(basename "$2")
-		echo "Launching experiment with ${#MACHINES[@]} nodes..."
-		EXTRA_ARGS="--multipax-opt"
-		cl_run "$2"
-		cat logs/* >logs/all_logs.tmp
-		grep -oP '\[PARSE\] \K.*' logs/all_logs.tmp >>results/caspaxos.csv
-		rm logs/all_logs.tmp
-	done
-elif [[ "$cmd" == "launch-experiment-velos" && "$count" -eq 2 ]]; then
-	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' >results/velos.csv
-	ORIG_MACHINES=("${MACHINES[@]}")
-	for i in $(seq 3 ${#ORIG_MACHINES[@]}); do
-		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
-		load_cfg
-		echo "Resetting..."
-		reset $(basename "$2")
-		echo "Launching experiment with ${#MACHINES[@]} nodes..."
-		cl_run "$2"
-		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >>results/velos.csv
-	done
-elif [[ "$cmd" == "launch-experiment-mu" && "$count" -eq 2 ]]; then
-	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' >results/mu.csv
-	ORIG_MACHINES=("${MACHINES[@]}")
-	for i in $(seq 7 ${#ORIG_MACHINES[@]}); do
-		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
-		load_cfg
-		echo "Resetting..."
-		reset_mu && reset $(basename "$2")
-		sleep 5
-		echo "Launching experiment with ${#MACHINES[@]} nodes..."
-		run_mu "$2"
-		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >>results/mu.csv
-	done
-elif [[ "$cmd" == "launch-experiment-failure" && "$count" -eq 2 ]]; then
-	source tools/experiments/failover.sh $2
-elif [[ "$cmd" == "experiment" && "$count" -eq 3 ]]; then
-	# check if tools/experiments/"$2".sh exists
-	if [[ ! -f "tools/experiments/${2}.sh" ]]; then
-		echo "Experiment script not found: tools/experiments/${2}.sh"
+elif [[ "$cmd" == "send-libs" && "$count" -eq 1 ]]; then
+	source tools/mu.sh
+	send_libs
+elif [[ "$cmd" == "do-experiment" && "$count" -ge 2 ]]; then
+	# check if file exists
+	EXE_NAME=$(basename "$2")
+	if [[ ! -f "tools/experiments/$2.sh" ]]; then
+		echo "Executable not found: tools/experiments/$2.sh"
 		exit 1
 	fi
-	source tools/experiments/"$2".sh "$3"
+	source tools/experiments/$2.sh $3
 else
 	usage
 fi

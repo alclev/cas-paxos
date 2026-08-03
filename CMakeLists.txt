@@ -16,7 +16,8 @@ endif()
 if(BUILD_MODE STREQUAL "DEBUG")
   message(STATUS "Building in Debug mode")
   set(CMAKE_BUILD_TYPE Debug)
-  add_compile_options(-g -O2 -fno-omit-frame-pointer) 
+  add_compile_options(-g -O0 -fno-omit-frame-pointer -fsanitize=address) 
+  add_link_options(-fsanitize=address)
   # -fsanitize=address
   # add_link_options(-fsanitize=address)
   add_compile_options(-U ROMULUS_LOG_LEVEL -D ROMULUS_LOG_LEVEL=DEBUG)
@@ -31,7 +32,7 @@ else()
 endif()
 
 # Set global compiler flags
-add_compile_options(-Wall -Wextra -Wwrite-strings -Werror )
+add_compile_options(-Wall -Wextra -Wwrite-strings -Werror -Wno-error=unused-parameter -Wno-error=unused-variable)
 #######################################################################################################################
 # Setup
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -62,7 +63,7 @@ else()
 endif()
 
 # add_compile_definitions(FAILOVER)
-add_compile_definitions(SYSDUMP)
+# add_compile_definitions(SYSDUMP)
 # add_compile_definitions(PROMISE_BENCH)
 # add_compile_definitions(VERBOSE)
 

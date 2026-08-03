@@ -71,10 +71,14 @@ fi
 # 2. Run for Mu Squared
 if [ "$EXPERIMENT" == "mu_squared" ] || [ "$EXPERIMENT" == "all" ]; then
 	outfile="results/sys_size/mu_squared.csv"
-	echo "system_size,total_work_us,total_ops,election_lat_ns,lat_avg_ns,lat_50p_ns,lat_99p_ns,lat_99_9p_ns" >"$outfile"
+	outfile_2="results/sys_size/mu_squared_thrus.csv"
+	outfile_3="results/sys_size/mu_squared_latencies.csv"
+	rm -f "$outfile" "$outfile_2" "$outfile_3"
+	# node_id, system_size, total_commits, total_worktime_us, lat_avg, lat_50p, lat_99p, lat_99_9p
+	echo "node_id,system_size,total_commits,total_worktime_us,lat_avg,lat_50p,lat_99p,lat_99_9p" >"$outfile"
 	# compile for Mu Squared
 	bash tools/build.sh release lease
-
+	ORIG_MACHINES=("${MACHINES[@]}")
 	for i in $(seq 3 ${#ORIG_MACHINES[@]}); do
 		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
 		load_cfg
@@ -87,7 +91,8 @@ if [ "$EXPERIMENT" == "mu_squared" ] || [ "$EXPERIMENT" == "all" ]; then
 		cl_run "$BIN_PATH"
 		# Aggregate logs and extract all lines with [PARSE]
 		grep -hoP '\[PARSE\] \K.*' logs/* >>"$outfile"
-
+		grep -hoP '\[THROUGHPUTS\] \K.*' logs/* >>"$outfile_2"
+		grep -hoP '\[LATENCIES\] \K.*' logs/* >>"$outfile_3"
 	done
 fi
 # 3. Run for Mu
@@ -97,7 +102,7 @@ if [ "$EXPERIMENT" == "mu" ] || [ "$EXPERIMENT" == "all" ]; then
 	# compile for Mu
 	bash tools/build.sh release mu
 	source tools/mu.sh
-
+	ORIG_MACHINES=("${MACHINES[@]}")
 	echo "Resetting..."
 	reset-all
 	reset_memcached
