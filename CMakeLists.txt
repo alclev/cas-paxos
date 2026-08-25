@@ -63,7 +63,7 @@ else()
 endif()
 
 # add_compile_definitions(FAILOVER)
-# add_compile_definitions(SYSDUMP)
+# add_compile_definitions(MEMDUMP)
 # add_compile_definitions(PROMISE_BENCH)
 # add_compile_definitions(VERBOSE)
 

@@ -5,11 +5,14 @@
 #include <atomic>
 #include <chrono>
 #include <thread>
+#include <random>
 
-constexpr auto kTimeout = std::chrono::nanoseconds(500'000'000);
+constexpr auto kTimeout = std::chrono::microseconds(500'000);
 
 inline std::atomic<bool> dump_requested_ = false;
 inline std::atomic<bool> failure_detector_running_ = true;
+inline std::atomic<bool> perm_handler_running_ = true;
+
 
 template <typename Rep, typename Period>
 void busy_wait(std::chrono::duration<Rep, Period> d,
@@ -98,6 +101,17 @@ inline std::chrono::duration<Rep, Period> DoBackoff(
   }
 
   return std::min(backoff * 2, kTimeout);
+}
+
+inline void RandomBackoff(uint32_t min_us, uint32_t max_us) {
+  static thread_local std::mt19937 rng{std::random_device{}()};
+  std::uniform_int_distribution<uint32_t> dist(min_us, max_us);
+  uint32_t wait_us = dist(rng);
+
+  auto deadline = std::chrono::steady_clock::now() +
+                  std::chrono::microseconds(wait_us);
+  while (std::chrono::steady_clock::now() < deadline)
+    _mm_pause();
 }
 
 // Return the next higher unique ballot calculated by offsetting for this host

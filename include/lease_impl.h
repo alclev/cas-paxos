@@ -5,18 +5,18 @@ std::vector<txn_t<int>> proposals;
 std::unique_ptr<MuSquared> msq;
 
 #define INIT_CONSENSUS(transport_flag, buf_sz, mach_map)                       \
-  ROMULUS_INFO("Initializing Mu Squared...");                                  \
   auto registry =                                                              \
       std::make_unique<romulus::ConnectionRegistry>("MuSquared", registry_ip); \
   auto device = std::make_shared<romulus::Device>(transport_flag);             \
   msq = std::make_unique<MuSquared>(args, system_size, device);                \
   msq->Init(dev_name, dev_port, std::move(registry), mach_map);                \
+  msq->SpawnThreads();                                                         \
   proposals = msq->GetProposals();
 
 #define LEASE_EXEC_LATENCY                                                 \
   [&]() {                                                                  \
     uint32_t i = latencies.size() % proposals.size();                      \
-    ROMULUS_DEBUG("Executing proposal {}...", i);                           \
+    ROMULUS_DEBUG("Executing proposal {}...", i);                          \
     auto start = std::chrono::high_resolution_clock::now();                \
     msq->Propose(proposals[i]);                                            \
     auto end = std::chrono::high_resolution_clock::now();                  \

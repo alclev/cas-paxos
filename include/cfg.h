@@ -31,7 +31,7 @@ inline auto EXTRA_ARGS = {
     STR_ARG(HOSTNAME, "Hostname of this node."),
     U64_ARG_OPT(TESTTIME, "Experiment duration in seconds", 5),
     U64_ARG_OPT(LOOP, "Number of iterations between runtime checks.", 1000),
-    U64_ARG_OPT(CAPACITY, "Capacity of the replicated log.", (1ULL << 20)),
+    U64_ARG_OPT(CAPACITY, "Capacity of the replicated log.", (1ULL << 10)),
     U64_ARG_OPT(SLEEP, "Sleep interval between proposals in ms", 0),
     U64_ARG_OPT(KEY_RANGE, "Key range for the workload.", 256),
     U64_ARG_OPT(NUM_SHARDS, "Number of shards for the workload.", 20),
