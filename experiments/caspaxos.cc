@@ -74,8 +74,8 @@ int main(int argc, char* argv[]) {
 
   pin_thread_to_core(0);
 
-  // ROMULUS_INFO("Warming up...");
-  // msq->Warmup();
+  ROMULUS_INFO("Warming up...");
+  msq->Warmup();
 
   uint64_t commits = 0;
   uint64_t total_commits = 0;

@@ -38,16 +38,16 @@ struct replication_ctx_t {
 };
 
 struct perm_ctx_t {
-  std::vector<romulus::ReliableConnection*> conns_;
+  std::vector<std::vector<romulus::ReliableConnection*>> conns_mat_;
   romulus::LocalAddr laddr_;
   std::vector<romulus::RemoteAddr> req_raddrs_;
   std::vector<romulus::RemoteAddr> grant_raddrs_;
   perm_ctx_t() = default;
-  perm_ctx_t(std::vector<romulus::ReliableConnection*> conns,
+  perm_ctx_t(std::vector<std::vector<romulus::ReliableConnection*>> conns_mat,
              std::vector<romulus::RemoteAddr> req_raddrs,
              std::vector<romulus::RemoteAddr> grant_raddrs,
              romulus::LocalAddr laddr)
-      : conns_(std::move(conns)),
+      : conns_mat_(std::move(conns_mat)),
         laddr_(laddr),
         req_raddrs_(std::move(req_raddrs)),
         grant_raddrs_(std::move(grant_raddrs)) {}

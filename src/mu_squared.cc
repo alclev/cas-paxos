@@ -6,9 +6,13 @@ MuSquared::MuSquared(std::shared_ptr<romulus::ArgMap> args,
     : args_(args), id_(args->uget(NODE_ID)), hostname_(args->sget(HOSTNAME)),
       system_size_(system_size), quorum_(system_size / 2 + 1),
       num_shards_(args->uget(NUM_SHARDS)), capacity_(args->uget(CAPACITY)),
-      pipeline_depth_(args->uget(PIPELINE_DEPTH)), req_epoch_(0), fuo_(0),
+      pipeline_depth_(args->uget(PIPELINE_DEPTH)), req_epoch_(0),
       need_fuo_scan_(false), device_(std::move(device)),
-      num_shared_cq_(args->uget(NUM_SHARED_CQ)) {
+      num_handlers_(args_->uget(NUM_HANDLERS)) {
+  ROMULUS_ASSERT(num_handlers_ > 0, "Num handlers must be at least 1");
+  // At most, we only need a handler per shard or else there will be no work for
+  // the remaining threads
+  num_handlers_ = std::min(num_handlers_, num_shards_);
   // Define seed for the workload as static partition based on node id
   uint64_t key_range = args_->uget(KEY_RANGE);
   shard_size_ = key_range / num_shards_;
@@ -53,64 +57,62 @@ MuSquared::MuSquared(std::shared_ptr<romulus::ArgMap> args,
 
   // Insert outlier at the end of workload
   proposals_.push_back(outliers.back()); // arbitrary at the moment
+
+  want_perms_ = std::make_unique<std::atomic<bool>[]>(num_shards_);
+  perm_acks_ = std::make_unique<std::atomic<bool>[]>(num_shards_);
+
+  fuos_ = std::make_unique<std::atomic<uint64_t>[]>(num_shards_);
+  for (uint64_t s = 0; s < num_shards_; ++s)
+    fuos_[s].store(0, std::memory_order_relaxed);
 }
 
 MuSquared::~MuSquared() { Shutdown(); }
 
 void MuSquared::SpawnThreads() {
-  for (int s = 0; s < (int)num_shards_; ++s) {
-    perm_threads_.emplace_back(&MuSquared::PermHandler, this, s);
+  ROMULUS_DEBUG("Spawning {} permission handler threads...", num_handlers_);
+  for (int p = 0; p < (int)num_handlers_; ++p) {
+    perm_threads_.emplace_back(&MuSquared::PermHandler, this, p);
   }
-  for (int n = 0; n < (int)system_size_; ++n) {
-    fd_threads_.emplace_back(&MuSquared::FailureDetector, this, n);
-  }
+
+  fd_thread_ = std::thread(&MuSquared::FailureDetector, this);
 }
 
-void MuSquared::Propose(txn_t<int> &txn, uint32_t depth) {
-  ROMULUS_ASSERT(!txn.keys.empty(), "Transaction must have at least one key.");
-  if (depth >= mu_squared::kMaxProposeDepth) {
-    ROMULUS_FATAL("Propose recursion bound exceeded on key {}",
-                  txn.keys.front());
-  }
-
-  uint64_t target_shard = SelectShard(txn.keys.front());
+void MuSquared::Propose(uint64_t target_shard, txn_t<int> &txn,
+                        uint32_t depth) {
+  ROMULUS_ASSERT(depth < mu_squared::kMaxProposeDepth,
+                 "Propose recursion bound exceeded.");
   // If we are able to succesfully write to a quorum of logs, then return true,
   // otherwise return false and we need to acquire the lease
-  bool committed = FastCommit(target_shard, txn);
-  if (!committed) {
+  if (!FastCommit(target_shard, txn)) {
     ROMULUS_DEBUG(
         "No existing permissions for shard {}. Entering lease acquisition "
         "path...",
         target_shard);
-
-    if (RequestPermissions(target_shard)) {
-      ROMULUS_DEBUG("Successfully acquired lease for shard {}", target_shard);
-      // Remote side has been reset via reqpermissions, now we need to put local
-      // side of qp in RTR
-      for (uint32_t n = 0; n < system_size_; ++n)
-        replication_ctx_.conns_mat_[n][target_shard]->Reconnect();
-
-    } else {
-      ROMULUS_DEBUG("Failed to acquire lease for shard {}", target_shard);
-    }
-    // At this point, we have conceptually acquired the lease for this shard id
-    // Now try again, increasing depth which is really just the number of
-    // attempts for this txn
-    RandomBackoff(1, mu_squared::kMaxStartingBackoff);
-    Propose(txn, depth + 1);
+    // Trigger the want perm flag on the shard of interest
+    want_perms_[target_shard].store(true, std::memory_order_release);
+    // Block until one of the PermHandlers flips back to false
+    while (want_perms_[target_shard].load(std::memory_order_acquire))
+      _mm_pause();
+    // Check the result of the operation. If unsuccessful then backoff and try
+    // again
+    if (!perm_acks_[target_shard].load(std::memory_order_relaxed))
+      RandomBackoff(1, mu_squared::kMaxStartingBackoff);
+    Propose(target_shard, txn, depth + 1);
   }
-  // Otherwise, we committed successfully and we move on
 }
 
-bool MuSquared::RequestPermissions(uint64_t shard_id) {
+// Writes to peer's perm_req regions to signify our request to the rest of the
+// system Then, we block until we receive a quorum of grant messages in return
+bool MuSquared::AcquirePermissions(
+    uint64_t shard_id, std::vector<std::pair<uint64_t, PermCtx>> &owned) {
   // Incremement the permissions sequence counter on every round of permission
   // requests
-  perm_req_t req{++req_epoch_};
+  perm_req_t req{req_epoch_.fetch_add(1, std::memory_order_relaxed) + 1};
   uint64_t slot = id_ * num_shards_ + shard_id;
 
   auto laddr = memblock_.GetAddrInfo(mu_squared::kPermRequesterScratchRegionId);
   laddr.length = mu_squared::kSlotSize;
-  laddr.offset = 0;
+  laddr.offset = mu_squared::kSlotSize * shard_id;
   *reinterpret_cast<perm_req_t *>(laddr.addr + laddr.offset) = req;
   // Populate before with snapshot before posting
   auto grant_addr = memblock_.GetAddrInfo(mu_squared::kPermGrantRegionId);
@@ -125,7 +127,7 @@ bool MuSquared::RequestPermissions(uint64_t shard_id) {
     auto raddr = remote_addrs_[n][mu_squared::kPermReqRegionId];
     raddr.addr_info.length = mu_squared::kSlotSize;
     raddr.addr_info.offset = slot * mu_squared::kSlotSize;
-    auto conn = perm_handler_ctx_.conns_[n];
+    auto conn = perm_handler_ctx_.conns_mat_[n][SelectHandler(shard_id)];
 
     bool ok = conn->Write(laddr, raddr, wr_id_t(id_, shard_id, n).raw);
     bool polled = ok && conn->ProcessCompletions(1) == 1;
@@ -152,6 +154,17 @@ bool MuSquared::RequestPermissions(uint64_t shard_id) {
                  std::chrono::milliseconds(mu_squared::kPermTimeout_ms);
 
   while (acks < quorum_) {
+    if (std::chrono::steady_clock::now() > timeout) {
+      ROMULUS_INFO("PermReq timed out: shard {} got {}/{}", shard_id, acks,
+                   quorum_);
+      return false;
+    }
+
+    // This MUST be here in order to prevent deadlock and continue serving
+    // requests from peers while we block on our own requests
+    for (auto &[s, ctx2] : owned)
+      HandleRequests(s, ctx2);
+
     for (uint32_t n = 0; n < system_size_; ++n) {
       if (acked[n])
         continue;
@@ -161,33 +174,39 @@ bool MuSquared::RequestPermissions(uint64_t shard_id) {
         continue;
       // grant detected, see if it is from old leader
       perm_grant_t grant(raw);
-      ROMULUS_DEBUG(
-          "[ReqPerm] grant from {}: raw={:#x} owner={} epoch={} fuo={}", n,
-          grant.raw_, grant.IsPrevOwner(), grant.Epoch(), grant.FUO());
-      // reset my fuo to reflect this
+      ROMULUS_DEBUG("[ReqPerm] grant from {}: raw={:#x} owner={} cycled={} "
+                    "epoch={} fuo={}",
+                    n, grant.raw_, grant.IsPrevOwner(), grant.Cycled(),
+                    grant.Epoch(), grant.FUO());
+
       if (grant.IsPrevOwner())
-        fuo_ = grant.FUO();
+        fuos_[shard_id] = grant.FUO();
+
+      if (grant.Cycled() ||
+          replication_ctx_.conns_mat_[n][shard_id]->InErrorState())
+        replication_ctx_.conns_mat_[n][shard_id]->Reconnect(
+            mu_squared::kFullPermission);
+
       acked[n] = true;
       ++acks;
     }
-
-    if (std::chrono::steady_clock::now() > timeout) {
-      ROMULUS_INFO("PermReq timed out: shard {} got {}/{}", shard_id, acks,
-                   quorum_);
-      return false;
-    }
   }
+
   return true;
 }
 
 bool MuSquared::FastCommit(uint64_t shard_id, txn_t<int> &txn) {
+  // Check if a repair is needed for this column's QP's
+  if (want_perms_[shard_id].load(std::memory_order_acquire))
+    return false;
+
   ROMULUS_DEBUG("Entering the fast path...");
   // assuming one kv pair
   int val = txn.values.front();
   State commit_val;
   commit_val.SetValue(Value(static_cast<uint32_t>(val)));
 
-  if (fuo_ >= capacity_) {
+  if (fuos_[shard_id] >= capacity_) {
     ROMULUS_DEBUG("Hit capacity for shard {}. Resetting...", shard_id);
     Reset(shard_id);
   }
@@ -204,25 +223,28 @@ bool MuSquared::FastCommit(uint64_t shard_id, txn_t<int> &txn) {
   while (done_count < quorum_) {
     // Post writes
     int posted = 0;
+    bool post_failed = false;
     for (uint32_t n = 0; n < system_size_; ++n) {
-      if (done[n])
+      // Skip if already counted or is dead
+      if (done[n] || replication_ctx_.conns_mat_[n][shard_id]->InErrorState())
         continue;
 
       auto &conn = replication_ctx_.conns_mat_[n][shard_id];
       auto &raddr = replication_ctx_.raddrs_mat_[n][shard_id];
 
       raddr.addr_info.length = mu_squared::kSlotSize;
-      raddr.addr_info.offset = fuo_ * mu_squared::kSlotSize;
+      raddr.addr_info.offset = fuos_[shard_id] * mu_squared::kSlotSize;
 
-      bool committed = conn->Write(laddr, raddr, wr_id_t(n, shard_id, 0).raw);
-      if (!committed) {
-        ROMULUS_DEBUG(
-            "[FAST PATH] Failed to commit value at shard id {} on node {}",
-            shard_id, n);
-        return false;
+      if (!conn->Write(laddr, raddr, wr_id_t(n, shard_id, 0).raw)) {
+        ROMULUS_DEBUG("[FAST PATH] post failed, shard {} node {}", shard_id, n);
+        post_failed = true;
+        break;
       }
       ++posted;
     }
+
+    if (posted == 0)
+      return false;
 
     // shared cq
     auto &conn = replication_ctx_.conns_mat_.front()[shard_id];
@@ -247,109 +269,124 @@ bool MuSquared::FastCommit(uint64_t shard_id, txn_t<int> &txn) {
       }
       ROMULUS_DEBUG("[FAST PATH] shard {} node {}: {}", shard_id, wr_id.GetID(),
                     ibv_wc_status_str(wc[i].status));
+      replication_ctx_.conns_mat_[wr_id.GetID()][shard_id]->SetErrorState(true);
       needs_reconnect = true;
     }
-
-    if (needs_reconnect) {
-      for (uint32_t n = 0; n < system_size_; ++n)
-        replication_ctx_.conns_mat_[n][shard_id]->Reconnect();
+    // Reached a QP in error state
+    if (needs_reconnect)
+      want_perms_[shard_id].store(true, std::memory_order_release);
+    // Successfully committed
+    if (done_count >= quorum_)
+      break;
+    // There is no possibility for progress, abort
+    if (needs_reconnect || post_failed)
       return false;
-    }
   }
-  fuo_++;
+  fuos_[shard_id]++;
   ROMULUS_DEBUG("Fast commit complete for shard {}. FUO now at {}", shard_id,
-                fuo_);
+                fuos_[shard_id].load());
   return true;
 }
 
-void MuSquared::PermHandler(uint64_t shard_id) {
-  auto laddr = memblock_.GetAddrInfo(mu_squared::kPermHandlerScratchRegionId);
-  laddr.offset = mu_squared::kSlotSize * shard_id;
-  laddr.length = mu_squared::kSlotSize;
+// Scan perm req region for valid incoming requests, execute the permission
+// change, and ack on completion
+void MuSquared::HandleRequests(uint64_t shard_id, PermCtx &ctx) {
+  for (uint32_t n = 0; n < system_size_; ++n) {
+    uint64_t raw = ctx.req_raw[n * num_shards_ + shard_id];
+    if (raw == mu_squared::kPermNull || raw == ctx.last_req[n])
+      continue;
+
+    ROMULUS_DEBUG("[HandleRequests] request from node {} for shard {}", n,
+                  shard_id);
+    uint64_t owner_id = ctx.current_owner;
+
+    // revoke from the old owner
+    if (owner_id != mu_squared::kNoOwner && owner_id != n) {
+      auto *old_conn = replication_ctx_.conns_mat_[owner_id][shard_id];
+      if (old_conn->ApplyPermissions(mu_squared::kNoPermission) ==
+          romulus::ReliableConnection::PermResult::Failed) {
+        ROMULUS_DEBUG("[PermHandler] revoke from node {} shard {} failed",
+                      owner_id, shard_id);
+        // must abort
+        continue;
+      }
+    }
+    // grant to the requester
+    auto *new_conn = replication_ctx_.conns_mat_[n][shard_id];
+    romulus::ReliableConnection::PermResult r =
+        new_conn->ApplyPermissions(mu_squared::kFullPermission);
+    if (r == romulus::ReliableConnection::PermResult::Failed) {
+      ROMULUS_DEBUG("[PermHandler] grant to node {} shard {} failed", n,
+                    shard_id);
+      continue;
+    }
+    // construct the grant
+    perm_grant_t grant_msg;
+    grant_msg.SetEpoch(ctx.grant_epoch++);
+    grant_msg.SetCycled(r == romulus::ReliableConnection::PermResult::Cycled);
+    if (owner_id == id_) {
+      grant_msg.SetOwner(true);
+      grant_msg.SetFUO(fuos_[shard_id]);
+    } else {
+      grant_msg.SetOwner(false);
+    }
+
+    // load staging buffer
+    *reinterpret_cast<uint64_t *>(ctx.laddr.addr + ctx.laddr.offset) =
+        grant_msg.raw_;
+
+    // RDMA-write the ack
+    auto *ack_conn = perm_handler_ctx_.conns_mat_[n][SelectHandler(shard_id)];
+    auto grant_raddr = remote_addrs_[n][mu_squared::kPermGrantRegionId];
+    grant_raddr.addr_info.length = mu_squared::kSlotSize;
+    grant_raddr.addr_info.offset =
+        (id_ * num_shards_ + shard_id) * mu_squared::kSlotSize;
+
+    if (!ack_conn->Write(ctx.laddr, grant_raddr,
+                         wr_id_t(id_, shard_id, n).raw) ||
+        ack_conn->ProcessCompletions(1) != 1) {
+      ROMULUS_DEBUG("[PermHandler] ack to node {} shard {} failed", n,
+                    shard_id);
+      continue;
+    }
+
+    ctx.current_owner = n;
+    ctx.last_req[n] = raw;
+  }
+}
+
+void MuSquared::PermHandler(uint64_t tid) {
+  uint16_t core = 1 + tid;
+  ROMULUS_DEBUG("[Permission Handler] Pinning to core {}...", core);
+  pin_thread_to_core(core);
 
   auto raddr = memblock_.GetAddrInfo(mu_squared::kPermReqRegionId);
-  auto *raddr_raw =
-      reinterpret_cast<volatile uint64_t *>(raddr.addr + raddr.offset);
 
-  std::vector<uint64_t> last_req(system_size_, mu_squared::kPermNull);
-  uint64_t current_owner = mu_squared::kNoOwner;
-
-  uint64_t grant_epoch = 0;
+  std::vector<std::pair<uint64_t, PermCtx>> owned;
+  for (uint64_t s = 0; s < num_shards_; ++s) {
+    if (SelectHandler(s) != tid)
+      continue;
+    PermCtx ctx;
+    ctx.last_req.assign(system_size_, mu_squared::kPermNull);
+    ctx.current_owner = s % system_size_;
+    ctx.laddr = memblock_.GetAddrInfo(mu_squared::kPermHandlerScratchRegionId);
+    ctx.laddr.offset = mu_squared::kSlotSize * s;
+    ctx.laddr.length = mu_squared::kSlotSize;
+    ctx.req_raw =
+        reinterpret_cast<volatile uint64_t *>(raddr.addr + raddr.offset);
+    owned.emplace_back(s, std::move(ctx));
+  }
 
   while (perm_handler_running_.load(std::memory_order_acquire)) {
+    for (auto &[s, ctx] : owned)
+      HandleRequests(s, ctx);
 
-    for (int n = 0; n < (int)system_size_; ++n) {
-      // node-major layout
-      uint64_t raw = raddr_raw[n * num_shards_ + shard_id];
-
-      if (raw == mu_squared::kPermNull || raw == last_req[n])
+    for (auto &[s, ctx] : owned) {
+      if (!want_perms_[s].load(std::memory_order_acquire))
         continue;
-
-      // at this point we can assume that the request is valid, that is
-      // not null and strictly greater than the previous epoch
-      // first we revoke the old permissions assuming a legit request
-      ROMULUS_DEBUG("[PermHandler] Received request from node {} for shard {}",
-                    n, shard_id);
-      uint64_t owner_id = current_owner;
-
-      if (owner_id != mu_squared::kNoOwner && (int)owner_id != n) {
-        auto *old_conn = replication_ctx_.conns_mat_[owner_id][shard_id];
-        if (!old_conn->ChangePermissions(LOCAL_READ | LOCAL_WRITE)) {
-          // must abort for correctness
-          ROMULUS_DEBUG("[PermHandler] revoke from node {} shard {} failed",
-                        owner_id, shard_id);
-          continue;
-        }
-
-      } else {
-        // Either old owner is null or the incoming request is for an already
-        // existing permissions in place.
-        ROMULUS_DEBUG("Skipping revokation of old permissions... ");
-      }
-
-      // then we grant permissions to the new requester
-      auto *new_conn = replication_ctx_.conns_mat_[n][shard_id];
-      ROMULUS_ASSERT(
-          new_conn->ChangePermissions(LOCAL_READ | LOCAL_WRITE | REMOTE_READ |
-                                      REMOTE_WRITE | REMOTE_ATOMIC),
-          "[PERM HANDLER] Failed to grant new permissions for shard {}",
-          shard_id);
-      ROMULUS_DEBUG("[PERM HANDLER] Granted permission to node {} for shard {}",
-                    n, shard_id);
-
-      // Ack to indicate successful completion of request
-      auto *ack_conn = perm_handler_ctx_.conns_[n];
-      perm_grant_t grant_msg;
-      grant_msg.SetEpoch(grant_epoch++);
-
-      // Note: embed fuo in grant message & load staging
-      if (owner_id != mu_squared::kNoOwner && owner_id == id_) {
-        grant_msg.SetOwner(true);
-        grant_msg.SetFUO(fuo_);
-      } else {
-        // If we are not the old leader, embed seq number for liveness
-        grant_msg.SetOwner(false);
-      }
-      // load in the staging buffer
-      *reinterpret_cast<uint64_t *>(laddr.addr + laddr.offset) = grant_msg.raw_;
-
-      auto grant_raddr = remote_addrs_[n][mu_squared::kPermGrantRegionId];
-      grant_raddr.addr_info.length = mu_squared::kSlotSize;
-      grant_raddr.addr_info.offset =
-          (id_ * num_shards_ + shard_id) * mu_squared::kSlotSize;
-
-      if (!ack_conn->Write(laddr, grant_raddr, wr_id_t(id_, shard_id, n).raw)) {
-        ROMULUS_DEBUG("[PermHandler] ack post to node {} shard {} failed", n,
-                      shard_id);
-        continue;
-      }
-      if (ack_conn->ProcessCompletions(1) != 1) {
-        ROMULUS_DEBUG("[PermHandler] ack completion to node {} shard {} failed",
-                      n, shard_id);
-        continue;
-      }
-      current_owner = n;
-      last_req[n] = raw;
+      perm_acks_[s].store(AcquirePermissions(s, owned),
+                          std::memory_order_relaxed);
+      want_perms_[s].store(false, std::memory_order_release);
     }
     _mm_pause();
   }
@@ -357,13 +394,22 @@ void MuSquared::PermHandler(uint64_t shard_id) {
 
 uint64_t MuSquared::Acquire_FUO() { return 0; }
 
-void MuSquared::FailureDetector(uint64_t target_node) {
-  while (failure_detector_running_.load(std::memory_order_acquire)) {
-  }
+void MuSquared::FailureDetector() {
+  uint16_t core = 1 + num_handlers_;
+  ROMULUS_INFO("[Failure Detector] Pinning to core {}...", core);
+
+  pin_thread_to_core(core);
+
+  // while (failure_detector_running_.load(std::memory_order_acquire)) {
+  // }
 }
 
 std::string MuSquared::GenLogID(uint64_t shard_id) {
   return mu_squared::kLogRegionId + "_" + std::to_string(shard_id);
+}
+
+uint64_t MuSquared::SelectHandler(uint64_t s) const {
+  return (s / system_size_) % num_handlers_;
 }
 
 uint64_t MuSquared::SelectShard(int key) {
@@ -371,7 +417,32 @@ uint64_t MuSquared::SelectShard(int key) {
   return std::min(id, num_shards_ - 1);
 }
 
-void MuSquared::Warmup() {}
+void MuSquared::Warmup() {
+  const int num_warmup_iters = 1e4;
+
+  auto laddr = memblock_.GetAddrInfo(mu_squared::kPermRequesterScratchRegionId);
+  laddr.length = mu_squared::kSlotSize;
+
+  for (int i = 0; i < num_warmup_iters; ++i) {
+
+    for (int n = 0; n < (int)system_size_; ++n) {
+
+      for (int offset = 0; offset < (int)num_shards_; ++offset) {
+        laddr.offset = mu_squared::kSlotSize * offset;
+        *reinterpret_cast<uint64_t *>(laddr.addr + laddr.offset) = 0;
+        auto raddr = remote_addrs_[n][mu_squared::kPermReqRegionId];
+        raddr.addr_info.length = mu_squared::kSlotSize;
+
+        raddr.addr_info.offset = (id_ * num_shards_ + offset) * mu_squared::kSlotSize;
+        auto conn = perm_handler_ctx_.conns_mat_[n][SelectHandler(offset)];
+        ROMULUS_ASSERT(conn->Write(laddr, raddr, wr_id_t(0).raw),
+                       "Failed to write in warmup");
+        ROMULUS_ASSERT(conn->ProcessCompletions(1) == 1,
+                       "Failed to poll in warmup");
+      }
+    }
+  }
+}
 
 void MuSquared::Sync() { conn_manager_->arrive_strict_barrier(); }
 
@@ -388,7 +459,7 @@ void MuSquared::DrainCQ() {
 
 void MuSquared::Reset(uint64_t shard_id) {
   ResetLogs(shard_id);
-  fuo_ = 0;
+  fuos_[shard_id] = 0;
 }
 
 void MuSquared::ResetLogs(uint64_t shard_id) {
@@ -412,9 +483,6 @@ void MuSquared::Shutdown() {
     }
   }
 
-  for (auto &t : fd_threads_) {
-    if (t.joinable()) {
-      t.join();
-    }
-  }
+  if (fd_thread_.joinable())
+    fd_thread_.join();
 }

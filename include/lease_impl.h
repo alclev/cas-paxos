@@ -13,16 +13,21 @@ std::unique_ptr<MuSquared> msq;
   msq->SpawnThreads();                                                         \
   proposals = msq->GetProposals();
 
-#define LEASE_EXEC_LATENCY                                                 \
-  [&]() {                                                                  \
-    uint32_t i = latencies.size() % proposals.size();                      \
-    ROMULUS_DEBUG("Executing proposal {}...", i);                          \
-    auto start = std::chrono::high_resolution_clock::now();                \
-    msq->Propose(proposals[i]);                                            \
-    auto end = std::chrono::high_resolution_clock::now();                  \
-    latencies.push_back(                                                   \
-        std::chrono::duration_cast<std::chrono::microseconds>(end - start) \
-            .count());                                                     \
+#define LEASE_EXEC_LATENCY                                                     \
+  [&]() {                                                                      \
+    int iter = latencies.size() % proposals.size();                            \
+    ROMULUS_DEBUG("Executing proposal {}...", iter);                           \
+    txn_t<int> txn = proposals[iter];                                          \
+    ROMULUS_ASSERT(!txn.keys.empty(),                                          \
+                   "Transaction must have at least one key.");                 \
+    uint64_t target_shard = msq->SelectShard(txn.keys.front());                \
+    ROMULUS_DEBUG("Txn is mapped to shard {}", target_shard);                  \
+    auto start = std::chrono::high_resolution_clock::now();                    \
+    msq->Propose(target_shard, txn);                                           \
+    auto end = std::chrono::high_resolution_clock::now();                      \
+    latencies.push_back(                                                       \
+        std::chrono::duration_cast<std::chrono::microseconds>(end - start)     \
+            .count());                                                         \
   };
 
 #define LEASE_SYNC_NODES [&]() { msq->Sync(); };
@@ -30,8 +35,8 @@ std::unique_ptr<MuSquared> msq;
 #define LEASE_DONE [&]() { msq->Cleanup(); };
 
 #define CALC_LAT                                                               \
-  [&](std::tuple<double, double, double, double>* result,                      \
-      std::vector<double>& latencies) {                                        \
+  [&](std::tuple<double, double, double, double> *result,                      \
+      std::vector<double> &latencies) {                                        \
     /* remove the first 25% of latencies as warmup */                          \
     latencies.erase(latencies.begin(),                                         \
                     latencies.begin() + latencies.size() / 4);                 \

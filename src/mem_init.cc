@@ -16,8 +16,8 @@ void MuSquared::Init(std::string_view dev_name, int dev_port,
   uint64_t proposal_len = num_shards_;
   uint64_t fd_local_len = (system_size_ - 1);
   uint64_t fd_remote_len = (system_size_ - 1);
-  uint64_t perm_handler_scratch_len = num_shards_; // just one slot
-  uint64_t perm_requester_scratch_len = 1; // just one slot
+  uint64_t perm_handler_scratch_len = num_shards_;   // one slot per shard
+  uint64_t perm_requester_scratch_len = num_shards_; // one slot per shard
   uint64_t perm_req_len = system_size_ * num_shards_;
   uint64_t perm_grant_len = system_size_ * num_shards_;
 
@@ -26,7 +26,8 @@ void MuSquared::Init(std::string_view dev_name, int dev_port,
 
   // NB: the following configuration assumes STANDALONE
   std::size_t remote_len = scratch_len + proposal_len + log_len + fd_local_len +
-                           fd_remote_len + perm_handler_scratch_len + perm_requester_scratch_len + perm_req_len +
+                           fd_remote_len + perm_handler_scratch_len +
+                           perm_requester_scratch_len + perm_req_len +
                            perm_grant_len;
 
   raw_ =
@@ -57,6 +58,8 @@ void MuSquared::Init(std::string_view dev_name, int dev_port,
   //   |    FD_r     |  : (n-1) * k      remote FD region
   //   +-------------+
   //   |  p_scratch  |  : k * s
+  //   +-------------+
+  //   |  r_scratch  |  : k * s
   //   +-------------+
   //   |  perm_req   |  : n * s * k  inbound requests, polled locally
   //   +-------------+
@@ -98,13 +101,13 @@ void MuSquared::Init(std::string_view dev_name, int dev_port,
   memblock_.RegisterMemRegion(mu_squared::kFDRemoteRegionId, current_offset,
                               fd_remote_len * mu_squared::kSlotSize);
   current_offset += fd_remote_len * mu_squared::kSlotSize;
-    memblock_.RegisterMemRegion(mu_squared::kPermHandlerScratchRegionId,
+  memblock_.RegisterMemRegion(mu_squared::kPermHandlerScratchRegionId,
                               current_offset,
                               perm_handler_scratch_len * mu_squared::kSlotSize);
   current_offset += perm_handler_scratch_len * mu_squared::kSlotSize;
-  memblock_.RegisterMemRegion(mu_squared::kPermRequesterScratchRegionId,
-                              current_offset,
-                              perm_requester_scratch_len * mu_squared::kSlotSize);
+  memblock_.RegisterMemRegion(
+      mu_squared::kPermRequesterScratchRegionId, current_offset,
+      perm_requester_scratch_len * mu_squared::kSlotSize);
   current_offset += perm_requester_scratch_len * mu_squared::kSlotSize;
   memblock_.RegisterMemRegion(mu_squared::kPermReqRegionId, current_offset,
                               perm_req_len * mu_squared::kSlotSize);
@@ -114,15 +117,14 @@ void MuSquared::Init(std::string_view dev_name, int dev_port,
   current_offset += perm_grant_len * mu_squared::kSlotSize;
 
   // Define number of QP's **for this version**
-  // (n * s) + (2 * n) - 1
-  num_qps_ = num_shards_ +
-             3; // 1 primary, s replication, 1 FD per peer, 1 perm per peer
-  num_shared_cq_ = num_shards_ + 2; // 1 primary, s replication have shared cq
+  num_qps_ = num_shards_ + num_handlers_ + 2;
+  num_shared_cq_ = num_shards_ + num_handlers_ + 1;
+
   // Shared cq mapping
-  // QP 0: Primary consensus logic -- shared CQ -- idx 0
-  // QP 1..s: Replication logic    -- shared CQ -- idx 1..s
-  // QP s+1: perm ack              -- shared CQ -- idx s+1
-  // QP s+2: FD                -- NOT shared CQ -- idx s+2
+  // QP 0            : primary consensus           -- shared CQ 0
+  // QP 1 .. s       : replication, shard 0..s-1   -- shared CQ 1..s
+  // QP s+1 .. s+p   : perm handler, handler 0..p-1 -- shared CQ s+1..s+p
+  // QP s+p+1        : failure detector            -- NOT shared
 
   // Register memory and connect to other nodes
   registry_ = std::move(registry);
@@ -202,41 +204,17 @@ void MuSquared::Init(std::string_view dev_name, int dev_port,
   }
   // Initialize the perm_req and perm_grant regions to have kPermNull in
   // every slot
-  auto perm_laddr = memblock_.GetAddrInfo(mu_squared::kPermHandlerScratchRegionId);
-  perm_laddr.length = mu_squared::kSlotSize;
-  perm_laddr.offset = 0;
-  // load the staging buffer
-  *reinterpret_cast<uint64_t *>(perm_laddr.addr + perm_laddr.offset) =
-      mu_squared::kPermNull;
+  auto req_laddr = memblock_.GetAddrInfo(mu_squared::kPermReqRegionId);
+  auto grant_laddr = memblock_.GetAddrInfo(mu_squared::kPermGrantRegionId);
 
-  for (int target = 0; target < (int)system_size_; ++target) {
-    // Target node address & connection information
-    auto *conn = remote_conns_[target].front();
-    auto req_base = remote_addrs_[target][mu_squared::kPermReqRegionId];
-    auto grant_base = remote_addrs_[target][mu_squared::kPermGrantRegionId];
-    req_base.addr_info.length = mu_squared::kSlotSize;
-    grant_base.addr_info.length = mu_squared::kSlotSize;
-
-    // Target nnode's request and grant matrices
-    for (int n = 0; n < (int)system_size_; ++n) {
-      for (int s = 0; s < (int)num_shards_; ++s) {
-        int slot = (n * num_shards_) + s;
-        auto req_raddr = req_base, grant_raddr = grant_base;
-        req_raddr.addr_info.offset = slot * mu_squared::kSlotSize;
-        grant_raddr.addr_info.offset = slot * mu_squared::kSlotSize;
-
-        // Write and poll for perm reg
-        ROMULUS_ASSERT(conn->Write(perm_laddr, req_raddr, 0),
-                       "Error intializing req_raddr region");
-        ROMULUS_ASSERT(conn->ProcessCompletions(1) == 1,
-                       "Error polling req_raddr region");
-        // Write and poll for grant reg
-        ROMULUS_ASSERT(conn->Write(perm_laddr, grant_raddr, 0),
-                       "Error polling grant_raddr region");
-        ROMULUS_ASSERT(conn->ProcessCompletions(1) == 1,
-                       "Error polling grant_raddr region");
-      }
-    }
+  // Both matrices are locally polled, so they are primed with local stores
+  for (uint64_t slot = 0; slot < perm_req_len; ++slot) {
+    *reinterpret_cast<uint64_t *>(req_laddr.addr + req_laddr.offset +
+                                  slot * mu_squared::kSlotSize) =
+        mu_squared::kPermNull;
+    *reinterpret_cast<uint64_t *>(grant_laddr.addr + grant_laddr.offset +
+                                  slot * mu_squared::kSlotSize) =
+        mu_squared::kPermNull;
   }
   ROMULUS_DEBUG(
       "Succesfully intialized all slots in perm_req and perm_grant with "
@@ -254,7 +232,8 @@ void MuSquared::Init(std::string_view dev_name, int dev_port,
   replication_ctx_.raddrs_mat_.resize(
       system_size_, std::vector<romulus::RemoteAddr>(num_shards_));
 
-  perm_handler_ctx_.conns_.resize(system_size_);
+  perm_handler_ctx_.conns_mat_.resize(
+      system_size_, std::vector<romulus::ReliableConnection *>(num_handlers_));
   perm_handler_ctx_.req_raddrs_.resize(system_size_);
   perm_handler_ctx_.grant_raddrs_.resize(system_size_);
 
@@ -284,6 +263,20 @@ void MuSquared::Init(std::string_view dev_name, int dev_port,
     }
   }
 
+  for (int h = 0; h < (int)num_handlers_; ++h) {
+
+    for (int n = 0; n < (int)system_size_; ++n) {
+      // row, col = node, handler
+      auto conn = remote_conns_[n][1 + num_shards_ + h];
+#ifdef MEMDUMP
+      ROMULUS_DEBUG("Perm mat ({},{}) : QP: {} CQ: {}", n, h,
+                    reinterpret_cast<uintptr_t>(conn->GetQP()),
+                    reinterpret_cast<uintptr_t>(conn->GetCQ()));
+#endif
+      perm_handler_ctx_.conns_mat_[n][h] = conn;
+    }
+  }
+
   for (int n = 0; n < (int)system_size_; ++n) {
     // primary
     auto &conn = remote_conns_[n][0];
@@ -296,13 +289,6 @@ void MuSquared::Init(std::string_view dev_name, int dev_port,
     cons_ctx_.proposed_[n] = remote_addrs_[n][mu_squared::kProposedRegionId];
 
     // perm handler
-    conn = remote_conns_[n][1 + num_shards_];
-#ifdef MEMDUMP
-    ROMULUS_DEBUG("PermHandler (node {}) : QP: {} CQ: {}", n,
-                  reinterpret_cast<uintptr_t>(conn->GetQP()),
-                  reinterpret_cast<uintptr_t>(conn->GetCQ()));
-#endif
-    perm_handler_ctx_.conns_[n] = conn;
     perm_handler_ctx_.req_raddrs_[n] =
         remote_addrs_[n][mu_squared::kPermReqRegionId];
     perm_handler_ctx_.grant_raddrs_[n] =
@@ -311,7 +297,7 @@ void MuSquared::Init(std::string_view dev_name, int dev_port,
     // failure detector
     if (n == (int)id_)
       continue;
-    conn = remote_conns_[n][2 + num_shards_];
+    conn = remote_conns_[n][1 + num_shards_ + num_handlers_];
 #ifdef MEMDUMP
     ROMULUS_DEBUG("FailureDetector (node {}) : QP: {} CQ: {}", n,
                   reinterpret_cast<uintptr_t>(conn->GetQP()),
@@ -327,16 +313,25 @@ void MuSquared::Init(std::string_view dev_name, int dev_port,
   // --- QP counts ---
   // Primary concensus: n
   // Replication      : n * s
-  // Perm Acks        : n
+  // Perm Acks        : n * p
   // FD               : n - 1
   //
+  // Thread counts
+  // Primary consensus: 1
+  // Permission handlers: p
+  // Failure Detector: 1
+  // Total: p + 2 threads
   // -----------------------------
 
-  // Initialize permissions for replication QP's with only local rw access
+  // Initialize permissions for replication QP's: the owner of each shard holds
+  // write access from the outset, every other node only local rw access
   for (int n = 0; n < (int)system_size_; ++n) {
     for (int s = 0; s < (int)num_shards_; ++s) {
       auto &c = replication_ctx_.conns_mat_[n][s];
-      c->ChangePermissions(LOCAL_READ | LOCAL_WRITE);
+      // c->ApplyPermissions(n == (int)(s % system_size_)
+      //                         ? mu_squared::kFullPermission
+      //                         : mu_squared::kNoPermission);
+      c->ApplyPermissions(mu_squared::kNoPermission);
     }
   }
 
