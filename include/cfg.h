@@ -15,6 +15,8 @@ constexpr const char* NUM_SHARDS = "--num-shards";
 constexpr const char* PIPELINE_DEPTH = "--pipeline-depth";
 constexpr const char* TXN_SIZE = "--txn-size";
 constexpr const char* NUM_HANDLERS = "--num-handlers";
+constexpr const char* NO_OUTLIERS = "--no-outliers";
+
 
 
 // Cloudlab notes:
@@ -37,7 +39,8 @@ inline auto EXTRA_ARGS = {
     U64_ARG_OPT(SLEEP, "Sleep interval between proposals in ms", 0),
     U64_ARG_OPT(KEY_RANGE, "Key range for the workload.", 256),
     U64_ARG_OPT(NUM_SHARDS, "Number of shards for the workload.", 20),
-    U64_ARG_OPT(PIPELINE_DEPTH, "Consensus pipeline depth.", 10),
+    U64_ARG_OPT(PIPELINE_DEPTH, "Consensus pipeline depth.", 8),
     U64_ARG_OPT(TXN_SIZE, "Transaction size in terms of number of keys", 1),
-    U64_ARG_OPT(NUM_HANDLERS, "Number of handler threads for memory permissioning", 4)
+    U64_ARG_OPT(NUM_HANDLERS, "Number of handler threads for memory permissioning", 4),
+    BOOL_ARG_OPT(NO_OUTLIERS, "Use a workload without outliers (ideally routed)", true);
 };

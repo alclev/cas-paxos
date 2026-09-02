@@ -92,7 +92,7 @@ constexpr int kFullPermission =
 constexpr int kNoPermission =
     romulus::PERM_FLAGS::LOCAL_READ | romulus::PERM_FLAGS::LOCAL_WRITE;
 constexpr uint32_t kSlotSize = sizeof(State);
-constexpr uint64_t kNumProposals = (1ULL << 20);
+constexpr uint64_t kNumProposals = (1ULL << 12);
 constexpr uint32_t kMaxStartingBackoff = 100; // us
 constexpr uint32_t kMaxProposeDepth = 100;
 constexpr uint32_t kPermTimeout_ms = 100;
@@ -144,6 +144,7 @@ private:
   void HandleRequests(uint64_t shard_id, PermCtx &ctx);
   bool AcquirePermissions(uint64_t shard_id,
                           std::vector<std::pair<uint64_t, PermCtx>> &owned);
+  bool PollPipeline(uint64_t shard_id, uint64_t target);
   bool FastCommit(uint64_t shard_id, txn_t<int> &txn);
   void PermHandler(uint64_t tid);
   void FailureDetector();
@@ -173,6 +174,10 @@ private:
   std::atomic<uint64_t> req_epoch_;
   std::unique_ptr<std::atomic<uint64_t>[]> fuos_;
   bool need_fuo_scan_;
+
+  std::vector<std::vector<uint64_t>> scoreboard_;
+  std::vector<uint64_t> confirmed_;
+  std::vector<uint64_t> seq_;
 
   // Workload
   std::vector<txn_t<int>> proposals_;
@@ -211,6 +216,7 @@ private:
 
   // Threads
   uint64_t num_handlers_;
+  bool no_outliers_;
   std::vector<std::thread> perm_threads_;
   std::thread fd_thread_;
 };

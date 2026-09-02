@@ -8,7 +8,8 @@ MuSquared::MuSquared(std::shared_ptr<romulus::ArgMap> args,
       num_shards_(args->uget(NUM_SHARDS)), capacity_(args->uget(CAPACITY)),
       pipeline_depth_(args->uget(PIPELINE_DEPTH)), req_epoch_(0),
       need_fuo_scan_(false), device_(std::move(device)),
-      num_handlers_(args_->uget(NUM_HANDLERS)) {
+      num_handlers_(args_->uget(NUM_HANDLERS)),
+      no_outliers_(args_bget(NO_OUTLIERS)) {
   ROMULUS_ASSERT(num_handlers_ > 0, "Num handlers must be at least 1");
   // At most, we only need a handler per shard or else there will be no work for
   // the remaining threads
@@ -16,14 +17,14 @@ MuSquared::MuSquared(std::shared_ptr<romulus::ArgMap> args,
   // Define seed for the workload as static partition based on node id
   uint64_t key_range = args_->uget(KEY_RANGE);
   shard_size_ = key_range / num_shards_;
-
+  // Assigning static ranges to each node in the system
   shard_ranges_.resize(num_shards_);
   for (uint64_t i = 0; i < num_shards_; ++i) {
     shard_ranges_[i] = {i * shard_size_, (i == num_shards_ - 1)
                                              ? key_range - 1
                                              : (i + 1) * shard_size_ - 1};
   }
-
+  // Among these ranges, we decide which shards based on id
   for (uint64_t i = 0; i < num_shards_; ++i) {
     if (i % system_size_ == id_) {
       my_shards_.push_back(i);
@@ -42,21 +43,19 @@ MuSquared::MuSquared(std::shared_ptr<romulus::ArgMap> args,
   std::vector<txn_t<int>> outliers;
   outliers.reserve(my_shards_.size());
 
+  // Construct strided workload
   for (auto &curr : my_shards_) {
     auto wg_primary = WorkloadGenerator::generate<int>(
         config, shard_ranges_[curr].first, shard_ranges_[curr].second);
-
     proposals_.insert(proposals_.end(), wg_primary.begin(), wg_primary.end());
-
-    auto next = (curr + 1) % num_shards_;
-    auto wg_next = WorkloadGenerator::generate<int>(
-        config, shard_ranges_[next].first, shard_ranges_[next].second);
-
-    outliers.push_back(wg_next.back());
+    // If we want outliers, insert them in strides alternating with the other
+    if (!no_outliers_) {
+      auto next = (curr + 1) % num_shards_;
+      auto wg_next = WorkloadGenerator::generate<int>(
+          config, shard_ranges_[next].first, shard_ranges_[next].second);
+      proposals_.insert(proposals_.end(), wg_next.begin(), wg_next.end());
+    }
   }
-
-  // Insert outlier at the end of workload
-  proposals_.push_back(outliers.back()); // arbitrary at the moment
 
   want_perms_ = std::make_unique<std::atomic<bool>[]>(num_shards_);
   perm_acks_ = std::make_unique<std::atomic<bool>[]>(num_shards_);
@@ -64,6 +63,10 @@ MuSquared::MuSquared(std::shared_ptr<romulus::ArgMap> args,
   fuos_ = std::make_unique<std::atomic<uint64_t>[]>(num_shards_);
   for (uint64_t s = 0; s < num_shards_; ++s)
     fuos_[s].store(0, std::memory_order_relaxed);
+
+  scoreboard_.assign(num_shards_, std::vector<uint64_t>(system_size_, 0));
+  confirmed_.assign(num_shards_, 0);
+  seq_.assign(num_shards_, 0);
 }
 
 MuSquared::~MuSquared() { Shutdown(); }
@@ -191,22 +194,40 @@ bool MuSquared::AcquirePermissions(
       ++acks;
     }
   }
+  // repair every error-state conn
+  for (uint32_t n = 0; n < system_size_; ++n)
+    if (replication_ctx_.conns_mat_[n][shard_id]->InErrorState())
+      replication_ctx_.conns_mat_[n][shard_id]->Reconnect(
+          mu_squared::kFullPermission);
+  // discard all pre-repair completions on this shard's CQ
+  {
+    auto cq_raw = replication_ctx_.conns_mat_.front()[shard_id]->GetCQ();
+    ibv_wc wc[16];
+    while (ibv_poll_cq(cq_raw, 16, wc) > 0)
+      ;
+  }
+  // rebase the pipeline
+  confirmed_[shard_id] = seq_[shard_id];
+  for (uint32_t n = 0; n < system_size_; ++n)
+    scoreboard_[shard_id][n] = seq_[shard_id];
 
   return true;
 }
 
-bool MuSquared::FastCommit(uint64_t shard_id, txn_t<int> &txn) {
-  // Check if a repair is needed for this column's QP's
+
+
+bool MuSquared::FastCommit_Pipeline(uint64_t shard_id, txn_t<int> &txn) {
   if (want_perms_[shard_id].load(std::memory_order_acquire))
     return false;
 
-  ROMULUS_DEBUG("Entering the fast path...");
-  // assuming one kv pair
   int val = txn.values.front();
   State commit_val;
   commit_val.SetValue(Value(static_cast<uint32_t>(val)));
 
   if (fuos_[shard_id] >= capacity_) {
+    // All in-flight writes must land before the log is recycled
+    if (!PollPipeline(shard_id, seq_[shard_id]))
+      return false;
     ROMULUS_DEBUG("Hit capacity for shard {}. Resetting...", shard_id);
     Reset(shard_id);
   }
@@ -214,77 +235,80 @@ bool MuSquared::FastCommit(uint64_t shard_id, txn_t<int> &txn) {
   auto &laddr = replication_ctx_.laddr_;
   laddr.length = mu_squared::kSlotSize;
   laddr.offset = mu_squared::kSlotSize * id_;
-  // Load the staging buffer
   *reinterpret_cast<State *>(laddr.addr + laddr.offset) = commit_val;
 
-  // Perform quorum WRITE to the appropriate log
-  std::vector<bool> done(system_size_, false);
-  uint64_t done_count = 0;
-  while (done_count < quorum_) {
-    // Post writes
-    int posted = 0;
-    bool post_failed = false;
-    for (uint32_t n = 0; n < system_size_; ++n) {
-      // Skip if already counted or is dead
-      if (done[n] || replication_ctx_.conns_mat_[n][shard_id]->InErrorState())
-        continue;
+  uint64_t seq = ++seq_[shard_id];
+  uint32_t posted = 0;
+  for (uint32_t n = 0; n < system_size_; ++n) {
+    if (replication_ctx_.conns_mat_[n][shard_id]->InErrorState())
+      continue;
+    auto &conn = replication_ctx_.conns_mat_[n][shard_id];
+    auto &raddr = replication_ctx_.raddrs_mat_[n][shard_id];
+    raddr.addr_info.length = mu_squared::kSlotSize;
+    raddr.addr_info.offset = fuos_[shard_id] * mu_squared::kSlotSize;
 
-      auto &conn = replication_ctx_.conns_mat_[n][shard_id];
-      auto &raddr = replication_ctx_.raddrs_mat_[n][shard_id];
-
-      raddr.addr_info.length = mu_squared::kSlotSize;
-      raddr.addr_info.offset = fuos_[shard_id] * mu_squared::kSlotSize;
-
-      if (!conn->Write(laddr, raddr, wr_id_t(n, shard_id, 0).raw)) {
-        ROMULUS_DEBUG("[FAST PATH] post failed, shard {} node {}", shard_id, n);
-        post_failed = true;
-        break;
-      }
-      ++posted;
+    if (!conn->Write(laddr, raddr, wr_id_t(n, shard_id, seq).raw)) {
+      ROMULUS_DEBUG("[FAST PATH] post failed, shard {} node {}", shard_id, n);
+      return false; // Propose sets want_perms_; slow path recovers
     }
+    ++posted;
+  }
+  if (posted < quorum_)
+    return false; // not enough live QPs to ever confirm
 
-    if (posted == 0)
-      return false;
+  // TODO: need to account for FUO recovery after handover
+  fuos_[shard_id]++;
 
-    // shared cq
-    auto &conn = replication_ctx_.conns_mat_.front()[shard_id];
-    auto conn_raw = conn->GetCQ(); // shared cq
+  // Poll only once pipeline_depth_ commits, retire the oldest
+  if (seq_[shard_id] - confirmed_[shard_id] < pipeline_depth_)
+    return true;
+  return PollPipeline(shard_id, confirmed_[shard_id] + 1);
+}
 
-    std::vector<ibv_wc> wc(posted);
+// Poll the shared CQ until seq is quorum-confirmed for shard_id.
+// Completions belonging to other shards are credited to their scoreboards.
+bool MuSquared::PollPipeline(uint64_t shard_id, uint64_t target) {
+  auto cq_raw = replication_ctx_.conns_mat_.front()[shard_id]->GetCQ();
+  ibv_wc wc[16];
 
-    int total = 0;
-    while (total < posted) {
-      int n = ibv_poll_cq(conn_raw, posted - total, wc.data() + total);
-      if (n < 0)
-        ROMULUS_FATAL("Fast path write: Error in polling");
-      total += n;
-    }
-    bool needs_reconnect = false;
+  while (confirmed_[shard_id] < target) {
+    int total = ibv_poll_cq(cq_raw, 16, wc);
+    if (total < 0)
+      ROMULUS_FATAL("Fast path write: Error in polling");
+
     for (int i = 0; i < total; ++i) {
       wr_id_t wr_id = wc[i].wr_id;
-      if (wc[i].status == IBV_WC_SUCCESS) {
-        done[wr_id.GetID()] = true;
-        ++done_count;
+      uint64_t n = wr_id.GetID();
+      uint64_t s = wr_id.GetShardID();
+
+      if (wc[i].status != IBV_WC_SUCCESS) {
+        ROMULUS_DEBUG("[FAST PATH] shard {} node {}: {}", s, n,
+                      ibv_wc_status_str(wc[i].status));
+        replication_ctx_.conns_mat_[n][s]->SetErrorState(true);
+        want_perms_[s].store(true, std::memory_order_release);
         continue;
       }
-      ROMULUS_DEBUG("[FAST PATH] shard {} node {}: {}", shard_id, wr_id.GetID(),
-                    ibv_wc_status_str(wc[i].status));
-      replication_ctx_.conns_mat_[wr_id.GetID()][shard_id]->SetErrorState(true);
-      needs_reconnect = true;
+      // RC completions are in posting order per QP, so seqs are monotone;
+      // the max guards against stragglers from a previously broken pipeline
+      scoreboard_[s][n] = std::max(scoreboard_[s][n], wr_id.GetEpoch());
+
+      uint32_t acks;
+      do {
+        acks = 0;
+        for (uint32_t m = 0; m < system_size_; ++m)
+          if (scoreboard_[s][m] > confirmed_[s])
+            ++acks;
+        if (acks >= quorum_)
+          ++confirmed_[s];
+      } while (acks >= quorum_);
     }
-    // Reached a QP in error state
-    if (needs_reconnect)
-      want_perms_[shard_id].store(true, std::memory_order_release);
-    // Successfully committed
-    if (done_count >= quorum_)
-      break;
-    // There is no possibility for progress, abort
-    if (needs_reconnect || post_failed)
+
+    // Pipeline broken for this shard: unconfirmed writes may or may not have
+    // landed; abandon and let the slow path re-derive FUO
+    if (want_perms_[shard_id].load(std::memory_order_acquire) &&
+        confirmed_[shard_id] < target)
       return false;
   }
-  fuos_[shard_id]++;
-  ROMULUS_DEBUG("Fast commit complete for shard {}. FUO now at {}", shard_id,
-                fuos_[shard_id].load());
   return true;
 }
 
@@ -433,7 +457,8 @@ void MuSquared::Warmup() {
         auto raddr = remote_addrs_[n][mu_squared::kPermReqRegionId];
         raddr.addr_info.length = mu_squared::kSlotSize;
 
-        raddr.addr_info.offset = (id_ * num_shards_ + offset) * mu_squared::kSlotSize;
+        raddr.addr_info.offset =
+            (id_ * num_shards_ + offset) * mu_squared::kSlotSize;
         auto conn = perm_handler_ctx_.conns_mat_[n][SelectHandler(offset)];
         ROMULUS_ASSERT(conn->Write(laddr, raddr, wr_id_t(0).raw),
                        "Failed to write in warmup");

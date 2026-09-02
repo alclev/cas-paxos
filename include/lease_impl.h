@@ -4,7 +4,7 @@ std::vector<double> latencies;
 std::vector<txn_t<int>> proposals;
 std::unique_ptr<MuSquared> msq;
 
-#define INIT_CONSENSUS(transport_flag, buf_sz, mach_map)                       \
+#define INIT_CONSENSUS(transport_flag, mach_map)                               \
   auto registry =                                                              \
       std::make_unique<romulus::ConnectionRegistry>("MuSquared", registry_ip); \
   auto device = std::make_shared<romulus::Device>(transport_flag);             \

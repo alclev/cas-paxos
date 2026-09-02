@@ -12,7 +12,7 @@ void MuSquared::Init(std::string_view dev_name, int dev_port,
 
   ROMULUS_INFO("Registering remotely accessible memory");
 
-  uint64_t scratch_len = system_size_;
+  uint64_t scratch_len = system_size_ * pipeline_depth_;
   uint64_t proposal_len = num_shards_;
   uint64_t fd_local_len = (system_size_ - 1);
   uint64_t fd_remote_len = (system_size_ - 1);

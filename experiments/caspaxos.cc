@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
         sleep.count());
 
   ROMULUS_INFO("Initializing Mu Squared...");
-  INIT_CONSENSUS(transport_flag, kNumProposals, mach_map);
+  INIT_CONSENSUS(transport_flag, mach_map);
   // msq->RemoteDump();
 
   std::function<void(void)> sync = LEASE_SYNC_NODES;
@@ -74,8 +74,8 @@ int main(int argc, char* argv[]) {
 
   pin_thread_to_core(0);
 
-  ROMULUS_INFO("Warming up...");
-  msq->Warmup();
+  // ROMULUS_INFO("Warming up...");
+  // msq->Warmup();
 
   uint64_t commits = 0;
   uint64_t total_commits = 0;
