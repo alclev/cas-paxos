@@ -140,12 +140,13 @@ public:
 
 private:
   void DrainCQ();
-  void ResetLogs(uint64_t shard_id);
+  void ResetLog(uint64_t shard_id);
   void HandleRequests(uint64_t shard_id, PermCtx &ctx);
   bool AcquirePermissions(uint64_t shard_id,
                           std::vector<std::pair<uint64_t, PermCtx>> &owned);
   bool PollPipeline(uint64_t shard_id, uint64_t target);
-  bool FastCommit(uint64_t shard_id, txn_t<int> &txn);
+  bool FastCommit_Single(uint64_t target_shard, txn_t<int>& txn);
+  bool FastCommit_Pipe(uint64_t target_shard, txn_t<int>& txn);
   void PermHandler(uint64_t tid);
   void FailureDetector();
   uint64_t Acquire_FUO();

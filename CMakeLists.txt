@@ -48,25 +48,14 @@ target_include_directories(${PROJECT_NAME}
   ${ROMULUS_INCLUDE_PATH}
 )
 
-option(USE_MU "Enable Mu" OFF)
-option(USE_VELOS "Enable Velos" OFF)
-option(USE_LEASE "Enable Lease" OFF)
+option(MU_SQUARED "Enable Mu^2" OFF)
+option(VELOS_SQUARED "Enable Velos^2" OFF)
 
-if(USE_MU)
+if(MU_SQUARED)
     add_compile_definitions(USE_MU)
-elseif(USE_VELOS)
+elseif(VELOS_SQUARED)
     add_compile_definitions(USE_VELOS)
-elseif(USE_LEASE)
-    add_compile_definitions(USE_LEASE)
-else()
-    add_compile_definitions(DEFAULT)
 endif()
 
-# add_compile_definitions(FAILOVER)
-# add_compile_definitions(MEMDUMP)
-# add_compile_definitions(PROMISE_BENCH)
-# add_compile_definitions(VERBOSE)
-
 add_subdirectory(experiments)
-
 

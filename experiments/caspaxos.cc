@@ -20,15 +20,21 @@
 #include "util.h"
 #include "workload.h"
 
+#ifdef MU_SQUARED
+#include "msq_impl.h"
+#else
+#include "vsq_impl.h"
+#endif
+
 #define PAXOS_NS paxos_st
 
-constexpr double kThruFreq = 1e6;  // us
+constexpr double kThruFreq = 1e6; // us
 
 /// @brief
 /// @param argc
 /// @param argv
 /// @return
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   ROMULUS_STOPWATCH_DECLARE();
 
   romulus::INIT();
@@ -62,15 +68,13 @@ int main(int argc, char* argv[]) {
   INIT_CONSENSUS(transport_flag, mach_map);
   // msq->RemoteDump();
 
-  std::function<void(void)> sync = LEASE_SYNC_NODES;
-  std::function<void(void)> exec = LEASE_EXEC_LATENCY;
-  std::function<void(void)> done = LEASE_DONE;
-  std::function<void(std::tuple<double, double, double, double>*,
-                     std::vector<double>&)>
+  std::function<void(void)> sync = SYNC_NODES;
+  std::function<void(void)> exec = EXEC_LATENCY;
+  std::function<void(void)> done = DONE;
+  std::function<void(std::tuple<double, double, double, double> *,
+                     std::vector<double> &)>
       calc = CALC_LAT;
   // std::function<void(void)> reset = RESET;
-
-  ROMULUS_INFO("Using Mu^2...");
 
   pin_thread_to_core(0);
 
@@ -93,7 +97,7 @@ int main(int argc, char* argv[]) {
     if (curr_us - last_thru_clock > kThruFreq) {
       last_thru_clock = curr_us;
       thrus.push_back(commits);
-      commits = 0;  // reset
+      commits = 0; // reset
     }
     auto work_start = std::chrono::steady_clock::now();
     exec();
@@ -157,7 +161,7 @@ int main(int argc, char* argv[]) {
   ROMULUS_INFO("[PARSE] {}", result_ss.str());
 
   ROMULUS_INFO("Experiment is finished. Cleaning up...");
-  done();  // cleanup
+  done(); // cleanup
 
   return 0;
 }

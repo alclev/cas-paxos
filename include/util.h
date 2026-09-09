@@ -11,7 +11,7 @@ constexpr auto kTimeout = std::chrono::microseconds(500'000);
 
 inline std::atomic<bool> dump_requested_ = false;
 inline std::atomic<bool> failure_detector_running_ = true;
-inline std::atomic<bool> perm_handler_running_ = true;
+inline std::atomic<bool> prepare_running_ = true;
 
 template <typename Rep, typename Period>
 void busy_wait(std::chrono::duration<Rep, Period> d,

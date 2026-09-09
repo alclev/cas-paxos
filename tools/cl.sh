@@ -107,7 +107,7 @@ function cl_install_deps() {
 	# Turn off interactive prompts
 	echo "sudo sed -i 's|http://us.archive.ubuntu.com/ubuntu/|http://mirror.math.princeton.edu/pub/ubuntu/|g' /etc/apt/sources.list.d/ubuntu.sources" >>${tmp_script_file}
 	echo 'sudo apt update' >>"${tmp_script_file}"
-	echo "sudo apt upgrade -y" >>${tmp_script_file}
+	echo "sudo apt upgrade -y" >>${tmp_script_file}f
 	echo "sudo apt install -y ${package_deps}" >>${tmp_script_file}
 	echo "echo 'kernel.perf_event_paranoid=-1' | sudo tee -a /etc/sysctl.conf" >>${tmp_script_file}
 	echo "sudo sysctl -p" >>${tmp_script_file}
@@ -411,6 +411,7 @@ elif [[ "$cmd" == "build-run" && "$count" -eq 4 ]]; then
 		exit 1
 	fi
 	source tools/build.sh "$2" "$3"
+	EXTRA_ARGS="--no-outliers"
 	cl_run "$4"
 elif [[ "$cmd" == "run" && "$count" -eq 2 ]]; then
 	cl_run "$2"

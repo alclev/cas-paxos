@@ -9,7 +9,7 @@ MuSquared::MuSquared(std::shared_ptr<romulus::ArgMap> args,
       pipeline_depth_(args->uget(PIPELINE_DEPTH)), req_epoch_(0),
       need_fuo_scan_(false), device_(std::move(device)),
       num_handlers_(args_->uget(NUM_HANDLERS)),
-      no_outliers_(args_bget(NO_OUTLIERS)) {
+      no_outliers_(args_->bget(NO_OUTLIERS)) {
   ROMULUS_ASSERT(num_handlers_ > 0, "Num handlers must be at least 1");
   // At most, we only need a handler per shard or else there will be no work for
   // the remaining threads
@@ -86,7 +86,9 @@ void MuSquared::Propose(uint64_t target_shard, txn_t<int> &txn,
                  "Propose recursion bound exceeded.");
   // If we are able to succesfully write to a quorum of logs, then return true,
   // otherwise return false and we need to acquire the lease
-  if (!FastCommit(target_shard, txn)) {
+  bool ok = pipeline_depth_ == 1 ? FastCommit_Single(target_shard, txn)
+                                 : FastCommit_Pipe(target_shard, txn);
+  if (!ok) {
     ROMULUS_DEBUG(
         "No existing permissions for shard {}. Entering lease acquisition "
         "path...",
@@ -214,9 +216,100 @@ bool MuSquared::AcquirePermissions(
   return true;
 }
 
+bool MuSquared::FastCommit_Single(uint64_t shard_id, txn_t<int> &txn) {
+  // Check if a repair is needed for this column's QP's
+  if (want_perms_[shard_id].load(std::memory_order_acquire))
+    return false;
 
+  ROMULUS_DEBUG("Entering the fast path...");
+  // assuming one kv pair
+  int val = txn.values.front();
+  State commit_val;
+  commit_val.SetValue(Value(static_cast<uint32_t>(val)));
 
-bool MuSquared::FastCommit_Pipeline(uint64_t shard_id, txn_t<int> &txn) {
+  if (fuos_[shard_id] >= capacity_) {
+    ROMULUS_DEBUG("Hit capacity for shard {}. Resetting...", shard_id);
+    Reset(shard_id);
+  }
+
+  auto &laddr = replication_ctx_.laddr_;
+  laddr.length = mu_squared::kSlotSize;
+  laddr.offset = mu_squared::kSlotSize * id_;
+  // Load the staging buffer
+  *reinterpret_cast<State *>(laddr.addr + laddr.offset) = commit_val;
+
+  // Perform quorum WRITE to the appropriate log
+  std::vector<bool> done(system_size_, false);
+  uint64_t done_count = 0;
+  while (done_count < quorum_) {
+    // Post writes
+    int posted = 0;
+    bool post_failed = false;
+    for (uint32_t n = 0; n < system_size_; ++n) {
+      // Skip if already counted or is dead
+      if (done[n] || replication_ctx_.conns_mat_[n][shard_id]->InErrorState())
+        continue;
+
+      auto &conn = replication_ctx_.conns_mat_[n][shard_id];
+      auto &raddr = replication_ctx_.raddrs_mat_[n][shard_id];
+
+      raddr.addr_info.length = mu_squared::kSlotSize;
+      raddr.addr_info.offset = fuos_[shard_id] * mu_squared::kSlotSize;
+
+      if (!conn->Write(laddr, raddr, wr_id_t(n, shard_id, 0).raw)) {
+        ROMULUS_DEBUG("[FAST PATH] post failed, shard {} node {}", shard_id, n);
+        post_failed = true;
+        break;
+      }
+      ++posted;
+    }
+
+    if (posted == 0)
+      return false;
+
+    // shared cq
+    auto &conn = replication_ctx_.conns_mat_.front()[shard_id];
+    auto conn_raw = conn->GetCQ(); // shared cq
+
+    std::vector<ibv_wc> wc(posted);
+
+    int total = 0;
+    while (total < posted) {
+      int n = ibv_poll_cq(conn_raw, posted - total, wc.data() + total);
+      if (n < 0)
+        ROMULUS_FATAL("Fast path write: Error in polling");
+      total += n;
+    }
+    bool needs_reconnect = false;
+    for (int i = 0; i < total; ++i) {
+      wr_id_t wr_id = wc[i].wr_id;
+      if (wc[i].status == IBV_WC_SUCCESS) {
+        done[wr_id.GetID()] = true;
+        ++done_count;
+        continue;
+      }
+      ROMULUS_DEBUG("[FAST PATH] shard {} node {}: {}", shard_id, wr_id.GetID(),
+                    ibv_wc_status_str(wc[i].status));
+      replication_ctx_.conns_mat_[wr_id.GetID()][shard_id]->SetErrorState(true);
+      needs_reconnect = true;
+    }
+    // Reached a QP in error state
+    if (needs_reconnect)
+      want_perms_[shard_id].store(true, std::memory_order_release);
+    // Successfully committed
+    if (done_count >= quorum_)
+      break;
+    // There is no possibility for progress, abort
+    if (needs_reconnect || post_failed)
+      return false;
+  }
+  fuos_[shard_id]++;
+  ROMULUS_DEBUG("Fast commit complete for shard {}. FUO now at {}", shard_id,
+                fuos_[shard_id].load());
+  return true;
+}
+
+bool MuSquared::FastCommit_Pipe(uint64_t shard_id, txn_t<int> &txn) {
   if (want_perms_[shard_id].load(std::memory_order_acquire))
     return false;
 

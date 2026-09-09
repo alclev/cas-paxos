@@ -3,8 +3,10 @@
 std::vector<double> latencies;
 std::vector<txn_t<int>> proposals;
 std::unique_ptr<MuSquared> msq;
+uint64_t i = 0;
 
 #define INIT_CONSENSUS(transport_flag, mach_map)                               \
+  ROMULUS_INFO("Using Mu^2...");                                               \
   auto registry =                                                              \
       std::make_unique<romulus::ConnectionRegistry>("MuSquared", registry_ip); \
   auto device = std::make_shared<romulus::Device>(transport_flag);             \
@@ -13,11 +15,10 @@ std::unique_ptr<MuSquared> msq;
   msq->SpawnThreads();                                                         \
   proposals = msq->GetProposals();
 
-#define LEASE_EXEC_LATENCY                                                     \
+#define EXEC_LATENCY                                                           \
   [&]() {                                                                      \
-    int iter = latencies.size() % proposals.size();                            \
-    ROMULUS_DEBUG("Executing proposal {}...", iter);                           \
-    txn_t<int> txn = proposals[iter];                                          \
+    ROMULUS_DEBUG("Executing proposal {}...", i);                              \
+    txn_t<int> txn = proposals[i++ % proposals.size()];                        \
     ROMULUS_ASSERT(!txn.keys.empty(),                                          \
                    "Transaction must have at least one key.");                 \
     uint64_t target_shard = msq->SelectShard(txn.keys.front());                \
@@ -30,9 +31,9 @@ std::unique_ptr<MuSquared> msq;
             .count());                                                         \
   };
 
-#define LEASE_SYNC_NODES [&]() { msq->Sync(); };
+#define SYNC_NODES [&]() { msq->Sync(); };
 
-#define LEASE_DONE [&]() { msq->Cleanup(); };
+#define DONE [&]() { msq->Cleanup(); };
 
 #define CALC_LAT                                                               \
   [&](std::tuple<double, double, double, double> *result,                      \
