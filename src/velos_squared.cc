@@ -7,10 +7,10 @@ VelosSquared::VelosSquared(std::shared_ptr<romulus::ArgMap> args,
       system_size_(system_size), quorum_(system_size / 2 + 1),
       num_shards_(args->uget(NUM_SHARDS)), capacity_(args->uget(CAPACITY)),
       pipeline_depth_(args->uget(PIPELINE_DEPTH)),
-      no_outliers_(args_->bget(NO_OUTLIERS)), device_(std::move(device)) {
+      no_outliers_(args_->bget(NO_OUTLIERS)), local_ballot_(0), wr_id_(0),
+      device_(std::move(device)), raw_(nullptr),
+      failure_detector_running_(true), prepare_running_(true) {
 
-  // At most, we only need a handler per shard or else there will be no work for
-  // the remaining threads
   // Define seed for the workload as static partition based on node id
   uint64_t key_range = args_->uget(KEY_RANGE);
   shard_size_ = key_range / num_shards_;
@@ -35,8 +35,8 @@ VelosSquared::VelosSquared(std::shared_ptr<romulus::ArgMap> args,
   proposals_.reserve(velos_squared::kNumProposals);
   WorkloadConfig config{velos_squared::kNumProposals, args_->uget(TXN_SIZE),
                         key_range, capacity_};
-  // Now add the proposals that will trigger the lease acquisition, namely for
-  // the next shard in the ring
+  // Now add the proposals that will trigger contention, namely for the next
+  // shard in the ring
   std::vector<txn_t<int>> outliers;
   outliers.reserve(my_shards_.size());
 
@@ -57,6 +57,7 @@ VelosSquared::VelosSquared(std::shared_ptr<romulus::ArgMap> args,
   fuos_ = std::make_unique<std::atomic<uint64_t>[]>(num_shards_);
   prep_offsets_ = std::make_unique<std::atomic<uint64_t>[]>(num_shards_);
   prom_offsets_ = std::make_unique<std::atomic<uint64_t>[]>(num_shards_);
+  want_prep_ = std::make_unique<std::atomic<bool>[]>(num_shards_);
   // initialize member as s,n matrix
   preprepare_expected_ = std::vector<std::vector<State>>(
     num_shards_, std::vector<State>(system_size_));
@@ -67,13 +68,17 @@ VelosSquared::VelosSquared(std::shared_ptr<romulus::ArgMap> args,
     fuos_[s].store(0, std::memory_order_relaxed);
     prep_offsets_[s].store(0, std::memory_order_relaxed);
     prom_offsets_[s].store(0, std::memory_order_relaxed);
+    want_prep_[s].store(false, std::memory_order_relaxed);
 
     for (uint64_t n = 0; n < system_size_; ++n) {
       preprepare_expected_[s][n] = State();
       preprepare_done_[s][n] = false;
     }
   }
-  wr_ids_.reserve(num_shards_);
+  wr_ids_.assign(num_shards_, 0);
+  expected_.assign(system_size_, State());
+  done_.assign(system_size_, false);
+  detected_.assign(system_size_, false);
 }
 
 VelosSquared::~VelosSquared() { Shutdown(); }
@@ -86,35 +91,58 @@ void VelosSquared::SpawnThreads() {
 void VelosSquared::Propose(uint64_t target_shard, Value &v, uint32_t depth) {
   ROMULUS_ASSERT(depth < velos_squared::kMaxProposeDepth,
                  "Propose recursion bound exceeded.");
+  // Keep the preparer ahead of us
+  if (prep_offsets_[target_shard].load(std::memory_order_acquire) -
+        prom_offsets_[target_shard].load(std::memory_order_relaxed) <=
+      velos_squared::kPrepareLow)
+    while (!prep_queue_.enqueue(prep_req_t{target_shard, false}))
+      _mm_pause();
   // If we are able to succesfully write to a quorum of logs, then return true,
-  // otherwise return false and we need to acquire the lease
-  bool ok = pipeline_depth_ == 1 ? Promise_Single(target_shard, v)
-                                 : Promise_Pipe(target_shard, v);
+  // otherwise return false and we need to re-prepare under a higher ballot
+  bool ok = pipeline_depth_ == 1 ? Promise_Single(target_shard, v, depth)
+                                 : Promise_Pipe(target_shard, v, depth);
   if (!ok) {
     ROMULUS_DEBUG(
       "Could not get quorum of promises for shard {} at depth {}. Retrying"
       "path...",
       target_shard, depth);
-    // Trigger the want perm flag on the shard of interest
-    want_perms_[target_shard].store(true, std::memory_order_release);
-    // Block until one of the PermHandlers flips back to false
-    while (want_perms_[target_shard].load(std::memory_order_acquire))
+    // Trigger the want prep flag on the shard of interest
+    want_prep_[target_shard].store(true, std::memory_order_release);
+    while (!prep_queue_.enqueue(prep_req_t{target_shard, true}))
       _mm_pause();
-    // Check the result of the operation. If unsuccessful then backoff and try
-    // again
-    if (!perm_acks_[target_shard].load(std::memory_order_relaxed))
-      RandomBackoff(1, velos_squared::kMaxStartingBackoff);
+    // Block until the PrepareHandler flips back to false
+    while (want_prep_[target_shard].load(std::memory_order_acquire))
+      _mm_pause();
+    RandomBackoff(1, velos_squared::kMaxStartingBackoff);
     Propose(target_shard, v, depth + 1);
   }
 }
 
 void VelosSquared::PrepareHandler() {
+
+  pin_thread_to_core(2);
+
   prep_req_t req;
   while (prepare_running_.load(std::memory_order_acquire)) {
     if (prep_queue_.dequeue(req)) {
+      // A reset rewinds to the promise watermark and bumps the ballot, since
+      // everything prepared under the old ballot has been overtaken
+      if (req.reset) {
+        prep_offsets_[req.shard_id].store(
+          prom_offsets_[req.shard_id].load(std::memory_order_acquire),
+          std::memory_order_release);
+        local_ballot_ = MakeBallot(local_ballot_ / system_size_ + 1);
+      }
       Prepare(req.shard_id);
+      if (req.reset)
+        want_prep_[req.shard_id].store(false, std::memory_order_release);
     } else {
       _mm_pause();
+      // if (!first && empty_counter % 1000000 == 0) {
+      //   ROMULUS_DEBUG("[PrepareHandler] Empty queue for {} iterations. Stopping.", empty_counter);
+      //   prepare_running_.store(false, std::memory_order_release);
+      // }
+        
     }
   }
 }
@@ -123,11 +151,18 @@ bool VelosSquared::Prepare(uint64_t target_shard) {
   uint64_t fuo = 0;
   std::vector<State> swap(system_size_);
   std::vector<State> state(system_size_);
-  std::vector<bool> done(system_size_, false);
+  auto &expected = preprepare_expected_[target_shard];
+  auto &done = preprepare_done_[target_shard];
 
+  auto laddr = prep_ctx_.laddr_;
+  laddr.length = velos_squared::kSlotSize;
+
+  // Prepare up to a window ahead of the promise watermark
   while ((fuo = prep_offsets_[target_shard].load(std::memory_order_acquire)) <
-         capacity_) {
-    State *curr_proposal = &proposed_state_[fuo];
+           capacity_ &&
+         fuo < prom_offsets_[target_shard].load(std::memory_order_acquire) +
+                 velos_squared::kPrepareWindow) {
+    State *curr_proposal = &proposed_state_[target_shard * capacity_ + fuo];
     Ballot curr_promise_ballot = curr_proposal->GetPromiseBallot();
     if (local_ballot_ == 0) {
       local_ballot_ = MakeBallot(1);
@@ -138,22 +173,15 @@ bool VelosSquared::Prepare(uint64_t target_shard) {
     uint32_t done_count = 0;
 
     std::fill(done.begin(), done.end(), false);
+    std::fill(expected.begin(), expected.end(), State());
     std::fill(swap.begin(), swap.end(),
               State(curr_promise_ballot, 0, Value(0)));
     std::fill(state.begin(), state.end(), State());
 
-    uint64_t &wr_id = wr_ids_[target_shard];
-
-    uint64_t wr_id_base =
-      (static_cast<uint64_t>(wr_id) << 48) | (static_cast<uint64_t>(id_) << 32);
-    uint32_t cached_offset =
-      prep_offsets_[target_shard].load(std::memory_order_acquire);
-
-    auto laddr = memblock_.GetAddrInfo(velos_squared::kPreScratchRegionId);
-    laddr.length = velos_squared::kSlotSize;
-
     while (done_count < quorum_) {
-      ++wr_id;
+      uint64_t wr_id_base =
+        (static_cast<uint64_t>(++wr_ids_[target_shard]) << 48) |
+        (static_cast<uint64_t>(id_) << 32);
       // Post CAS ops.
       int posted = 0;
       for (uint32_t n = 0; n < system_size_; ++n) {
@@ -162,21 +190,26 @@ bool VelosSquared::Prepare(uint64_t target_shard) {
 
         uint64_t wr_id = wr_id_base | static_cast<uint64_t>(n);
 
-        auto &conn = remote_conns_[n][1];
-
-        auto &raddr = remote_addrs_[n][GenLogID(target_shard)];
-        raddr.addr_info.offset = cached_offset * velos_squared::kSlotSize;
+        auto &conn = prep_ctx_.conns_[n];
+        auto &raddr = prep_ctx_.raddrs_mat_[n][target_shard];
+        raddr.addr_info.offset = fuo * velos_squared::kSlotSize;
         raddr.addr_info.length = velos_squared::kSlotSize;
 
         laddr.offset = n * velos_squared::kSlotSize;
 
-        conn->CompareAndSwap(laddr, raddr,
-                             preprepare_expected_[target_shard][n].raw,
-                             swap[n].raw, wr_id);
+        conn->CompareAndSwap(laddr, raddr, expected[n].raw, swap[n].raw, wr_id);
         posted++;
       }
 
-      remote_conns_[id_][1]->ProcessCompletions(posted);
+      auto conn_raw = prep_ctx_.conns_[id_]->GetCQ();
+      std::vector<ibv_wc> wc(posted);
+      int total = 0;
+      while (total < posted) {
+        int n = ibv_poll_cq(conn_raw, posted - total, wc.data() + total);
+        if (n < 0)
+          ROMULUS_FATAL("Prepare: Error in polling");
+        total += n;
+      }
 
       // Check return value of CAS.
       bool need_bump = false;
@@ -186,20 +219,14 @@ bool VelosSquared::Prepare(uint64_t target_shard) {
         if (done[i])
           continue;
         laddr.offset = i * velos_squared::kSlotSize;
-        State observed = *reinterpret_cast<State *>(laddr.addr +
-                                                    laddr.offset);
+        State observed = *reinterpret_cast<State *>(laddr.addr + laddr.offset);
 
-        if (observed.raw == preprepare_expected_[target_shard][i].raw) {
-          // ROMULUS_DEBUG("Prepare: cas success");
+        if (observed.raw == expected[i].raw) {
           state[i] = observed;
-          preprepare_done_[i] = true;
+          done[i] = true;
           ++done_count;
         } else {
-          // ROMULUS_DEBUG(
-          //     "Prepare: cas failed but promise ballot still good.
-          //     observed={}, " "expected={}", observed.ToString(),
-          //     preprepare_expected_[i].ToString());
-          preprepare_expected_[i] = observed;
+          expected[i] = observed;
           swap[i] = State(curr_promise_ballot, observed.GetBallot(),
                           observed.GetValue());
           state[i] = observed;
@@ -210,9 +237,18 @@ bool VelosSquared::Prepare(uint64_t target_shard) {
           }
         }
       }
-      // Handle ballot bump after processing all completions
+      // Handle ballot bump after processing all completions. A quorum must be
+      // promised under one ballot, so restart the slot
       if (need_bump) {
-        ROMULUS_INFO("Prepare: Need bump triggered. Unimplemented.");
+        local_ballot_ = MakeBallot(observed_max_ballot / system_size_ + 1);
+        curr_promise_ballot = local_ballot_;
+        curr_proposal->SetPromiseBallot(curr_promise_ballot);
+        done_count = 0;
+        std::fill(done.begin(), done.end(), false);
+        for (uint32_t i = 0; i < system_size_; ++i) {
+          swap[i] = State(curr_promise_ballot, expected[i].GetBallot(),
+                          expected[i].GetValue());
+        }
       }
     }
     // Reduce over the quorum: adopt highest accepted proposal
@@ -221,62 +257,69 @@ bool VelosSquared::Prepare(uint64_t target_shard) {
         curr_proposal->SetProposal(state[i].GetBallot(), state[i].GetValue());
       }
     }
-    ROMULUS_DEBUG("Prepared slot: prep_offset={}, state={}", fuo,
-                  curr_proposal->ToString());
-    
-    prepared_swap_[prep_offset_] = State(curr_promise_ballot, 0, Value(0));
-    prep_offset_.fetch_add(1);
+    ROMULUS_DEBUG("Prepared slot: shard={}, prep_offset={}, state={}",
+                  target_shard, fuo, curr_proposal->ToString());
+
+    prep_offsets_[target_shard].fetch_add(1, std::memory_order_release);
   }
 
   return true;
 }
 
-bool VelosSquared::Promise_Single(uint64_t target_shard, Value &v) {
+bool VelosSquared::Promise_Single(uint64_t target_shard, Value &v,
+                                  uint32_t attempt) {
+  ROMULUS_ASSERT(prom_offsets_[target_shard].load(std::memory_order_acquire) <
+                   capacity_,
+                 "Log exhausted on shard {}", target_shard);
   // Wait until the preparer has prepared the next slot
-  while (prom_offset_.load() >= prep_offset_.load()) {
+  while (prom_offsets_[target_shard].load(std::memory_order_acquire) >=
+         prep_offsets_[target_shard].load(std::memory_order_acquire)) {
     _mm_pause();
   }
-  State *curr_proposal = &proposed_state_[prom_offset_];
+  uint64_t prom = prom_offsets_[target_shard].load(std::memory_order_relaxed);
+
+  State *curr_proposal = &proposed_state_[target_shard * capacity_ + prom];
   Ballot curr_promise_ballot = curr_proposal->GetPromiseBallot();
   uint32_t done_count = 0;
-  // Metadata to indicate to indicate a SUCCESSFUL cas for the given
-  // acceptor
-  // Metadata to indicate whether a CAS for a given acceptor has been POLLED
+  // Snapshot before mutation: this is what prepare left on the acceptors
+  State prepared = *curr_proposal;
   for (uint32_t i = 0; i < system_size_; ++i) {
-    expected_[i] = prepared_swap_[prom_offset_];
+    expected_[i] = prepared;
     done_[i] = false;
   }
-  // We install the chose value if it hasn't already been set
+  // We install the chosen value if it hasn't already been set
   if (curr_proposal->GetBallot() == 0) {
     curr_proposal->SetProposal(curr_promise_ballot, v);
   }
 
   // Cached values
-  uint32_t cached_offset = prom_offset_ * kSlotSize;
-  uint64_t wr_id_base = (static_cast<uint64_t>(wr_id_) << 48) |
-                        (static_cast<uint64_t>(host_id_) << 32);
+  uint32_t cached_offset = prom * velos_squared::kSlotSize;
+  auto laddr = cons_ctx_.laddr_;
+  laddr.length = velos_squared::kSlotSize;
   // Retry until a quroum succeeds and the local log is written to. Making
   // sure that we write to the local log allows a follower to be certain
   // that if the slot is filled that the value is committed.
   int posted = 0;
   while (done_count < quorum_) {
+    uint64_t wr_id_base = (static_cast<uint64_t>(++wr_id_) << 48) |
+                          (static_cast<uint64_t>(id_) << 32);
     // Post CAS ops.
     posted = 0;
     for (uint32_t i = 0; i < system_size_; ++i) {
       // Already succeeded.
       if (done_[i])
         continue;
-      if (detected_[i]) {
-        done_[i] = true;
-        ++done_count;
-        continue;
-      }
+      // if (detected_[i]) {
+      //   done_[i] = true;
+      //   ++done_count;
+      //   continue;
+      // }
       // Post a request
-      auto &conn = cached_conns_[i];
-      auto &raddr = cached_raddrs_[i];
+      auto &conn = cons_ctx_.conns_[i];
+      auto &raddr = cons_ctx_.raddrs_mat_[i][target_shard];
       raddr.addr_info.offset = cached_offset;
-      auto &laddr = cached_laddr_;
-      laddr.offset = i * kSlotSize;
+      raddr.addr_info.length = velos_squared::kSlotSize;
+      laddr.offset = i * velos_squared::kSlotSize;
 
       uint64_t wr_id = wr_id_base | static_cast<uint64_t>(i);
 
@@ -286,157 +329,47 @@ bool VelosSquared::Promise_Single(uint64_t target_shard, Value &v) {
     }
 
     // Shared cq batch poll
-    remote_conns_[0][0]->ProcessCompletions(posted);
+    auto conn_raw = cons_ctx_.conns_[id_]->GetCQ();
+    std::vector<ibv_wc> wc(posted);
+    int total = 0;
+    while(total < posted) {
+      int n = ibv_poll_cq(conn_raw, posted - total, wc.data() + total);
+      if (n < 0)
+        ROMULUS_FATAL("Promise: Error in polling");
+      total += n;
+    }
 
     for (uint32_t i = 0; i < system_size_; ++i) {
       if (done_[i])
         continue;
       // This will the result of the previous CAS
-      cached_laddr_.offset = i * kSlotSize;
-      State observed =
-        *reinterpret_cast<State *>(cached_laddr_.addr + cached_laddr_.offset);
-      // State observed = *c->scratch_state;
+      laddr.offset = i * velos_squared::kSlotSize;
+      State observed = *reinterpret_cast<State *>(laddr.addr + laddr.offset);
 
       if (expected_[i].raw == observed.raw) {
-        // ROMULUS_DEBUG(
-        //     "<Promise> CAS success! observed={}, expected={}, "
-        //     "curr_proposal={}",
-        //     observed.ToString(), expected_[i].ToString(),
-        //     curr_proposal->ToString());
         // CAS succeeded. Done.
         done_[i] = true;
         ++done_count;
       } else if (observed.GetPromiseBallot() > curr_promise_ballot) {
-        // ROMULUS_DEBUG(
-        //     "<Promise> CAS failure Case 1: Seen higher ballot, abort."
-        //     "observed={}, expected={}, curr_proposal={}",
-        //     observed.ToString(), expected_[i].ToString(),
-        //     curr_proposal->ToString());
-        // We will make an assumption the that
-        stable_leader_ = true;
+        // Seen higher ballot, abort. Caller re-prepares
         return false;
       } else {
-        // ROMULUS_DEBUG(
-        //     "<Promise> CAS failure Case 2: Ballot still good. retry."
-        //     "observed={}, expected={}, curr_proposal={}",
-        //     observed.ToString(), expected_[i].ToString(),
-        //     curr_proposal->ToString());
         expected_[i] = observed;
       }
     }
-
-    ++wr_id_;
   }
 
-  log_[prom_offset_] = *curr_proposal;
-  ROMULUS_DEBUG("<Promise> Promised value: {} on slot {}", v.raw(),
-                prom_offset_.load());
-  prom_offset_.fetch_add(1);
+  log_[target_shard * capacity_ + prom] = *curr_proposal;
+  ROMULUS_DEBUG("<Promise> Promised value: {} on shard {} slot {}", v.raw(),
+                target_shard, prom);
+  prom_offsets_[target_shard].fetch_add(1, std::memory_order_release);
   return true;
 }
 
-bool VelosSquared::Promise_Pipe(uint64_t target_shard, Value &v) {
-  // Wait until the preparer has prepared the next slot
-  while (prom_offset_.load() >= prep_offset_.load()) {
-    _mm_pause();
-  }
-  State *curr_proposal = &proposed_state_[prom_offset_];
-  Ballot curr_promise_ballot = curr_proposal->GetPromiseBallot();
-  uint32_t done_count = 0;
-  // Metadata to indicate to indicate a SUCCESSFUL cas for the given
-  // acceptor
-  // Metadata to indicate whether a CAS for a given acceptor has been POLLED
-  for (uint32_t i = 0; i < system_size_; ++i) {
-    expected_[i] = prepared_swap_[prom_offset_];
-    done_[i] = false;
-  }
-  // We install the chose value if it hasn't already been set
-  if (curr_proposal->GetBallot() == 0) {
-    curr_proposal->SetProposal(curr_promise_ballot, v);
-  }
-
-  // Cached values
-  uint32_t cached_offset = prom_offset_ * kSlotSize;
-  uint64_t wr_id_base = (static_cast<uint64_t>(wr_id_) << 48) |
-                        (static_cast<uint64_t>(host_id_) << 32);
-  // Retry until a quroum succeeds and the local log is written to. Making
-  // sure that we write to the local log allows a follower to be certain
-  // that if the slot is filled that the value is committed.
-  int posted = 0;
-  while (done_count < quorum_) {
-    // Post CAS ops.
-    posted = 0;
-    for (uint32_t i = 0; i < system_size_; ++i) {
-      // Already succeeded.
-      if (done_[i])
-        continue;
-      if (detected_[i]) {
-        done_[i] = true;
-        ++done_count;
-        continue;
-      }
-      // Post a request
-      auto &conn = cached_conns_[i];
-      auto &raddr = cached_raddrs_[i];
-      raddr.addr_info.offset = cached_offset;
-      auto &laddr = cached_laddr_;
-      laddr.offset = i * kSlotSize;
-
-      uint64_t wr_id = wr_id_base | static_cast<uint64_t>(i);
-
-      conn->CompareAndSwap(laddr, raddr, expected_[i].raw, curr_proposal->raw,
-                           wr_id);
-      ++posted;
-    }
-
-    // Shared cq batch poll
-    remote_conns_[0][0]->ProcessCompletions(posted);
-
-    for (uint32_t i = 0; i < system_size_; ++i) {
-      if (done_[i])
-        continue;
-      // This will the result of the previous CAS
-      cached_laddr_.offset = i * kSlotSize;
-      State observed =
-        *reinterpret_cast<State *>(cached_laddr_.addr + cached_laddr_.offset);
-      // State observed = *c->scratch_state;
-
-      if (expected_[i].raw == observed.raw) {
-        // ROMULUS_DEBUG(
-        //     "<Promise> CAS success! observed={}, expected={}, "
-        //     "curr_proposal={}",
-        //     observed.ToString(), expected_[i].ToString(),
-        //     curr_proposal->ToString());
-        // CAS succeeded. Done.
-        done_[i] = true;
-        ++done_count;
-      } else if (observed.GetPromiseBallot() > curr_promise_ballot) {
-        // ROMULUS_DEBUG(
-        //     "<Promise> CAS failure Case 1: Seen higher ballot, abort."
-        //     "observed={}, expected={}, curr_proposal={}",
-        //     observed.ToString(), expected_[i].ToString(),
-        //     curr_proposal->ToString());
-        // We will make an assumption the that
-        stable_leader_ = true;
-        return false;
-      } else {
-        // ROMULUS_DEBUG(
-        //     "<Promise> CAS failure Case 2: Ballot still good. retry."
-        //     "observed={}, expected={}, curr_proposal={}",
-        //     observed.ToString(), expected_[i].ToString(),
-        //     curr_proposal->ToString());
-        expected_[i] = observed;
-      }
-    }
-
-    ++wr_id_;
-  }
-
-  log_[prom_offset_] = *curr_proposal;
-  ROMULUS_DEBUG("<Promise> Promised value: {} on slot {}", v.raw(),
-                prom_offset_.load());
-  prom_offset_.fetch_add(1);
-  return true;
+bool VelosSquared::Promise_Pipe(uint64_t target_shard, Value &v,
+                                uint32_t attempt) {
+  // TODO
+  return Promise_Single(target_shard, v, attempt);
 }
 
 void VelosSquared::FailureDetector() {
@@ -448,7 +381,7 @@ void VelosSquared::FailureDetector() {
 }
 
 Ballot VelosSquared::MakeBallot(uint32_t round) {
-  uint32_t b = round * system_size_ + host_id_;
+  uint32_t b = round * system_size_ + id_;
   ROMULUS_ASSERT(b <= std::numeric_limits<uint16_t>::max(),
                  "Ballot overflow: round={}, system_size={}", round,
                  system_size_);
@@ -485,11 +418,15 @@ void VelosSquared::DrainCQ(ibv_cq *cq_raw) {
 void VelosSquared::Reset(uint64_t shard_id) {
   ResetLog(shard_id);
   fuos_[shard_id] = 0;
+  prep_offsets_[shard_id] = 0;
+  prom_offsets_[shard_id] = 0;
 }
 
 void VelosSquared::ResetLog(uint64_t shard_id) {
   auto raddr = memblock_.GetAddrInfo(GenLogID(shard_id));
   std::memset((void *)(raddr.addr + raddr.offset), 0,
+              capacity_ * velos_squared::kSlotSize);
+  std::memset((void *)&proposed_state_[shard_id * capacity_], 0,
               capacity_ * velos_squared::kSlotSize);
 }
 

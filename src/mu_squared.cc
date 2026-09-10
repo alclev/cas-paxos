@@ -7,9 +7,10 @@ MuSquared::MuSquared(std::shared_ptr<romulus::ArgMap> args,
       system_size_(system_size), quorum_(system_size / 2 + 1),
       num_shards_(args->uget(NUM_SHARDS)), capacity_(args->uget(CAPACITY)),
       pipeline_depth_(args->uget(PIPELINE_DEPTH)), req_epoch_(0),
-      need_fuo_scan_(false), device_(std::move(device)),
+      need_fuo_scan_(false), device_(std::move(device)), raw_(nullptr),
       num_handlers_(args_->uget(NUM_HANDLERS)),
-      no_outliers_(args_->bget(NO_OUTLIERS)) {
+      no_outliers_(args_->bget(NO_OUTLIERS)),
+      failure_detector_running_(true) {
   ROMULUS_ASSERT(num_handlers_ > 0, "Num handlers must be at least 1");
   // At most, we only need a handler per shard or else there will be no work for
   // the remaining threads
@@ -576,11 +577,11 @@ void MuSquared::DrainCQ() {
 }
 
 void MuSquared::Reset(uint64_t shard_id) {
-  ResetLogs(shard_id);
+  ResetLog(shard_id);
   fuos_[shard_id] = 0;
 }
 
-void MuSquared::ResetLogs(uint64_t shard_id) {
+void MuSquared::ResetLog(uint64_t shard_id) {
   auto raddr = memblock_.GetAddrInfo(GenLogID(shard_id));
   std::memset((void *)(raddr.addr + raddr.offset), 0,
               capacity_ * mu_squared::kSlotSize);

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
+#include <set>
 
 #include "romulus/common.h"
 #include "romulus/connection_manager.h"
@@ -10,15 +11,15 @@
 #include "romulus/registry.h"
 
 #include "aparray.h"
-#include "state.h"
-#include "util.h"
-#include "workload.h"
+#include "contexts.h"
 #include "queue.h"
+#include "state.h"
+#include "workload.h"
+#include "util.h"
 
-struct alignas(64) prep_req_t {
+struct prep_req_t {
   uint64_t shard_id;
-  uint64_t wr_id;
-  State state;
+  bool reset;
 };
 
 namespace velos_squared {
@@ -29,6 +30,9 @@ constexpr uint32_t kMaxStartingBackoff = 100; // us
 constexpr uint32_t kMaxProposeDepth = 100;
 constexpr uint32_t kPermTimeout_ms = 100;
 constexpr uint32_t kQueueSize = 64;
+constexpr uint64_t kPrepareWindow = 4096;
+constexpr uint64_t kPrepareLow = 2048;
+
 const std::string kFDLocalRegionId = "FailureDetectorLocalRegion";
 const std::string kFDRemoteRegionId = "FailureDetectorRemoteRegion";
 
@@ -59,8 +63,8 @@ public:
   bool Prepare(uint64_t target_shard);
   void PrepareHandler();
   void FailureDetector();
-  bool Promise_Single(uint64_t target_shard, Value &v);
-  bool Promise_Pipe(uint64_t target_shard, Value &v);
+  bool Promise_Single(uint64_t target_shard, Value &v, uint32_t attempt);
+  bool Promise_Pipe(uint64_t target_shard, Value &v, uint32_t attempt);
 
   std::string GenLogID(uint64_t shard_id);
   void SpawnThreads();
@@ -101,6 +105,15 @@ private:
   ReaderWriterQueue<prep_req_t, velos_squared::kQueueSize> prep_queue_;
   std::vector<uint64_t> my_shards_;
   std::vector<uint64_t> wr_ids_;
+
+  std::unique_ptr<std::atomic<bool>[]> want_prep_;
+  base_ctx_t cons_ctx_, prep_ctx_;
+  fd_ctx_t fd_ctx_;
+
+  std::vector<State> expected_;
+  std::vector<bool> done_;
+  std::vector<bool> detected_;
+  uint64_t wr_id_;
 
   // RDMA resources
   std::shared_ptr<romulus::Device> device_;

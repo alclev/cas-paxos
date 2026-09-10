@@ -1,4 +1,6 @@
 
+
+. ../config/cloudlab.conf
 # Parse script args
 if [[ "$1" == "LAT" ]]; then
 	cmds=("${lat_cmds[@]}")
@@ -18,7 +20,7 @@ bw_cmds=(
 	"ib_write_bw"
 	"ib_atomic_bw"
 )
-sizes=(8 16 32 64 128 256 512 1024)
+sizes=(8)
 # -R : enables the connection manager
 # -F : disables CPU mismatch warning
 # -s : define message size in bytes

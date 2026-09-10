@@ -18,27 +18,18 @@ target_link_libraries(corelib
 foreach(SRC ${SRC_SOURCES})
   get_filename_component(SRC_NAME ${SRC} NAME_WE)
   add_executable(${SRC_NAME} ${SRC})
-  if(USE_MU)
-    message(STATUS "Building WITH Mu enabled")
-    target_compile_definitions(${SRC_NAME} PRIVATE USE_MU)
-
-    target_link_libraries(${SRC_NAME}
-      PRIVATE
-      ${CMAKE_SOURCE_DIR}/lib/libcrashconsensus.so
-    )
+  
+  if(MU_SQUARED)
+    message(STATUS "Building with Mu^2 enabled")
+    target_compile_definitions(${SRC_NAME} PRIVATE MU_SQUARED)
   else()
-    message(STATUS "Building WITHOUT Mu")
+    message(STATUS "Building without Mu^2 enabled")
   endif()
-  if(USE_VELOS)
-    message(STATUS "Building WITH Velos enabled")
-    target_compile_definitions(${SRC_NAME} PRIVATE USE_VELOS)
+  
+  if(VELOS_SQUARED)
+    message(STATUS "Building with Velos^2 enabled")
   else()
-    message(STATUS "Building WITHOUT Velos")
-  endif()
-  if(USE_LEASE)
-    message(STATUS "Building WITH Lease enabled")
-  else()
-    message(STATUS "Building WITHOUT Lease")
+    message(STATUS "Building WITHOUT Velos^2 enabled")
   endif()
 
   target_link_libraries(${SRC_NAME}

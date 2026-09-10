@@ -359,22 +359,18 @@ void VelosSquared::Init(std::string_view dev_name, int dev_port,
   ROMULUS_INFO("Registering remotely accessible memory");
 
   uint64_t scratch_len = system_size_ * pipeline_depth_;
-  uint64_t proposal_len = num_shards_;
+  uint64_t pre_scratch_len = system_size_;
   uint64_t fd_local_len = (system_size_ - 1);
   uint64_t fd_remote_len = (system_size_ - 1);
-  uint64_t perm_handler_scratch_len = num_shards_;   // one slot per shard
-  uint64_t perm_requester_scratch_len = num_shards_; // one slot per shard
-  uint64_t perm_req_len = system_size_ * num_shards_;
-  uint64_t perm_grant_len = system_size_ * num_shards_;
 
-  // capacity is per-shard
+  // capacity is per-shard. proposed mirrors the log since every slot is
+  // prepared ahead of time
+  uint64_t proposal_len = capacity_ * num_shards_;
   uint64_t log_len = capacity_ * num_shards_;
 
   // NB: the following configuration assumes STANDALONE
-  std::size_t remote_len = scratch_len + proposal_len + log_len + fd_local_len +
-                           fd_remote_len + perm_handler_scratch_len +
-                           perm_requester_scratch_len + perm_req_len +
-                           perm_grant_len;
+  std::size_t remote_len = scratch_len + proposal_len + log_len +
+                           pre_scratch_len + fd_local_len + fd_remote_len;
 
   raw_ =
     new romulus::APArray<State, velos_squared::kSlotSize, CACHE_PREFETCH_SIZE>(
@@ -384,12 +380,13 @@ void VelosSquared::Init(std::string_view dev_name, int dev_port,
   // ============================================================================
   //   Memory Layout
   //   n = system_size   s = num_shards_   c = capacity   k = kSlotSize
+  //   d = pipeline_depth_
   // ============================================================================
   //
   //   +-------------+
-  //   |   scratch   |  : n * k
+  //   |   scratch   |  : n * d * k
   //   +-------------+
-  //   |  proposed   |  : s * k
+  //   |  proposed   |  : s * c * k      local only, shard-major
   //   +-------------+
   //   |    log_0    |  : c * k
   //   +-------------+
@@ -434,9 +431,10 @@ void VelosSquared::Init(std::string_view dev_name, int dev_port,
                                 capacity_ * velos_squared::kSlotSize);
     current_offset += capacity_ * velos_squared::kSlotSize;
   }
-  memblock_.RegisterMemRegion(velos_squared::kPreScratchRegionId, current_offset,
-                              scratch_len * velos_squared::kSlotSize);
-  current_offset += scratch_len * velos_squared::kSlotSize;
+  memblock_.RegisterMemRegion(velos_squared::kPreScratchRegionId,
+                              current_offset,
+                              pre_scratch_len * velos_squared::kSlotSize);
+  current_offset += pre_scratch_len * velos_squared::kSlotSize;
   memblock_.RegisterMemRegion(velos_squared::kFDLocalRegionId, current_offset,
                               fd_local_len * velos_squared::kSlotSize);
   current_offset += fd_local_len * velos_squared::kSlotSize;
@@ -526,6 +524,113 @@ void VelosSquared::Init(std::string_view dev_name, int dev_port,
     }
     remote_conns_.emplace(m.first, conns);
   }
+
+  // Initialize all RDMA contexts. Each thread owns its own copy of the log
+  // addrs since the offset is mutated per CAS
+  cons_ctx_.conns_.resize(system_size_);
+  cons_ctx_.raddrs_mat_.resize(system_size_,
+                               std::vector<romulus::RemoteAddr>(num_shards_));
+  prep_ctx_.conns_.resize(system_size_);
+  prep_ctx_.raddrs_mat_.resize(system_size_,
+                               std::vector<romulus::RemoteAddr>(num_shards_));
+
+  fd_ctx_.conns_.resize(system_size_, nullptr);
+  fd_ctx_.raddrs_.resize(system_size_);
+
+  cons_ctx_.laddr_ = memblock_.GetAddrInfo(velos_squared::kScratchRegionId);
+  prep_ctx_.laddr_ = memblock_.GetAddrInfo(velos_squared::kPreScratchRegionId);
+  fd_ctx_.laddr_ = memblock_.GetAddrInfo(velos_squared::kFDLocalRegionId);
+
+  for (int n = 0; n < (int)system_size_; ++n) {
+    // primary
+    cons_ctx_.conns_[n] = remote_conns_[n][0];
+    // prepreparation
+    prep_ctx_.conns_[n] = remote_conns_[n][1];
+    for (int s = 0; s < (int)num_shards_; ++s) {
+      cons_ctx_.raddrs_mat_[n][s] = remote_addrs_[n][GenLogID(s)];
+      prep_ctx_.raddrs_mat_[n][s] = remote_addrs_[n][GenLogID(s)];
+    }
+
+    // failure detector
+    if (n == (int)id_)
+      continue;
+    fd_ctx_.conns_[n] = remote_conns_[n][2];
+    fd_ctx_.raddrs_[n] = remote_addrs_[n][velos_squared::kFDRemoteRegionId];
+  }
+#ifdef MEMDUMP
+  // Dump every context's QP/CQ so the shared-CQ mapping is verifiable
+  ROMULUS_INFO("=== Context dump: node {} of {} ===", id_, system_size_);
+  ROMULUS_INFO("num_qps_={} num_shared_cq_={}", num_qps_, num_shared_cq_);
+  for (int n = 0; n < (int)system_size_; ++n) {
+    ROMULUS_INFO(
+      "cons_ctx_[{}]{} QP={:#x} CQ={:#x}", n, (n == (int)id_) ? " LOOPBACK" : "",
+      reinterpret_cast<uintptr_t>(cons_ctx_.conns_[n]->GetQP()),
+      reinterpret_cast<uintptr_t>(cons_ctx_.conns_[n]->GetCQ()));
+  }
+  for (int n = 0; n < (int)system_size_; ++n) {
+    ROMULUS_INFO(
+      "prep_ctx_[{}]{} QP={:#x} CQ={:#x}", n, (n == (int)id_) ? " LOOPBACK" : "",
+      reinterpret_cast<uintptr_t>(prep_ctx_.conns_[n]->GetQP()),
+      reinterpret_cast<uintptr_t>(prep_ctx_.conns_[n]->GetCQ()));
+  }
+  for (int n = 0; n < (int)system_size_; ++n) {
+    if (fd_ctx_.conns_[n] == nullptr) {
+      ROMULUS_INFO("fd_ctx_[{}] null", n);
+      continue;
+    }
+    ROMULUS_INFO("fd_ctx_[{}] QP={:#x} CQ={:#x}", n,
+                 reinterpret_cast<uintptr_t>(fd_ctx_.conns_[n]->GetQP()),
+                 reinterpret_cast<uintptr_t>(fd_ctx_.conns_[n]->GetCQ()));
+  }
+  // A shared CQ must hold every completion the poller waits on, and the two
+  // phases must not land on the same one
+  std::set<uintptr_t> cons_cqs, prep_cqs;
+  for (int n = 0; n < (int)system_size_; ++n) {
+    cons_cqs.insert(reinterpret_cast<uintptr_t>(cons_ctx_.conns_[n]->GetCQ()));
+    prep_cqs.insert(reinterpret_cast<uintptr_t>(prep_ctx_.conns_[n]->GetCQ()));
+  }
+  ROMULUS_INFO("distinct cons CQs={} prep CQs={}", cons_cqs.size(),
+               prep_cqs.size());
+  for (auto &c : cons_cqs) {
+    if (prep_cqs.count(c))
+      ROMULUS_INFO("!! CQ {:#x} shared between cons and prep", c);
+  }
+  // Local view of the remotely accessible regions
+  auto dump = [&](const std::string &r) {
+    auto a = memblock_.GetAddrInfo(r);
+    ROMULUS_INFO("region {:<24} addr={:#x} offset={} len={}", r, a.addr,
+                 a.offset, a.length);
+  };
+  dump(velos_squared::kScratchRegionId);
+  dump(velos_squared::kProposedRegionId);
+  dump(velos_squared::kPreScratchRegionId);
+  dump(velos_squared::kFDLocalRegionId);
+  dump(velos_squared::kFDRemoteRegionId);
+  for (int s = 0; s < (int)num_shards_; ++s)
+    dump(GenLogID(s));
+  // Remote log bases as seen from here: the stride decides atomic lock-table
+  // collisions at the responder
+  for (int s = 0; s < (int)num_shards_; ++s) {
+    ROMULUS_INFO("raddr log_{} node0 addr={:#x} rkey={}", s,
+                 cons_ctx_.raddrs_mat_[0][s].addr_info.addr,
+                 cons_ctx_.raddrs_mat_[0][s].addr_info.key);
+  }
+  ROMULUS_INFO("=== End context dump ===");
+#endif
+  // QP mappings
+  // n = system_size   s = num_shards_   c = capacity   k = kSlotSize
+  //
+  // --- QP counts ---
+  // Primary concensus: n
+  // Prepreparation   : n
+  // FD               : n - 1
+  //
+  // Thread counts
+  // Primary consensus: 1
+  // Prepare handler: 1
+  // Failure Detector: 1
+  // Total: 3 threads
+  // -----------------------------
 
   // Finally, barrier
   conn_manager_->arrive_strict_barrier();

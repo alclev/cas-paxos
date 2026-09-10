@@ -33,13 +33,13 @@ constexpr const char* NO_OUTLIERS = "--no-outliers";
 
 inline auto EXTRA_ARGS = {
     STR_ARG(HOSTNAME, "Hostname of this node."),
-    U64_ARG_OPT(TESTTIME, "Experiment duration in seconds", 5),
+    U64_ARG_OPT(TESTTIME, "Experiment duration in seconds", 4),
     U64_ARG_OPT(LOOP, "Number of iterations between runtime checks.", 1000),
-    U64_ARG_OPT(CAPACITY, "Capacity of the replicated log.", (1ULL << 15)),
+    U64_ARG_OPT(CAPACITY, "Capacity of the replicated log.", 1048583),
     U64_ARG_OPT(SLEEP, "Sleep interval between proposals in ms", 0),
     U64_ARG_OPT(KEY_RANGE, "Key range for the workload.", 256),
     U64_ARG_OPT(NUM_SHARDS, "Number of shards for the workload.", 20),
-    U64_ARG_OPT(PIPELINE_DEPTH, "Consensus pipeline depth.", 8),
+    U64_ARG_OPT(PIPELINE_DEPTH, "Consensus pipeline depth.", 1),
     U64_ARG_OPT(TXN_SIZE, "Transaction size in terms of number of keys", 1),
     U64_ARG_OPT(NUM_HANDLERS, "Number of handler threads for memory permissioning", 4),
     BOOL_ARG_OPT(NO_OUTLIERS, "Use a workload without outliers (ideally routed)")

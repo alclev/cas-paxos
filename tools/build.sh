@@ -2,7 +2,7 @@
 # This script builds the project in debug mode using clang-18.
 
 function usage() {
-    echo "Usage: $0 <debug|release> <default|mu|lease|velos>"
+    echo "Usage: $0 <debug|release> <musq|vesq>"
     exit 1
 }
 
@@ -22,21 +22,17 @@ if [[ "$BUILD_MODE" != "DEBUG" && "$BUILD_MODE" != "RELEASE" ]]; then
 	usage
 fi
 
-if [[ "$MODE" != "DEFAULT" && "$MODE" != "MU" && "$MODE" != "LEASE" && "$MODE" != "VELOS" ]]; then
+if [[ "$MODE" != "MUSQ" && "$MODE" != "VESQ" ]]; then
     usage
 fi
 
 
 CONDITIONAL_ARGS="-DBUILD_MODE=${BUILD_MODE}"
 # If the second arg exists
-if [[ "$MODE" == "MU" ]]; then
-    CONDITIONAL_ARGS="${CONDITIONAL_ARGS} -DUSE_MU=ON -DUSE_VELOS=OFF -DUSE_LEASE=OFF"
-elif [[ "$MODE" == "LEASE" ]]; then
-    CONDITIONAL_ARGS="${CONDITIONAL_ARGS} -DUSE_MU=OFF -DUSE_VELOS=OFF -DUSE_LEASE=ON"
-elif [[ "$MODE" == "DEFAULT" ]]; then
-    CONDITIONAL_ARGS="${CONDITIONAL_ARGS} -DUSE_MU=OFF -DUSE_VELOS=OFF -DUSE_LEASE=OFF"
-elif [[ "$MODE" == "VELOS" ]]; then
-    CONDITIONAL_ARGS="${CONDITIONAL_ARGS} -DUSE_MU=OFF -DUSE_VELOS=ON -DUSE_LEASE=OFF"
+if [[ "$MODE" == "MUSQ" ]]; then
+    CONDITIONAL_ARGS="${CONDITIONAL_ARGS} -DMU_SQUARED=ON -DVELOS_SQUARED=OFF"
+elif [[ "$MODE" == "MUSQ" ]]; then
+    CONDITIONAL_ARGS="${CONDITIONAL_ARGS} -DMU_SQUARED=OFF -DVELOS_SQUARED=ON"
 fi
 
 # Go into root dir

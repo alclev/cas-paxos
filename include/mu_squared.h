@@ -220,4 +220,6 @@ private:
   bool no_outliers_;
   std::vector<std::thread> perm_threads_;
   std::thread fd_thread_;
+  std::atomic<bool> failure_detector_running_;
+  std::atomic<bool> perm_handler_running_;
 };

@@ -2,13 +2,13 @@
 
 std::vector<double> latencies;
 std::vector<txn_t<int>> proposals;
-std::unique_ptr<MuSquared> msq;
+std::unique_ptr<VelosSquared> vsq;
 uint64_t i = 0;
 
 #define INIT_CONSENSUS(transport_flag, mach_map)                               \
   ROMULUS_INFO("Using Velos^2...");                                            \
   auto registry = std::make_unique<romulus::ConnectionRegistry>(               \
-      "VelosSquared", registry_ip);                                            \
+    "VelosSquared", registry_ip);                                              \
   auto device = std::make_shared<romulus::Device>(transport_flag);             \
   vsq = std::make_unique<VelosSquared>(args, system_size, device);             \
   vsq->Init(dev_name, dev_port, std::move(registry), mach_map);                \
@@ -21,19 +21,20 @@ uint64_t i = 0;
     txn_t<int> txn = proposals[i++ % proposals.size()];                        \
     ROMULUS_ASSERT(!txn.keys.empty(),                                          \
                    "Transaction must have at least one key.");                 \
-    uint64_t target_shard = msq->SelectShard(txn.keys.front());                \
+    uint64_t target_shard = vsq->SelectShard(txn.keys.front());                \
     ROMULUS_DEBUG("Txn is mapped to shard {}", target_shard);                  \
+    Value v(txn.values.front());                                               \
     auto start = std::chrono::high_resolution_clock::now();                    \
-    msq->Propose(target_shard, txn);                                           \
+    vsq->Propose(target_shard, v);                                             \
     auto end = std::chrono::high_resolution_clock::now();                      \
     latencies.push_back(                                                       \
-        std::chrono::duration_cast<std::chrono::microseconds>(end - start)     \
-            .count());                                                         \
+      std::chrono::duration_cast<std::chrono::microseconds>(end - start)       \
+        .count());                                                             \
   };
 
-#define SYNC_NODES [&]() { msq->Sync(); };
+#define SYNC_NODES [&]() { vsq->Sync(); };
 
-#define DONE [&]() { msq->Cleanup(); };
+#define DONE [&]() { vsq->Shutdown(); };
 
 #define CALC_LAT                                                               \
   [&](std::tuple<double, double, double, double> *result,                      \
@@ -58,17 +59,17 @@ uint64_t i = 0;
       latency_stddev /= static_cast<double>(latencies.size());                 \
       latency_stddev = std::sqrt(latency_stddev);                              \
       latency_max_idx =                                                        \
-          std::distance(latencies.begin(),                                     \
-                        std::max_element(latencies.begin(), latencies.end())); \
+        std::distance(latencies.begin(),                                       \
+                      std::max_element(latencies.begin(), latencies.end()));   \
       latency_max = latencies[latency_max_idx];                                \
       std::sort(latencies.begin(), latencies.end());                           \
       latency_50p =                                                            \
-          latencies[static_cast<uint32_t>((latencies.size() * .50))];          \
+        latencies[static_cast<uint32_t>((latencies.size() * .50))];            \
       latency_99p =                                                            \
-          latencies[static_cast<uint32_t>((latencies.size() * .99))];          \
+        latencies[static_cast<uint32_t>((latencies.size() * .99))];            \
       latency_99_9p =                                                          \
-          latencies[static_cast<uint32_t>((latencies.size() * .999))];         \
-      *result = std::make_tuple(latency_avg, latency_50p, latency_99p,         \
-                                latency_99_9p);                                \
+        latencies[static_cast<uint32_t>((latencies.size() * .999))];           \
+      *result =                                                                \
+        std::make_tuple(latency_avg, latency_50p, latency_99p, latency_99_9p); \
     }                                                                          \
   }
