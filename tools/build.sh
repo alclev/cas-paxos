@@ -31,7 +31,7 @@ CONDITIONAL_ARGS="-DBUILD_MODE=${BUILD_MODE}"
 # If the second arg exists
 if [[ "$MODE" == "MUSQ" ]]; then
     CONDITIONAL_ARGS="${CONDITIONAL_ARGS} -DMU_SQUARED=ON -DVELOS_SQUARED=OFF"
-elif [[ "$MODE" == "MUSQ" ]]; then
+elif [[ "$MODE" == "VESQ" ]]; then
     CONDITIONAL_ARGS="${CONDITIONAL_ARGS} -DMU_SQUARED=OFF -DVELOS_SQUARED=ON"
 fi
 

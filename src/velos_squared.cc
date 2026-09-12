@@ -79,6 +79,12 @@ VelosSquared::VelosSquared(std::shared_ptr<romulus::ArgMap> args,
   expected_.assign(system_size_, State());
   done_.assign(system_size_, false);
   detected_.assign(system_size_, false);
+
+  confirmed_.assign(num_shards_, 0);
+  acks_.assign(num_shards_ * pipeline_depth_, 0);
+  promise_expected_.assign(num_shards_ * pipeline_depth_,
+                           std::vector<State>(system_size_));
+  outstanding_.assign(num_shards_, 0);
 }
 
 VelosSquared::~VelosSquared() { Shutdown(); }
@@ -108,11 +114,25 @@ void VelosSquared::Propose(uint64_t target_shard, Value &v, uint32_t depth) {
       target_shard, depth);
     // Trigger the want prep flag on the shard of interest
     want_prep_[target_shard].store(true, std::memory_order_release);
+    if (pipeline_depth_ > 1) {
+      // Reap all in-flight WRs so no stale CQE survives the rewind. want_prep_
+      // is held, so each call is one poll batch
+      while (outstanding_[target_shard] > 0)
+        PollPipeline(target_shard,
+                     prom_offsets_[target_shard].load(
+                       std::memory_order_relaxed) + 1);
+      // Rewind over the unconfirmed tail so re-prepare re-derives it
+      prom_offsets_[target_shard].store(confirmed_[target_shard],
+                                        std::memory_order_release);
+    }
     while (!prep_queue_.enqueue(prep_req_t{target_shard, true}))
       _mm_pause();
     // Block until the PrepareHandler flips back to false
     while (want_prep_[target_shard].load(std::memory_order_acquire))
       _mm_pause();
+    // rebase the pipeline
+    confirmed_[target_shard] =
+      prom_offsets_[target_shard].load(std::memory_order_relaxed);
     RandomBackoff(1, velos_squared::kMaxStartingBackoff);
     Propose(target_shard, v, depth + 1);
   }
@@ -139,11 +159,23 @@ void VelosSquared::PrepareHandler() {
     } else {
       _mm_pause();
       // if (!first && empty_counter % 1000000 == 0) {
-      //   ROMULUS_DEBUG("[PrepareHandler] Empty queue for {} iterations. Stopping.", empty_counter);
-      //   prepare_running_.store(false, std::memory_order_release);
+      //   ROMULUS_DEBUG("[PrepareHandler] Empty queue for {} iterations.
+      //   Stopping.", empty_counter); prepare_running_.store(false,
+      //   std::memory_order_release);
       // }
-        
     }
+  }
+}
+
+void VelosSquared::TriggerPrepare() {
+  for(auto &s : my_shards_) {
+    // Trigger the want prep flag on the shard of interest
+    want_prep_[s].store(true, std::memory_order_release);
+    while (!prep_queue_.enqueue(prep_req_t{s, true}))
+      _mm_pause();
+    // Block until the PrepareHandler flips back to false
+    while (want_prep_[s].load(std::memory_order_acquire))
+      _mm_pause();
   }
 }
 
@@ -159,9 +191,7 @@ bool VelosSquared::Prepare(uint64_t target_shard) {
 
   // Prepare up to a window ahead of the promise watermark
   while ((fuo = prep_offsets_[target_shard].load(std::memory_order_acquire)) <
-           capacity_ &&
-         fuo < prom_offsets_[target_shard].load(std::memory_order_acquire) +
-                 velos_squared::kPrepareWindow) {
+           capacity_) {
     State *curr_proposal = &proposed_state_[target_shard * capacity_ + fuo];
     Ballot curr_promise_ballot = curr_proposal->GetPromiseBallot();
     if (local_ballot_ == 0) {
@@ -266,8 +296,7 @@ bool VelosSquared::Prepare(uint64_t target_shard) {
   return true;
 }
 
-bool VelosSquared::Promise_Single(uint64_t target_shard, Value &v,
-                                  uint32_t attempt) {
+bool VelosSquared::Promise_Single(uint64_t target_shard, Value &v, [[maybe_unused]] uint32_t attempt) {
   ROMULUS_ASSERT(prom_offsets_[target_shard].load(std::memory_order_acquire) <
                    capacity_,
                  "Log exhausted on shard {}", target_shard);
@@ -332,7 +361,7 @@ bool VelosSquared::Promise_Single(uint64_t target_shard, Value &v,
     auto conn_raw = cons_ctx_.conns_[id_]->GetCQ();
     std::vector<ibv_wc> wc(posted);
     int total = 0;
-    while(total < posted) {
+    while (total < posted) {
       int n = ibv_poll_cq(conn_raw, posted - total, wc.data() + total);
       if (n < 0)
         ROMULUS_FATAL("Promise: Error in polling");
@@ -368,8 +397,123 @@ bool VelosSquared::Promise_Single(uint64_t target_shard, Value &v,
 
 bool VelosSquared::Promise_Pipe(uint64_t target_shard, Value &v,
                                 uint32_t attempt) {
-  // TODO
-  return Promise_Single(target_shard, v, attempt);
+  if (want_prep_[target_shard].load(std::memory_order_acquire))
+    return false;
+  ROMULUS_ASSERT(prom_offsets_[target_shard].load(std::memory_order_acquire) < capacity_,
+                 "Log exhausted on shard {}", target_shard);
+  // Wait until the preparer has prepared the next slot
+  while (prom_offsets_[target_shard].load(std::memory_order_acquire) >=
+         prep_offsets_[target_shard].load(std::memory_order_acquire)) {
+    _mm_pause();
+  }
+  uint64_t prom = prom_offsets_[target_shard].load(std::memory_order_relaxed);
+  uint64_t ring = target_shard * pipeline_depth_ + prom % pipeline_depth_;
+
+  State *curr_proposal = &proposed_state_[target_shard * capacity_ + prom];
+  // Snapshot before mutation: this is what prepare left on the acceptors
+  std::fill(promise_expected_[ring].begin(), promise_expected_[ring].end(),
+            *curr_proposal);
+  acks_[ring] = 0;
+  // A slot already carrying a value (adopted or rewound) is re-driven, v takes
+  // the next slot
+  bool fresh = curr_proposal->GetBallot() == 0;
+  if (fresh)
+    curr_proposal->SetProposal(curr_proposal->GetPromiseBallot(), v);
+
+  auto laddr = cons_ctx_.laddr_;
+  laddr.length = velos_squared::kSlotSize;
+  for (uint32_t i = 0; i < system_size_; ++i) {
+    auto &conn = cons_ctx_.conns_[i];
+    auto &raddr = cons_ctx_.raddrs_mat_[i][target_shard];
+    raddr.addr_info.offset = prom * velos_squared::kSlotSize;
+    raddr.addr_info.length = velos_squared::kSlotSize;
+    laddr.offset = (ring * system_size_ + i) * velos_squared::kSlotSize;
+
+    uint64_t wr_id = (prom << 32) | (target_shard << 16) | i;
+
+    conn->CompareAndSwap(laddr, raddr, promise_expected_[ring][i].raw,
+                         curr_proposal->raw, wr_id);
+  }
+  outstanding_[target_shard] += system_size_;
+
+  prom_offsets_[target_shard].fetch_add(1, std::memory_order_release);
+
+  // Poll only once pipeline_depth_ promises are in flight, retire the oldest.
+  // Once v is posted the pipeline owns it; an abort surfaces on the next call
+  if (prom + 1 - confirmed_[target_shard] >= pipeline_depth_ &&
+      !PollPipeline(target_shard, confirmed_[target_shard] + 1))
+    return fresh;
+  return fresh || Promise_Pipe(target_shard, v, attempt);
+}
+
+// Poll the shared CQ until slot target is quorum-confirmed for target_shard.
+// Completions belonging to other shards are credited to their rings.
+// Poll the shared CQ until slot target is quorum-confirmed for target_shard.
+// Completions belonging to other shards are credited to their rings.
+bool VelosSquared::PollPipeline(uint64_t target_shard, uint64_t target) {
+  auto cq_raw = cons_ctx_.conns_[id_]->GetCQ();
+  auto laddr = cons_ctx_.laddr_;
+  laddr.length = velos_squared::kSlotSize;
+  ibv_wc wc[16];
+
+  while (confirmed_[target_shard] < target) {
+    int total = ibv_poll_cq(cq_raw, 16, wc);
+    if (total < 0)
+      ROMULUS_FATAL("Promise: Error in polling");
+
+    for (int i = 0; i < total; ++i) {
+      uint64_t n = wc[i].wr_id & 0xffff;
+      uint64_t s = (wc[i].wr_id >> 16) & 0xffff;
+      uint64_t slot = wc[i].wr_id >> 32;
+      uint64_t ring = s * pipeline_depth_ + slot % pipeline_depth_;
+      --outstanding_[s];
+
+      if (wc[i].status != IBV_WC_SUCCESS) {
+        ROMULUS_DEBUG("[PIPE] shard {} node {}: {}", s, n,
+                      ibv_wc_status_str(wc[i].status));
+        want_prep_[s].store(true, std::memory_order_release);
+        continue;
+      }
+      // Straggler from a confirmed slot
+      if (slot < confirmed_[s])
+        continue;
+
+      laddr.offset = (ring * system_size_ + n) * velos_squared::kSlotSize;
+      State observed = *reinterpret_cast<State *>(laddr.addr + laddr.offset);
+      State *curr_proposal = &proposed_state_[s * capacity_ + slot];
+
+      if (observed.raw == promise_expected_[ring][n].raw) {
+        ++acks_[ring];
+        // Confirm in order
+        while (confirmed_[s] 
+                 < prom_offsets_[s].load(std::memory_order_relaxed) &&
+               acks_[s * pipeline_depth_ + confirmed_[s] % pipeline_depth_] >=
+                 quorum_) {
+          log_[s * capacity_ + confirmed_[s]] =
+            proposed_state_[s * capacity_ + confirmed_[s]];
+          ++confirmed_[s];
+        }
+      } else if (observed.GetPromiseBallot() >
+                 curr_proposal->GetPromiseBallot()) {
+        // Seen higher ballot, abort. Caller re-prepares
+        want_prep_[s].store(true, std::memory_order_release);
+      } else if (!want_prep_[s].load(std::memory_order_acquire)) {
+        // Stale expected, retry this node
+        promise_expected_[ring][n] = observed;
+        auto &raddr = cons_ctx_.raddrs_mat_[n][s];
+        raddr.addr_info.offset = slot * velos_squared::kSlotSize;
+        raddr.addr_info.length = velos_squared::kSlotSize;
+        cons_ctx_.conns_[n]->CompareAndSwap(laddr, raddr, observed.raw,
+                                            curr_proposal->raw, wc[i].wr_id);
+        ++outstanding_[s];
+      }
+    }
+
+    if (want_prep_[target_shard].load(std::memory_order_acquire) &&
+        confirmed_[target_shard] < target)
+      return false;
+  }
+  return true;
 }
 
 void VelosSquared::FailureDetector() {
@@ -398,7 +542,7 @@ uint64_t VelosSquared::SelectShard(int key) {
 }
 
 void VelosSquared::Warmup() {
-  const int num_warmup_iters = 1e4;
+  // const int num_warmup_iters = 1e4;
 
   auto laddr = memblock_.GetAddrInfo(velos_squared::kLogRegionId);
   laddr.length = velos_squared::kSlotSize;
@@ -410,8 +554,7 @@ void VelosSquared::Sync() { conn_manager_->arrive_strict_barrier(); }
 void VelosSquared::DrainCQ(ibv_cq *cq_raw) {
   ibv_wc wc;
   while (ibv_poll_cq(cq_raw, 1, &wc) > 0) {
-    uint64_t wr_id = wc.wr_id;
-    ROMULUS_DEBUG("[DRAIN] Straggler: {} ", wr_id);
+    ROMULUS_DEBUG("[DRAIN] Straggler: {} ", wc.wr_id);
   }
 }
 
@@ -420,6 +563,19 @@ void VelosSquared::Reset(uint64_t shard_id) {
   fuos_[shard_id] = 0;
   prep_offsets_[shard_id] = 0;
   prom_offsets_[shard_id] = 0;
+  confirmed_[shard_id] = 0;
+}
+
+void VelosSquared::DumpLogs() {
+  for (uint64_t s = 0; s < num_shards_; ++s) {
+    auto raddr = memblock_.GetAddrInfo(GenLogID(s));
+    State *log = reinterpret_cast<State *>(raddr.addr + raddr.offset);
+    for (uint64_t i = 0; i < capacity_; ++i)
+      if (log[i].GetBallot() != 0)
+        ROMULUS_INFO("L,{}, {}, {}", s, i, log[i].GetValue().raw());
+    ROMULUS_INFO("C,{}, {}, {}", s, confirmed_[s],
+                 prom_offsets_[s].load(std::memory_order_relaxed));
+  }
 }
 
 void VelosSquared::ResetLog(uint64_t shard_id) {

@@ -11,9 +11,7 @@ uint64_t i = 0;
     "VelosSquared", registry_ip);                                              \
   auto device = std::make_shared<romulus::Device>(transport_flag);             \
   vsq = std::make_unique<VelosSquared>(args, system_size, device);             \
-  vsq->Init(dev_name, dev_port, std::move(registry), mach_map);                \
-  vsq->SpawnThreads();                                                         \
-  proposals = vsq->GetProposals();
+  vsq->Init(dev_name, dev_port, std::move(registry), mach_map);
 
 #define EXEC_LATENCY                                                           \
   [&]() {                                                                      \

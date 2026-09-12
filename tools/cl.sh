@@ -448,7 +448,7 @@ elif [[ "$cmd" == "do-experiment" && "$count" -ge 2 ]]; then
 		echo "Executable not found: tools/experiments/$2.sh"
 		exit 1
 	fi
-	source tools/experiments/$2.sh $3
+	source tools/experiments/$2.sh $3 $4
 else
 	usage
 fi

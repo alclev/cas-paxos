@@ -333,10 +333,10 @@ void MuSquared::Init(std::string_view dev_name, int dev_port,
   for (int n = 0; n < (int)system_size_; ++n) {
     for (int s = 0; s < (int)num_shards_; ++s) {
       auto &c = replication_ctx_.conns_mat_[n][s];
-      // c->ApplyPermissions(n == (int)(s % system_size_)
-      //                         ? mu_squared::kFullPermission
-      //                         : mu_squared::kNoPermission);
-      c->ApplyPermissions(mu_squared::kNoPermission);
+      c->ApplyPermissions(n == (int)(s % system_size_)
+                              ? mu_squared::kFullPermission
+                              : mu_squared::kNoPermission);
+      // c->ApplyPermissions(mu_squared::kNoPermission);
     }
   }
 
@@ -358,7 +358,7 @@ void VelosSquared::Init(std::string_view dev_name, int dev_port,
 
   ROMULUS_INFO("Registering remotely accessible memory");
 
-  uint64_t scratch_len = system_size_ * pipeline_depth_;
+  uint64_t scratch_len = num_shards_ * system_size_ * pipeline_depth_;
   uint64_t pre_scratch_len = system_size_;
   uint64_t fd_local_len = (system_size_ - 1);
   uint64_t fd_remote_len = (system_size_ - 1);

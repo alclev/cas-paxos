@@ -52,9 +52,9 @@ option(MU_SQUARED "Enable Mu^2" OFF)
 option(VELOS_SQUARED "Enable Velos^2" OFF)
 
 if(MU_SQUARED)
-    add_compile_definitions(USE_MU)
+    add_compile_definitions(MU_SQUARED)
 elseif(VELOS_SQUARED)
-    add_compile_definitions(USE_VELOS)
+    add_compile_definitions(VELOS_SQUARED)
 endif()
 
 add_subdirectory(experiments)

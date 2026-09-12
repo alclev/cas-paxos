@@ -29,7 +29,7 @@ foreach(SRC ${SRC_SOURCES})
   if(VELOS_SQUARED)
     message(STATUS "Building with Velos^2 enabled")
   else()
-    message(STATUS "Building WITHOUT Velos^2 enabled")
+    message(STATUS "Building without Velos^2 enabled")
   endif()
 
   target_link_libraries(${SRC_NAME}

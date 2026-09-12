@@ -2,8 +2,9 @@
 
 #include <cstdint>
 #include <memory>
-#include <unordered_map>
 #include <set>
+#include <unordered_map>
+#include <fstream>
 
 #include "romulus/common.h"
 #include "romulus/connection_manager.h"
@@ -14,8 +15,8 @@
 #include "contexts.h"
 #include "queue.h"
 #include "state.h"
-#include "workload.h"
 #include "util.h"
+#include "workload.h"
 
 struct prep_req_t {
   uint64_t shard_id;
@@ -30,7 +31,6 @@ constexpr uint32_t kMaxStartingBackoff = 100; // us
 constexpr uint32_t kMaxProposeDepth = 100;
 constexpr uint32_t kPermTimeout_ms = 100;
 constexpr uint32_t kQueueSize = 64;
-constexpr uint64_t kPrepareWindow = 4096;
 constexpr uint64_t kPrepareLow = 2048;
 
 const std::string kFDLocalRegionId = "FailureDetectorLocalRegion";
@@ -63,8 +63,10 @@ public:
   bool Prepare(uint64_t target_shard);
   void PrepareHandler();
   void FailureDetector();
-  bool Promise_Single(uint64_t target_shard, Value &v, uint32_t attempt);
-  bool Promise_Pipe(uint64_t target_shard, Value &v, uint32_t attempt);
+  bool Promise_Single(uint64_t target_shard, Value &v, uint32_t attempt = 0);
+  bool Promise_Pipe(uint64_t target_shard, Value &v, uint32_t attempt = 0);
+
+  void TriggerPrepare();
 
   std::string GenLogID(uint64_t shard_id);
   void SpawnThreads();
@@ -72,11 +74,17 @@ public:
   void Reset(uint64_t shard_id);
   void Sync();
   void Warmup();
+  void DumpLogs();
 
 private:
   void ResetLog(uint64_t shard_id);
   void DrainCQ(ibv_cq *cq_raw);
   Ballot MakeBallot(uint32_t round);
+  bool PollPipeline(uint64_t target_shard, uint64_t target);
+
+  std::vector<uint64_t> confirmed_;
+  std::vector<uint32_t> acks_;
+  std::vector<std::vector<State>> promise_expected_;
 
   // General
   std::shared_ptr<romulus::ArgMap> args_;
@@ -100,6 +108,8 @@ private:
   std::vector<std::vector<State>> preprepare_expected_;
   std::vector<std::vector<bool>> preprepare_done_;
   Ballot local_ballot_;
+
+  std::vector<uint64_t> outstanding_;
 
   std::unique_ptr<std::atomic<uint64_t>[]> fuos_;
   ReaderWriterQueue<prep_req_t, velos_squared::kQueueSize> prep_queue_;

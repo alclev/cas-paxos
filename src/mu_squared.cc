@@ -9,8 +9,8 @@ MuSquared::MuSquared(std::shared_ptr<romulus::ArgMap> args,
       pipeline_depth_(args->uget(PIPELINE_DEPTH)), req_epoch_(0),
       need_fuo_scan_(false), device_(std::move(device)), raw_(nullptr),
       num_handlers_(args_->uget(NUM_HANDLERS)),
-      no_outliers_(args_->bget(NO_OUTLIERS)),
-      failure_detector_running_(true) {
+      no_outliers_(args_->bget(NO_OUTLIERS)), failure_detector_running_(true),
+      perm_handler_running_(true) {
   ROMULUS_ASSERT(num_handlers_ > 0, "Num handlers must be at least 1");
   // At most, we only need a handler per shard or else there will be no work for
   // the remaining threads
@@ -22,8 +22,8 @@ MuSquared::MuSquared(std::shared_ptr<romulus::ArgMap> args,
   shard_ranges_.resize(num_shards_);
   for (uint64_t i = 0; i < num_shards_; ++i) {
     shard_ranges_[i] = {i * shard_size_, (i == num_shards_ - 1)
-                                             ? key_range - 1
-                                             : (i + 1) * shard_size_ - 1};
+                                           ? key_range - 1
+                                           : (i + 1) * shard_size_ - 1};
   }
   // Among these ranges, we decide which shards based on id
   for (uint64_t i = 0; i < num_shards_; ++i) {
@@ -47,13 +47,13 @@ MuSquared::MuSquared(std::shared_ptr<romulus::ArgMap> args,
   // Construct strided workload
   for (auto &curr : my_shards_) {
     auto wg_primary = WorkloadGenerator::generate<int>(
-        config, shard_ranges_[curr].first, shard_ranges_[curr].second);
+      config, shard_ranges_[curr].first, shard_ranges_[curr].second);
     proposals_.insert(proposals_.end(), wg_primary.begin(), wg_primary.end());
     // If we want outliers, insert them in strides alternating with the other
     if (!no_outliers_) {
       auto next = (curr + 1) % num_shards_;
       auto wg_next = WorkloadGenerator::generate<int>(
-          config, shard_ranges_[next].first, shard_ranges_[next].second);
+        config, shard_ranges_[next].first, shard_ranges_[next].second);
       proposals_.insert(proposals_.end(), wg_next.begin(), wg_next.end());
     }
   }
@@ -91,9 +91,9 @@ void MuSquared::Propose(uint64_t target_shard, txn_t<int> &txn,
                                  : FastCommit_Pipe(target_shard, txn);
   if (!ok) {
     ROMULUS_DEBUG(
-        "No existing permissions for shard {}. Entering lease acquisition "
-        "path...",
-        target_shard);
+      "No existing permissions for shard {}. Entering lease acquisition "
+      "path...",
+      target_shard);
     // Trigger the want perm flag on the shard of interest
     want_perms_[target_shard].store(true, std::memory_order_release);
     // Block until one of the PermHandlers flips back to false
@@ -110,7 +110,7 @@ void MuSquared::Propose(uint64_t target_shard, txn_t<int> &txn,
 // Writes to peer's perm_req regions to signify our request to the rest of the
 // system Then, we block until we receive a quorum of grant messages in return
 bool MuSquared::AcquirePermissions(
-    uint64_t shard_id, std::vector<std::pair<uint64_t, PermCtx>> &owned) {
+  uint64_t shard_id, std::vector<std::pair<uint64_t, PermCtx>> &owned) {
   // Incremement the permissions sequence counter on every round of permission
   // requests
   perm_req_t req{req_epoch_.fetch_add(1, std::memory_order_relaxed) + 1};
@@ -122,8 +122,8 @@ bool MuSquared::AcquirePermissions(
   *reinterpret_cast<perm_req_t *>(laddr.addr + laddr.offset) = req;
   // Populate before with snapshot before posting
   auto grant_addr = memblock_.GetAddrInfo(mu_squared::kPermGrantRegionId);
-  auto *grants = reinterpret_cast<volatile uint64_t *>(grant_addr.addr +
-                                                       grant_addr.offset);
+  auto *grants =
+    reinterpret_cast<volatile uint64_t *>(grant_addr.addr + grant_addr.offset);
   std::vector<uint64_t> before(system_size_);
   for (uint32_t n = 0; n < system_size_; ++n)
     before[n] = grants[n * num_shards_ + shard_id];
@@ -191,7 +191,7 @@ bool MuSquared::AcquirePermissions(
       if (grant.Cycled() ||
           replication_ctx_.conns_mat_[n][shard_id]->InErrorState())
         replication_ctx_.conns_mat_[n][shard_id]->Reconnect(
-            mu_squared::kFullPermission);
+          mu_squared::kFullPermission);
 
       acked[n] = true;
       ++acks;
@@ -201,7 +201,7 @@ bool MuSquared::AcquirePermissions(
   for (uint32_t n = 0; n < system_size_; ++n)
     if (replication_ctx_.conns_mat_[n][shard_id]->InErrorState())
       replication_ctx_.conns_mat_[n][shard_id]->Reconnect(
-          mu_squared::kFullPermission);
+        mu_squared::kFullPermission);
   // discard all pre-repair completions on this shard's CQ
   {
     auto cq_raw = replication_ctx_.conns_mat_.front()[shard_id]->GetCQ();
@@ -432,7 +432,7 @@ void MuSquared::HandleRequests(uint64_t shard_id, PermCtx &ctx) {
     // grant to the requester
     auto *new_conn = replication_ctx_.conns_mat_[n][shard_id];
     romulus::ReliableConnection::PermResult r =
-        new_conn->ApplyPermissions(mu_squared::kFullPermission);
+      new_conn->ApplyPermissions(mu_squared::kFullPermission);
     if (r == romulus::ReliableConnection::PermResult::Failed) {
       ROMULUS_DEBUG("[PermHandler] grant to node {} shard {} failed", n,
                     shard_id);
@@ -451,14 +451,14 @@ void MuSquared::HandleRequests(uint64_t shard_id, PermCtx &ctx) {
 
     // load staging buffer
     *reinterpret_cast<uint64_t *>(ctx.laddr.addr + ctx.laddr.offset) =
-        grant_msg.raw_;
+      grant_msg.raw_;
 
     // RDMA-write the ack
     auto *ack_conn = perm_handler_ctx_.conns_mat_[n][SelectHandler(shard_id)];
     auto grant_raddr = remote_addrs_[n][mu_squared::kPermGrantRegionId];
     grant_raddr.addr_info.length = mu_squared::kSlotSize;
     grant_raddr.addr_info.offset =
-        (id_ * num_shards_ + shard_id) * mu_squared::kSlotSize;
+      (id_ * num_shards_ + shard_id) * mu_squared::kSlotSize;
 
     if (!ack_conn->Write(ctx.laddr, grant_raddr,
                          wr_id_t(id_, shard_id, n).raw) ||
@@ -491,7 +491,7 @@ void MuSquared::PermHandler(uint64_t tid) {
     ctx.laddr.offset = mu_squared::kSlotSize * s;
     ctx.laddr.length = mu_squared::kSlotSize;
     ctx.req_raw =
-        reinterpret_cast<volatile uint64_t *>(raddr.addr + raddr.offset);
+      reinterpret_cast<volatile uint64_t *>(raddr.addr + raddr.offset);
     owned.emplace_back(s, std::move(ctx));
   }
 
@@ -552,7 +552,7 @@ void MuSquared::Warmup() {
         raddr.addr_info.length = mu_squared::kSlotSize;
 
         raddr.addr_info.offset =
-            (id_ * num_shards_ + offset) * mu_squared::kSlotSize;
+          (id_ * num_shards_ + offset) * mu_squared::kSlotSize;
         auto conn = perm_handler_ctx_.conns_mat_[n][SelectHandler(offset)];
         ROMULUS_ASSERT(conn->Write(laddr, raddr, wr_id_t(0).raw),
                        "Failed to write in warmup");
