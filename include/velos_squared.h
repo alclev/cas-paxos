@@ -109,7 +109,11 @@ private:
   std::vector<std::vector<bool>> preprepare_done_;
   Ballot local_ballot_;
 
+  // indexed by shard, what propose waits on and what tells you a shard's
+  // poipeline is quiet
   std::vector<uint64_t> outstanding_;
+  // indexed by peer
+  std::vector<uint64_t> inflight_;
 
   std::unique_ptr<std::atomic<uint64_t>[]> fuos_;
   ReaderWriterQueue<prep_req_t, velos_squared::kQueueSize> prep_queue_;

@@ -287,8 +287,8 @@ bool VelosSquared::Prepare(uint64_t target_shard) {
         curr_proposal->SetProposal(state[i].GetBallot(), state[i].GetValue());
       }
     }
-    ROMULUS_DEBUG("Prepared slot: shard={}, prep_offset={}, state={}",
-                  target_shard, fuo, curr_proposal->ToString());
+    // ROMULUS_DEBUG("Prepared slot: shard={}, prep_offset={}, state={}",
+    //               target_shard, fuo, curr_proposal->ToString());
 
     prep_offsets_[target_shard].fetch_add(1, std::memory_order_release);
   }
@@ -456,7 +456,7 @@ bool VelosSquared::PollPipeline(uint64_t target_shard, uint64_t target) {
   laddr.length = velos_squared::kSlotSize;
   ibv_wc wc[16];
 
-  while (confirmed_[target_shard] < target) {
+  while (confirmed_[target_shard] < target || outstanding_[target_shard] > (pipeline_depth_ - 1) * system_size_) {
     int total = ibv_poll_cq(cq_raw, 16, wc);
     if (total < 0)
       ROMULUS_FATAL("Promise: Error in polling");

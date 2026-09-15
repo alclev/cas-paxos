@@ -6,7 +6,7 @@ romulus::DEBUG is false
 [INFO] !> [CONF] host id=0
 [INFO] !> [CONF] registry ip=10.10.1.1
 [INFO] !> [CONF] output file=stats.csv
-[INFO] !> [CONF] testtime=2_s
+[INFO] !> [CONF] testtime=1_s
 [INFO] !> [CONF] device name=mlx4_0
 [INFO] !> [CONF] device port=1
 [INFO] !> [CONF] transport type=IB
@@ -15,17 +15,20 @@ romulus::DEBUG is false
 [INFO] !> [CONF] sleep=0_ms
 [INFO] !> [CONF] system_size=10
 [INFO] Initializing Mu Squared...
-[INFO] Using Mu^2...
+[INFO] Using Velos^2...
 [INFO] Node 0 is responsible for shard 0: 0 - 11
 [INFO] Node 0 is responsible for shard 10: 120 - 131
 [INFO] Generating workload...
 [INFO] Selected port 1 -- INFINIBAND transport layer
 [INFO] Using device: name=mlx4_0, port=1
 [INFO] Registering remotely accessible memory
-[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=20972018, bytes=167776192, is_multiple=false
-[INFO] Instantiating Memblock with 167776144 bytes
-[INFO] [Failure Detector] Pinning to core 2...
-^CConnection to apt098.apt.emulab.net closed.
+[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=41945068, bytes=335560576, is_multiple=false
+[INFO] Instantiating Memblock with 335560544 bytes
+[INFO] [Failure Detector] Pinning to core 4...
+[INFO] [POST] ret=12 (Cannot allocate memory) qp_state=3 max_send_wr=507 max_inline=448 rd_atomic=16 dest_rd_atomic=16
+[INFO] [POST] bad_wr_id=51432234024963 opcode=5 num_sge=1
+[FATAL] Failed to post CAS op
+Connection to apt098.apt.emulab.net closed.
 
 ==> ../logs/log_1.txt <==
 romulus::DEBUG is false
@@ -35,7 +38,7 @@ romulus::DEBUG is false
 [INFO] !> [CONF] host id=1
 [INFO] !> [CONF] registry ip=10.10.1.1
 [INFO] !> [CONF] output file=stats.csv
-[INFO] !> [CONF] testtime=2_s
+[INFO] !> [CONF] testtime=1_s
 [INFO] !> [CONF] device name=mlx4_0
 [INFO] !> [CONF] device port=1
 [INFO] !> [CONF] transport type=IB
@@ -44,17 +47,19 @@ romulus::DEBUG is false
 [INFO] !> [CONF] sleep=0_ms
 [INFO] !> [CONF] system_size=10
 [INFO] Initializing Mu Squared...
-[INFO] Using Mu^2...
+[INFO] Using Velos^2...
 [INFO] Node 1 is responsible for shard 1: 12 - 23
 [INFO] Node 1 is responsible for shard 11: 132 - 143
 [INFO] Generating workload...
 [INFO] Selected port 1 -- INFINIBAND transport layer
 [INFO] Using device: name=mlx4_0, port=1
 [INFO] Registering remotely accessible memory
-[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=20972018, bytes=167776192, is_multiple=false
-[INFO] Instantiating Memblock with 167776144 bytes
-[INFO] [Failure Detector] Pinning to core 2...
-[FATAL] Propose recursion bound exceeded.
+[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=41945068, bytes=335560576, is_multiple=false
+[INFO] Instantiating Memblock with 335560544 bytes
+[INFO] [Failure Detector] Pinning to core 4...
+[INFO] [POST] ret=12 (Cannot allocate memory) qp_state=3 max_send_wr=507 max_inline=448 rd_atomic=16 dest_rd_atomic=16
+[INFO] [POST] bad_wr_id=2177548484608 opcode=5 num_sge=1
+[FATAL] Failed to post CAS op
 Connection to apt110.apt.emulab.net closed.
 
 ==> ../logs/log_2.txt <==
@@ -65,7 +70,7 @@ romulus::DEBUG is false
 [INFO] !> [CONF] host id=2
 [INFO] !> [CONF] registry ip=10.10.1.1
 [INFO] !> [CONF] output file=stats.csv
-[INFO] !> [CONF] testtime=2_s
+[INFO] !> [CONF] testtime=1_s
 [INFO] !> [CONF] device name=mlx4_0
 [INFO] !> [CONF] device port=1
 [INFO] !> [CONF] transport type=IB
@@ -74,17 +79,20 @@ romulus::DEBUG is false
 [INFO] !> [CONF] sleep=0_ms
 [INFO] !> [CONF] system_size=10
 [INFO] Initializing Mu Squared...
-[INFO] Using Mu^2...
+[INFO] Using Velos^2...
 [INFO] Node 2 is responsible for shard 2: 24 - 35
 [INFO] Node 2 is responsible for shard 12: 144 - 155
 [INFO] Generating workload...
 [INFO] Selected port 1 -- INFINIBAND transport layer
 [INFO] Using device: name=mlx4_0, port=1
 [INFO] Registering remotely accessible memory
-[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=20972018, bytes=167776192, is_multiple=false
-[INFO] Instantiating Memblock with 167776144 bytes
-[INFO] [Failure Detector] Pinning to core 2...
-^CConnection to apt103.apt.emulab.net closed.
+[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=41945068, bytes=335560576, is_multiple=false
+[INFO] Instantiating Memblock with 335560544 bytes
+[INFO] [Failure Detector] Pinning to core 4...
+[INFO] [POST] ret=12 (Cannot allocate memory) qp_state=3 max_send_wr=507 max_inline=448 rd_atomic=16 dest_rd_atomic=16
+[INFO] [POST] bad_wr_id=82046760386560 opcode=5 num_sge=1
+[FATAL] Failed to post CAS op
+Connection to apt103.apt.emulab.net closed.
 
 ==> ../logs/log_3.txt <==
 romulus::DEBUG is false
@@ -94,7 +102,7 @@ romulus::DEBUG is false
 [INFO] !> [CONF] host id=3
 [INFO] !> [CONF] registry ip=10.10.1.1
 [INFO] !> [CONF] output file=stats.csv
-[INFO] !> [CONF] testtime=2_s
+[INFO] !> [CONF] testtime=1_s
 [INFO] !> [CONF] device name=mlx4_0
 [INFO] !> [CONF] device port=1
 [INFO] !> [CONF] transport type=IB
@@ -103,17 +111,20 @@ romulus::DEBUG is false
 [INFO] !> [CONF] sleep=0_ms
 [INFO] !> [CONF] system_size=10
 [INFO] Initializing Mu Squared...
-[INFO] Using Mu^2...
+[INFO] Using Velos^2...
 [INFO] Node 3 is responsible for shard 3: 36 - 47
 [INFO] Node 3 is responsible for shard 13: 156 - 167
 [INFO] Generating workload...
 [INFO] Selected port 1 -- INFINIBAND transport layer
 [INFO] Using device: name=mlx4_0, port=1
 [INFO] Registering remotely accessible memory
-[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=20972018, bytes=167776192, is_multiple=false
-[INFO] Instantiating Memblock with 167776144 bytes
-[INFO] [Failure Detector] Pinning to core 2...
-^CConnection to apt102.apt.emulab.net closed.
+[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=41945068, bytes=335560576, is_multiple=false
+[INFO] Instantiating Memblock with 335560544 bytes
+[INFO] [Failure Detector] Pinning to core 4...
+[INFO] [POST] ret=12 (Cannot allocate memory) qp_state=3 max_send_wr=507 max_inline=448 rd_atomic=16 dest_rd_atomic=16
+[INFO] [POST] bad_wr_id=71640055349248 opcode=5 num_sge=1
+[FATAL] Failed to post CAS op
+Connection to apt102.apt.emulab.net closed.
 
 ==> ../logs/log_4.txt <==
 romulus::DEBUG is false
@@ -123,7 +134,7 @@ romulus::DEBUG is false
 [INFO] !> [CONF] host id=4
 [INFO] !> [CONF] registry ip=10.10.1.1
 [INFO] !> [CONF] output file=stats.csv
-[INFO] !> [CONF] testtime=2_s
+[INFO] !> [CONF] testtime=1_s
 [INFO] !> [CONF] device name=mlx4_0
 [INFO] !> [CONF] device port=1
 [INFO] !> [CONF] transport type=IB
@@ -132,17 +143,19 @@ romulus::DEBUG is false
 [INFO] !> [CONF] sleep=0_ms
 [INFO] !> [CONF] system_size=10
 [INFO] Initializing Mu Squared...
-[INFO] Using Mu^2...
+[INFO] Using Velos^2...
 [INFO] Node 4 is responsible for shard 4: 48 - 59
 [INFO] Node 4 is responsible for shard 14: 168 - 179
 [INFO] Generating workload...
 [INFO] Selected port 1 -- INFINIBAND transport layer
 [INFO] Using device: name=mlx4_0, port=1
 [INFO] Registering remotely accessible memory
-[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=20972018, bytes=167776192, is_multiple=false
-[INFO] Instantiating Memblock with 167776144 bytes
-[INFO] [Failure Detector] Pinning to core 2...
-[FATAL] Propose recursion bound exceeded.
+[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=41945068, bytes=335560576, is_multiple=false
+[INFO] Instantiating Memblock with 335560544 bytes
+[INFO] [Failure Detector] Pinning to core 4...
+[INFO] [POST] ret=12 (Cannot allocate memory) qp_state=3 max_send_wr=507 max_inline=448 rd_atomic=16 dest_rd_atomic=16
+[INFO] [POST] bad_wr_id=61018600636416 opcode=5 num_sge=1
+[FATAL] Failed to post CAS op
 Connection to apt095.apt.emulab.net closed.
 
 ==> ../logs/log_5.txt <==
@@ -153,7 +166,7 @@ romulus::DEBUG is false
 [INFO] !> [CONF] host id=5
 [INFO] !> [CONF] registry ip=10.10.1.1
 [INFO] !> [CONF] output file=stats.csv
-[INFO] !> [CONF] testtime=2_s
+[INFO] !> [CONF] testtime=1_s
 [INFO] !> [CONF] device name=mlx4_0
 [INFO] !> [CONF] device port=1
 [INFO] !> [CONF] transport type=IB
@@ -162,18 +175,20 @@ romulus::DEBUG is false
 [INFO] !> [CONF] sleep=0_ms
 [INFO] !> [CONF] system_size=10
 [INFO] Initializing Mu Squared...
-[INFO] Using Mu^2...
+[INFO] Using Velos^2...
 [INFO] Node 5 is responsible for shard 5: 60 - 71
 [INFO] Node 5 is responsible for shard 15: 180 - 191
 [INFO] Generating workload...
 [INFO] Selected port 1 -- INFINIBAND transport layer
 [INFO] Using device: name=mlx4_0, port=1
 [INFO] Registering remotely accessible memory
-[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=20972018, bytes=167776192, is_multiple=false
-[INFO] Instantiating Memblock with 167776144 bytes
-[INFO] [Failure Detector] Pinning to core 2...
-[INFO] PermReq timed out: shard 15 got 5/6
-^CConnection to apt119.apt.emulab.net closed.
+[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=41945068, bytes=335560576, is_multiple=false
+[INFO] Instantiating Memblock with 335560544 bytes
+[INFO] [Failure Detector] Pinning to core 4...
+[INFO] [POST] ret=12 (Cannot allocate memory) qp_state=3 max_send_wr=507 max_inline=448 rd_atomic=16 dest_rd_atomic=16
+[INFO] [POST] bad_wr_id=2177548746752 opcode=5 num_sge=1
+[FATAL] Failed to post CAS op
+Connection to apt119.apt.emulab.net closed.
 
 ==> ../logs/log_6.txt <==
 romulus::DEBUG is false
@@ -183,7 +198,7 @@ romulus::DEBUG is false
 [INFO] !> [CONF] host id=6
 [INFO] !> [CONF] registry ip=10.10.1.1
 [INFO] !> [CONF] output file=stats.csv
-[INFO] !> [CONF] testtime=2_s
+[INFO] !> [CONF] testtime=1_s
 [INFO] !> [CONF] device name=mlx4_0
 [INFO] !> [CONF] device port=1
 [INFO] !> [CONF] transport type=IB
@@ -192,18 +207,17 @@ romulus::DEBUG is false
 [INFO] !> [CONF] sleep=0_ms
 [INFO] !> [CONF] system_size=10
 [INFO] Initializing Mu Squared...
-[INFO] Using Mu^2...
+[INFO] Using Velos^2...
 [INFO] Node 6 is responsible for shard 6: 72 - 83
 [INFO] Node 6 is responsible for shard 16: 192 - 203
 [INFO] Generating workload...
 [INFO] Selected port 1 -- INFINIBAND transport layer
 [INFO] Using device: name=mlx4_0, port=1
 [INFO] Registering remotely accessible memory
-[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=20972018, bytes=167776192, is_multiple=false
-[INFO] Instantiating Memblock with 167776144 bytes
-[INFO] [Failure Detector] Pinning to core 2...
-[FATAL] Propose recursion bound exceeded.
-Connection to apt109.apt.emulab.net closed.
+[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=41945068, bytes=335560576, is_multiple=false
+[INFO] Instantiating Memblock with 335560544 bytes
+[INFO] [Failure Detector] Pinning to core 4...
+^CConnection to apt109.apt.emulab.net closed.
 
 ==> ../logs/log_7.txt <==
 romulus::DEBUG is false
@@ -213,7 +227,7 @@ romulus::DEBUG is false
 [INFO] !> [CONF] host id=7
 [INFO] !> [CONF] registry ip=10.10.1.1
 [INFO] !> [CONF] output file=stats.csv
-[INFO] !> [CONF] testtime=2_s
+[INFO] !> [CONF] testtime=1_s
 [INFO] !> [CONF] device name=mlx4_0
 [INFO] !> [CONF] device port=1
 [INFO] !> [CONF] transport type=IB
@@ -222,16 +236,16 @@ romulus::DEBUG is false
 [INFO] !> [CONF] sleep=0_ms
 [INFO] !> [CONF] system_size=10
 [INFO] Initializing Mu Squared...
-[INFO] Using Mu^2...
+[INFO] Using Velos^2...
 [INFO] Node 7 is responsible for shard 7: 84 - 95
 [INFO] Node 7 is responsible for shard 17: 204 - 215
 [INFO] Generating workload...
 [INFO] Selected port 1 -- INFINIBAND transport layer
 [INFO] Using device: name=mlx4_0, port=1
 [INFO] Registering remotely accessible memory
-[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=20972018, bytes=167776192, is_multiple=false
-[INFO] Instantiating Memblock with 167776144 bytes
-[INFO] [Failure Detector] Pinning to core 2...
+[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=41945068, bytes=335560576, is_multiple=false
+[INFO] Instantiating Memblock with 335560544 bytes
+[INFO] [Failure Detector] Pinning to core 4...
 ^CConnection to apt117.apt.emulab.net closed.
 
 ==> ../logs/log_8.txt <==
@@ -242,7 +256,7 @@ romulus::DEBUG is false
 [INFO] !> [CONF] host id=8
 [INFO] !> [CONF] registry ip=10.10.1.1
 [INFO] !> [CONF] output file=stats.csv
-[INFO] !> [CONF] testtime=2_s
+[INFO] !> [CONF] testtime=1_s
 [INFO] !> [CONF] device name=mlx4_0
 [INFO] !> [CONF] device port=1
 [INFO] !> [CONF] transport type=IB
@@ -251,16 +265,16 @@ romulus::DEBUG is false
 [INFO] !> [CONF] sleep=0_ms
 [INFO] !> [CONF] system_size=10
 [INFO] Initializing Mu Squared...
-[INFO] Using Mu^2...
+[INFO] Using Velos^2...
 [INFO] Node 8 is responsible for shard 8: 96 - 107
 [INFO] Node 8 is responsible for shard 18: 216 - 227
 [INFO] Generating workload...
 [INFO] Selected port 1 -- INFINIBAND transport layer
 [INFO] Using device: name=mlx4_0, port=1
 [INFO] Registering remotely accessible memory
-[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=20972018, bytes=167776192, is_multiple=false
-[INFO] Instantiating Memblock with 167776144 bytes
-[INFO] [Failure Detector] Pinning to core 2...
+[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=41945068, bytes=335560576, is_multiple=false
+[INFO] Instantiating Memblock with 335560544 bytes
+[INFO] [Failure Detector] Pinning to core 4...
 ^CConnection to apt115.apt.emulab.net closed.
 
 ==> ../logs/log_9.txt <==
@@ -271,7 +285,7 @@ romulus::DEBUG is false
 [INFO] !> [CONF] host id=9
 [INFO] !> [CONF] registry ip=10.10.1.1
 [INFO] !> [CONF] output file=stats.csv
-[INFO] !> [CONF] testtime=2_s
+[INFO] !> [CONF] testtime=1_s
 [INFO] !> [CONF] device name=mlx4_0
 [INFO] !> [CONF] device port=1
 [INFO] !> [CONF] transport type=IB
@@ -280,14 +294,14 @@ romulus::DEBUG is false
 [INFO] !> [CONF] sleep=0_ms
 [INFO] !> [CONF] system_size=10
 [INFO] Initializing Mu Squared...
-[INFO] Using Mu^2...
+[INFO] Using Velos^2...
 [INFO] Node 9 is responsible for shard 9: 108 - 119
 [INFO] Node 9 is responsible for shard 19: 228 - 255
 [INFO] Generating workload...
 [INFO] Selected port 1 -- INFINIBAND transport layer
 [INFO] Using device: name=mlx4_0, port=1
 [INFO] Registering remotely accessible memory
-[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=20972018, bytes=167776192, is_multiple=false
-[INFO] Instantiating Memblock with 167776144 bytes
-[INFO] [Failure Detector] Pinning to core 2...
+[INFO] Allocating aligned memory: alignment=64, slotsize=8, capacity=41945068, bytes=335560576, is_multiple=false
+[INFO] Instantiating Memblock with 335560544 bytes
+[INFO] [Failure Detector] Pinning to core 4...
 ^CConnection to apt093.apt.emulab.net closed.

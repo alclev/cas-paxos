@@ -65,7 +65,6 @@ int main(int argc, char *argv[]) {
       "enabled",
       sleep.count());
 
-  ROMULUS_INFO("Initializing Mu Squared...");
   INIT_CONSENSUS(transport_flag, mach_map);
   // msq->RemoteDump();
 
