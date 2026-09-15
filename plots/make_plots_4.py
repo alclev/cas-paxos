@@ -56,35 +56,35 @@ if __name__ == '__main__':
   
   # Plot throughputs
   plt.figure()
-  plt.plot(node_count, cp_thru_mops, marker='o', label='CasPaxos', color='blue')
+  # plt.plot(node_count, cp_thru_mops, marker='o', label='CasPaxos', color='blue')
   plt.plot(node_count, mu_sq_thru_mops, marker='o', label='Mu Squared', color='green')
   plt.plot(node_count, mu_thru_mops, marker='o', label='Mu', color='red')
   plt.xlabel('System Size (Nodes)')
   plt.ylabel('Throughput (MOPS)')
-  plt.title('System Throughput vs System Size')
+  # plt.title('System Throughput vs System Size')
   plt.xticks(node_count)
   plt.grid()
   plt.legend()
   plt.savefig(MEDIA_DST / 'throughput.png')
   plt.close()
   
-  # Plot election latency
-  cp_election_lat_us = [lat * 1e-3 for lat in cp_results['election_lat_ns'].tolist()]
-  mu_sq_election_lat_us = [lat * 1e-3 for lat in mu_sq_election_lat_ns]
-  mu_election_lat_us = [lat * 1e-3 for lat in mu_results['election_lat_ns'].tolist()]
+  # # Plot election latency
+  # cp_election_lat_us = [lat * 1e-3 for lat in cp_results['election_lat_ns'].tolist()]
+  # mu_sq_election_lat_us = [lat * 1e-3 for lat in mu_sq_election_lat_ns]
+  # mu_election_lat_us = [lat * 1e-3 for lat in mu_results['election_lat_ns'].tolist()]
   
-  plt.figure()
-  # plt.plot(node_count, cp_election_lat_us, marker='o', label='CasPaxos', color='blue')
-  plt.plot(node_count, mu_sq_election_lat_us, marker='o', label='Mu Squared', color='green')
-  # plt.plot(node_count, mu_election_lat_us, marker='o', label='Mu', color='red')
-  plt.xlabel('System Size (Nodes)')
-  plt.ylabel('Election Latency (us)')
-  plt.title('Election Latency vs System Size')
-  plt.xticks(node_count)
-  plt.grid()
-  plt.legend()
-  plt.savefig(MEDIA_DST / 'election_latency.png')
-  plt.close()
+  # plt.figure()
+  # # plt.plot(node_count, cp_election_lat_us, marker='o', label='CasPaxos', color='blue')
+  # plt.plot(node_count, mu_sq_election_lat_us, marker='o', label='Mu Squared', color='green')
+  # # plt.plot(node_count, mu_election_lat_us, marker='o', label='Mu', color='red')
+  # plt.xlabel('System Size (Nodes)')
+  # plt.ylabel('Election Latency (us)')
+  # plt.title('Election Latency vs System Size')
+  # plt.xticks(node_count)
+  # plt.grid()
+  # plt.legend()
+  # plt.savefig(MEDIA_DST / 'election_latency.png')
+  # plt.close()
   
   # Plot latency avg
   cp_lat_avg = cp_results['lat_avg_ns'].tolist()
@@ -96,12 +96,12 @@ if __name__ == '__main__':
   mu_lat_avg = [lat * 1e-3 for lat in mu_lat_avg]
 
   plt.figure()
-  plt.plot(node_count, cp_lat_avg, marker='o', label='CasPaxos', color='blue')
+  # plt.plot(node_count, cp_lat_avg, marker='o', label='CasPaxos', color='blue')
   plt.plot(node_count, mu_sq_lat_avg, marker='o', label='Mu Squared', color='green')
   plt.plot(node_count, mu_lat_avg, marker='o', label='Mu', color='red')
   plt.xlabel('System Size (Nodes)')
   plt.ylabel('Average Latency (us)')
-  plt.title('Average Latency vs System Size')
+  # plt.title('Average Latency vs System Size')
   plt.xticks(node_count)
   plt.grid()
   plt.legend()
@@ -113,88 +113,88 @@ if __name__ == '__main__':
   mu_lat_50p = mu_results['lat_50p_ns'].tolist()
   
   # convert to us
-  cp_lat_50p = [lat * 1e-3 for lat in cp_lat_50p]
-  mu_sq_lat_50p = [lat * 1e-3 for lat in mu_sq_lat_50p_ns]
-  mu_lat_50p = [lat * 1e-3 for lat in mu_lat_50p]
+  # cp_lat_50p = [lat * 1e-3 for lat in cp_lat_50p]
+  # mu_sq_lat_50p = [lat * 1e-3 for lat in mu_sq_lat_50p_ns]
+  # mu_lat_50p = [lat * 1e-3 for lat in mu_lat_50p]
   
-  plt.figure()
-  plt.plot(node_count, cp_lat_50p, marker='o', label='CasPaxos', color='blue')
-  plt.plot(node_count, mu_sq_lat_50p, marker='o', label='Mu Squared', color='green')
-  plt.plot(node_count, mu_lat_50p, marker='o', label='Mu', color='red')
-  plt.xlabel('System Size (Nodes)')
-  plt.ylabel('50th Percentile Latency (us)')
-  plt.title('50th Percentile Latency vs System Size')
-  plt.xticks(node_count)
-  plt.grid()
-  plt.legend()
-  plt.savefig(MEDIA_DST / 'latency_50p.png')
-  plt.close()
+  # plt.figure()
+  # plt.plot(node_count, cp_lat_50p, marker='o', label='CasPaxos', color='blue')
+  # plt.plot(node_count, mu_sq_lat_50p, marker='o', label='Mu Squared', color='green')
+  # plt.plot(node_count, mu_lat_50p, marker='o', label='Mu', color='red')
+  # plt.xlabel('System Size (Nodes)')
+  # plt.ylabel('50th Percentile Latency (us)')
+  # plt.title('50th Percentile Latency vs System Size')
+  # plt.xticks(node_count)
+  # plt.grid()
+  # plt.legend()
+  # plt.savefig(MEDIA_DST / 'latency_50p.png')
+  # plt.close()
   
-  # Plot latency 99p 
-  cp_lat_99p = cp_results['lat_99p_ns'].tolist()
-  mu_lat_99p = mu_results['lat_99p_ns'].tolist()
+  # # Plot latency 99p 
+  # cp_lat_99p = cp_results['lat_99p_ns'].tolist()
+  # mu_lat_99p = mu_results['lat_99p_ns'].tolist()
   
-  # convert to us
-  cp_lat_99p = [lat * 1e-3 for lat in cp_lat_99p]
-  mu_sq_lat_99p = [lat * 1e-3 for lat in mu_sq_lat_99p_ns]
-  mu_lat_99p = [lat * 1e-3 for lat in mu_lat_99p]
+  # # convert to us
+  # cp_lat_99p = [lat * 1e-3 for lat in cp_lat_99p]
+  # mu_sq_lat_99p = [lat * 1e-3 for lat in mu_sq_lat_99p_ns]
+  # mu_lat_99p = [lat * 1e-3 for lat in mu_lat_99p]
 
-  plt.figure()
-  plt.plot(node_count, cp_lat_99p, marker='o', label='CasPaxos', color='blue')
-  plt.plot(node_count, mu_sq_lat_99p, marker='o', label='Mu Squared', color='green')
-  plt.plot(node_count, mu_lat_99p, marker='o', label='Mu', color='red')
-  plt.xlabel('System Size (Nodes)')
-  plt.ylabel('99th Percentile Latency (us)')
-  plt.title('99th Percentile Latency vs System Size')
-  plt.xticks(node_count)
-  plt.grid()
-  plt.legend()
-  plt.savefig(MEDIA_DST / 'latency_99p.png')
-  plt.close()
+  # plt.figure()
+  # plt.plot(node_count, cp_lat_99p, marker='o', label='CasPaxos', color='blue')
+  # plt.plot(node_count, mu_sq_lat_99p, marker='o', label='Mu Squared', color='green')
+  # plt.plot(node_count, mu_lat_99p, marker='o', label='Mu', color='red')
+  # plt.xlabel('System Size (Nodes)')
+  # plt.ylabel('99th Percentile Latency (us)')
+  # plt.title('99th Percentile Latency vs System Size')
+  # plt.xticks(node_count)
+  # plt.grid()
+  # plt.legend()
+  # plt.savefig(MEDIA_DST / 'latency_99p.png')
+  # plt.close()
   
-  # Plot latency 99.9p
-  cp_lat_99_9p = cp_results['lat_99_9p_ns'].tolist()
-  mu_lat_99_9p = mu_results['lat_99_9p_ns'].tolist()
+  # # Plot latency 99.9p
+  # cp_lat_99_9p = cp_results['lat_99_9p_ns'].tolist()
+  # mu_lat_99_9p = mu_results['lat_99_9p_ns'].tolist()
   
-  # convert to us
-  cp_lat_99_9p = [lat * 1e-3 for lat in cp_lat_99_9p]
-  mu_sq_lat_99_9p = [lat * 1e-3 for lat in mu_sq_lat_99_9p_ns]
-  mu_lat_99_9p = [lat * 1e-3 for lat in mu_lat_99_9p]
+  # # convert to us
+  # cp_lat_99_9p = [lat * 1e-3 for lat in cp_lat_99_9p]
+  # mu_sq_lat_99_9p = [lat * 1e-3 for lat in mu_sq_lat_99_9p_ns]
+  # mu_lat_99_9p = [lat * 1e-3 for lat in mu_lat_99_9p]
   
-  plt.figure()
-  plt.plot(node_count, cp_lat_99_9p, marker='o', label='CasPaxos', color='blue')
-  plt.plot(node_count, mu_sq_lat_99_9p, marker='o', label='Mu Squared', color='green')
-  plt.plot(node_count, mu_lat_99_9p, marker='o', label='Mu', color='red')
-  plt.xlabel('System Size (Nodes)')
-  plt.ylabel('99.9th Percentile Latency (us)')
-  plt.title('99.9th Percentile Latency vs System Size')
-  plt.xticks(node_count)
-  plt.grid()
-  plt.legend()
-  plt.savefig(MEDIA_DST / 'latency_99_9p.png')
-  plt.close()
+  # plt.figure()
+  # plt.plot(node_count, cp_lat_99_9p, marker='o', label='CasPaxos', color='blue')
+  # plt.plot(node_count, mu_sq_lat_99_9p, marker='o', label='Mu Squared', color='green')
+  # plt.plot(node_count, mu_lat_99_9p, marker='o', label='Mu', color='red')
+  # plt.xlabel('System Size (Nodes)')
+  # plt.ylabel('99.9th Percentile Latency (us)')
+  # plt.title('99.9th Percentile Latency vs System Size')
+  # plt.xticks(node_count)
+  # plt.grid()
+  # plt.legend()
+  # plt.savefig(MEDIA_DST / 'latency_99_9p.png')
+  # plt.close()
 
 
-  fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+  # fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
-  data = [
-      (cp_lat_avg, mu_sq_lat_avg, mu_lat_avg, 'Average Latency (us)', 'Average Latency vs System Size'),
-      (cp_lat_50p, mu_sq_lat_50p, mu_lat_50p, '50th Percentile Latency (us)', 'P50 Latency vs System Size'),
-      (cp_lat_99p, mu_sq_lat_99p, mu_lat_99p, '99th Percentile Latency (us)', 'P99 Latency vs System Size'),
-      (cp_lat_99_9p, mu_sq_lat_99_9p, mu_lat_99_9p, '99.9th Percentile Latency (us)', 'P99.9 Latency vs System Size'),
-  ]
+  # data = [
+  #     (cp_lat_avg, mu_sq_lat_avg, mu_lat_avg, 'Average Latency (us)', 'Average Latency vs System Size'),
+  #     (cp_lat_50p, mu_sq_lat_50p, mu_lat_50p, '50th Percentile Latency (us)', 'P50 Latency vs System Size'),
+  #     (cp_lat_99p, mu_sq_lat_99p, mu_lat_99p, '99th Percentile Latency (us)', 'P99 Latency vs System Size'),
+  #     (cp_lat_99_9p, mu_sq_lat_99_9p, mu_lat_99_9p, '99.9th Percentile Latency (us)', 'P99.9 Latency vs System Size'),
+  # ]
 
-  for ax, (cp, mu_sq, mu, ylabel, title) in zip(axes.flat, data):
-      ax.plot(node_count, cp, marker='o', label='CasPaxos', color='blue')
-      ax.plot(node_count, mu_sq, marker='o', label='Mu Squared', color='green')
-      ax.plot(node_count, mu, marker='o', label='Mu', color='red')
-      ax.set_xlabel('System Size (Nodes)')
-      ax.set_ylabel(ylabel)
-      ax.set_title(title)
-      ax.set_xticks(node_count)
-      ax.grid()
-      ax.legend()
+  # for ax, (cp, mu_sq, mu, ylabel, title) in zip(axes.flat, data):
+  #     ax.plot(node_count, cp, marker='o', label='CasPaxos', color='blue')
+  #     ax.plot(node_count, mu_sq, marker='o', label='Mu Squared', color='green')
+  #     ax.plot(node_count, mu, marker='o', label='Mu', color='red')
+  #     ax.set_xlabel('System Size (Nodes)')
+  #     ax.set_ylabel(ylabel)
+  #     ax.set_title(title)
+  #     ax.set_xticks(node_count)
+  #     ax.grid()
+  #     ax.legend()
 
-  plt.tight_layout()
-  plt.savefig(MEDIA_DST / 'latency_combined.png')
-  plt.close()
+  # plt.tight_layout()
+  # plt.savefig(MEDIA_DST / 'latency_combined.png')
+  # plt.close()

@@ -28,6 +28,8 @@
 // Scratch 4: Forward issuer thread
 constexpr uint32_t NUM_SCRATCH_REGIONS = 5;
 constexpr uint64_t kNumWarmupIters = 1000;
+constexpr uint32_t kMaxPipeDepth = 16;
+
 // Compile time configurations for testing different optimizations
 // #define DYNO_NO_WRITEBUF
 // #define DYNO_NO_SENDALL
@@ -38,7 +40,9 @@ namespace paxos_st {
 const std::string kRegistryName = "CasPaxos";
 const std::string kPdId = "PdId";
 const std::string kBlockId = "LogBlock";
-const std::string kScratchRegionId = "ScratchRegion";
+const std::string kPrepScratchRegionId = "PrepScratchRegion";
+const std::string kScratchRegionId = "MainScratchRegion";
+
 const std::string kFailureDetectorId = "FailureDetectorRegion";
 const std::string kProposedRegionId = "ProposedRegion";
 const std::string kLogRegionId = "LogRegion";
@@ -126,7 +130,7 @@ class CasPaxos : public Paxos {
         device_(std::make_shared<romulus::Device>(transport_flag)),
         buf_size_(args->uget(romulus::BUF_SIZE)),
         num_qps_(args->uget(romulus::NUM_QP)),
-        num_shared_cq_(args->uget(romulus::NUM_SHARED_CQ)) {
+        num_shared_cq_(args->uget(romulus::NUM_SHARED_CQ)), pipe_depth_(args->uget(romulus::OUTSTANDING_REQS)) {
     expected_.resize(system_size_);
     done_.resize(system_size_);
     swap_.resize(system_size_);
@@ -368,6 +372,7 @@ std::vector<bool> preprepare_done_;
   uint64_t buf_size_;
   uint64_t num_qps_;
   uint64_t num_shared_cq_;
+  uint64_t pipe_depth_;
 };
 
 }  // namespace paxos_st

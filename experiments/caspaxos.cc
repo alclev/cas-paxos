@@ -32,19 +32,20 @@
 #include "mu_squared.h"
 #endif
 
-#if (defined(DEFAULT) && defined(USE_MU)) ||    \
-    (defined(DEFAULT) && defined(USE_VELOS)) || \
-    (defined(DEFAULT) && defined(USE_LEASE)) || \
-    (defined(USE_MU) && defined(USE_VELOS)) ||  \
-    (defined(USE_MU) && defined(USE_LEASE)) ||  \
-    (defined(USE_VELOS) && defined(USE_LEASE))
+#if (defined(DEFAULT) && defined(USE_MU)) ||                                   \
+  (defined(DEFAULT) && defined(USE_VELOS)) ||                                  \
+  (defined(DEFAULT) && defined(USE_LEASE)) ||                                  \
+  (defined(USE_MU) && defined(USE_VELOS)) ||                                   \
+  (defined(USE_MU) && defined(USE_LEASE)) ||                                   \
+  (defined(USE_VELOS) && defined(USE_LEASE))
 #error "Conflicting options: only one mode can be selected at a time"
 #endif
 
 #define PAXOS_NS paxos_st
 constexpr uint32_t kNumProposals = 8092;
+constexpr double kThruFreq = 1e5; // us
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   ROMULUS_STOPWATCH_DECLARE();
 
   romulus::INIT();
@@ -75,22 +76,22 @@ int main(int argc, char* argv[]) {
   ROMULUS_INFO("!> [CONF] output file={}", output_file);
   if (sleep.count() > 0)
     ROMULUS_INFO(
-        "!> [WARNING] sleep={}_ms -- Do not run throughput tests with sleep "
-        "enabled",
-        sleep.count());
+      "!> [WARNING] sleep={}_ms -- Do not run throughput tests with sleep "
+      "enabled",
+      sleep.count());
 
   INIT_CONSENSUS(transport_flag, buf_size, mach_map);
   WorkloadGenerator wg(args, key_range, kNumProposals, system_size);
   wg.generate();
-  auto& proposals = wg.get_ops();
+  auto &proposals = wg.get_ops();
   // wg.print(0, 10);
 
   std::function<void(void)> sync = SYNC_NODES;
   std::function<void(void)> exec = EXEC_LATENCY;
   std::function<void(void)> done = DONE_LATENCY;
-  std::function<void(std::tuple<double, double, double, double>*,
-                     std::vector<double>&)>
-      calc = CALC_LAT;
+  std::function<void(std::tuple<double, double, double, double> *,
+                     std::vector<double> &)>
+    calc = CALC_LAT;
   std::function<void(void)> reset = RESET;
 
   ROMULUS_INFO("Starting latency test");
@@ -101,18 +102,18 @@ int main(int argc, char* argv[]) {
   auto fd_threads = paxos->FailureDetector();
   auto iterations = 0;
   auto testtime_us =
-      std::chrono::duration_cast<std::chrono::microseconds>(testtime);
+    std::chrono::duration_cast<std::chrono::microseconds>(testtime);
   uint64_t total_work_us = 0;
   paxos->Warmup();
   ROMULUS_STOPWATCH_BEGIN();
   while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
          static_cast<uint64_t>(testtime_us.count())) {
-    auto* failure_detected = paxos->isFailureDetected();
+    auto *failure_detected = paxos->isFailureDetected();
 
     for (uint32_t i = 0; i < loop; ++i) {
       ROMULUS_VERBOSE(
-          "<Main> Loop i={}, log_offset={}, isLeader={}, isLeaderStable={}", i,
-          paxos->GetOffset(), paxos->isLeader(), paxos->isLeaderStable());
+        "<Main> Loop i={}, log_offset={}, isLeader={}, isLeaderStable={}", i,
+        paxos->GetOffset(), paxos->isLeader(), paxos->isLeaderStable());
       paxos->ConditionalReset();
       ROMULUS_VERBOSE("<Main> After ConditionalReset");
       if (paxos->isLeaderStable() && !paxos->isLeader()) {
@@ -126,15 +127,14 @@ int main(int argc, char* argv[]) {
         auto work_end = std::chrono::steady_clock::now();
         iterations++;
         total_work_us += std::chrono::duration_cast<std::chrono::microseconds>(
-                             work_end - work_start)
-                             .count();
+                           work_end - work_start)
+                           .count();
         ROMULUS_VERBOSE("<Main> exec returned");
       } else {
         ROMULUS_VERBOSE(
-            "<Main> NEITHER BRANCH TAKEN! isLeader={}, isLeaderStable={}, "
-            "isFailureDetected={}",
-            paxos->isLeader(), paxos->isLeaderStable(),
-            failure_detected->load());
+          "<Main> NEITHER BRANCH TAKEN! isLeader={}, isLeaderStable={}, "
+          "isFailureDetected={}",
+          paxos->isLeader(), paxos->isLeaderStable(), failure_detected->load());
       }
 
       ROMULUS_VERBOSE("<Main> About to busy_wait");
@@ -150,10 +150,11 @@ int main(int argc, char* argv[]) {
 
   auto election_start = std::chrono::steady_clock::now();
   // Assumption -- the first exec is the election round and will be successful
-  if (paxos->MaybeLeaderId() == id) exec();
+  if (paxos->MaybeLeaderId() == id)
+    exec();
   [[maybe_unused]] auto election_lat =
-      std::chrono::duration_cast<std::chrono::microseconds>(
-          std::chrono::steady_clock::now() - election_start);
+    std::chrono::duration_cast<std::chrono::microseconds>(
+      std::chrono::steady_clock::now() - election_start);
 
   // Give preparer thread plenty of time to run ahead
   paxos->Preprepare();
@@ -162,7 +163,7 @@ int main(int argc, char* argv[]) {
   // exit(0);
 
   auto testtime_us =
-      std::chrono::duration_cast<std::chrono::microseconds>(testtime);
+    std::chrono::duration_cast<std::chrono::microseconds>(testtime);
   uint64_t total_work_us = 0;
   size_t iterations = 0;
   ROMULUS_STOPWATCH_BEGIN();
@@ -191,8 +192,7 @@ int main(int argc, char* argv[]) {
       "latency (ns): {}\nP50 latency (ns): {}\nP99 latency (ns): {}\nP99.9 "
       "latency (ns): {}",
       total_work_us, iterations, election_lat, std::get<0>(result),
-      std::get<1>(result), std::get<2>(result),
-      std::get<3>(result));
+      std::get<1>(result), std::get<2>(result), std::get<3>(result));
     ROMULUS_INFO("[PARSE] {}", ss.str());
     // system_size, worktime_us, total_ops, election_lat, lat_avg, lat_50p,
     // lat_99p, lat_99_9p calc = CALC_THROUGHPUT; calc(outfile);
@@ -201,10 +201,10 @@ int main(int argc, char* argv[]) {
   sync();
 
   ROMULUS_INFO("Experiment is finished. Cleaning up...");
-  done();  // cleanup
+  done(); // cleanup
 
 #ifdef FAILOVER
-  for (auto& t : fd_threads) {
+  for (auto &t : fd_threads) {
     t.join();
   }
 #endif
@@ -225,23 +225,121 @@ int main(int argc, char* argv[]) {
     }
   }).detach();
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  double last_clock = 0;
+
+  std::vector<double> thrus, lats;
+  thrus.reserve(10);
+  lats.reserve(10);
+  uint64_t total_commits = 0;
+  uint64_t commits = 0;
+
+  // block until we prepare the entire log
+  if (id == 0) {
+    while (velos->PrepareOffset() < capacity) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+  }
+
+  sync();
+
+  ROMULUS_INFO(
+    "Preparer thread has prepared the entire log, starting experiment...");
 
   auto testtime_us =
-      std::chrono::duration_cast<std::chrono::microseconds>(testtime);
+    std::chrono::duration_cast<std::chrono::microseconds>(testtime);
   ROMULUS_STOPWATCH_BEGIN();
-  while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
-         static_cast<uint64_t>(testtime_us.count())) {
-    for (uint32_t i = 0; i < loop; ++i) {
+  
+  auto start = std::chrono::steady_clock::now();
+  while (std::chrono::duration_cast<std::chrono::microseconds>(
+             std::chrono::steady_clock::now() - start)
+             .count() < testtime_us.count()) {
+    if (id == 0) {
+      auto curr_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                       std::chrono::steady_clock::now() - start)
+                       .count();
+      if (curr_us - last_clock > kThruFreq) {
+        last_clock = curr_us;
+        thrus.push_back(commits);
+        lats.push_back(latencies.back());
+        commits = 0; // reset
+      }
+
       exec();
+
+      commits++;
+      total_commits++;
       busy_wait(sleep);
     }
   }
+  double elapsed_us = std::chrono::duration<double, std::micro>(
+                        std::chrono::steady_clock::now() - start).count();
+
   preprepare_running.store(false);
   sync();
 
+  if (id == 0) {
+    std::tuple<double, double, double, double> latency_stats;
+    // dump latencies
+    std::ofstream raw_lats_file("raw_lats_" + std::to_string(id) + ".txt");
+    for (size_t i = 0; i < latencies.size(); ++i) {
+      raw_lats_file << latencies[i];
+      if (i != latencies.size() - 1) {
+        raw_lats_file << ",";
+      }
+    }
+    raw_lats_file << std::endl;
+
+    // Collect the lat and thru stats
+    std::stringstream thru_ss;
+    for (size_t t = 0; t < thrus.size(); ++t) {
+      thru_ss << thrus[t];
+      if (t != thrus.size() - 1) {
+        thru_ss << ",";
+      }
+    }
+    thru_ss << std::endl;
+
+    std::stringstream lat_ss;
+    for (size_t t = 0; t < lats.size(); ++t) {
+      lat_ss << lats[t];
+      if (t != lats.size() - 1) {
+        lat_ss << ",";
+      }
+    }
+    lat_ss << std::endl;
+
+    ROMULUS_INFO("[THROUGHPUTS] {}", thru_ss.str());
+    ROMULUS_INFO("[LATENCIES] {}", lat_ss.str());
+
+    CALC_LAT(&latency_stats, latencies);
+
+    std::stringstream result_ss;
+    result_ss << "\n\t\tNode id: " << id << "\n\t\tSystem size: " << system_size
+              << "\n\t\tTotal commits: " << total_commits
+              << "\n\t\tTotal worktime (us): " << static_cast<uint64_t>(elapsed_us)
+              << "\n\t\tAvg. latency (us): " << std::get<0>(latency_stats)
+              << ", "
+              << "\n\t\tp50 latency (us): " << std::get<1>(latency_stats)
+              << ", "
+              << "\n\t\tp99 latency (us): " << std::get<2>(latency_stats)
+              << ", "
+              << "\n\t\tp99.9 latency (us): " << std::get<3>(latency_stats);
+    result_ss << std::endl;
+    ROMULUS_INFO("[Results] {}", result_ss.str());
+    // id, system_size, total_commits, total_worktime_us, lat_avg, lat_50p,
+    // lat_99p, lat_99_9p
+    result_ss.str("");
+    result_ss.clear();
+    result_ss << id << "," << system_size << "," << total_commits << ","
+              << static_cast<uint64_t>(elapsed_us) << "," << std::get<0>(latency_stats) << ","
+              << std::get<1>(latency_stats) << "," << std::get<2>(latency_stats)
+              << "," << std::get<3>(latency_stats);
+    result_ss << std::endl;
+    ROMULUS_INFO("[PARSE] {}", result_ss.str());
+  }
+
   ROMULUS_INFO("Experiment is finished. Cleaning up...");
-  done();  // cleanup
+  done(); // cleanup
 #endif
 
 #ifdef USE_MU
@@ -249,24 +347,40 @@ int main(int argc, char* argv[]) {
   std::this_thread::sleep_for(std::chrono::seconds(2 + system_size - id));
 
   auto testtime_us =
-      std::chrono::duration_cast<std::chrono::microseconds>(testtime);
+    std::chrono::duration_cast<std::chrono::microseconds>(testtime);
   ROMULUS_STOPWATCH_BEGIN();
-  uint64_t total_work_us = 0;
-  size_t iterations = 0;
+  uint64_t total_worktime_us = 0;
+  uint64_t total_commits = 0;
+  uint64_t commits = 0;
+  double last_clock = 0;
+  std::vector<double> thrus, lats;
+  thrus.reserve(10);
+  lats.reserve(10);
+
   while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
          static_cast<uint64_t>(testtime_us.count())) {
     // ROMULUS_INFO("Am I the leader? {}", is_leader.load() ? "Yes" : "No");
     // Lowest leader id will be elected first...
 #ifndef FAILOVER
     if (id == 0) {
+      double curr_us = ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS);
+
+      if (curr_us - last_clock > kThruFreq) {
+        last_clock = curr_us;
+        thrus.push_back(commits);
+        lats.push_back(latencies.back());
+        commits = 0; // reset
+      }
+
       // ROMULUS_INFO("[LEADER] Executing iteration {}", iterations);
       auto work_start = std::chrono::steady_clock::now();
       exec();
-      iterations++;
-      auto work_end = std::chrono::steady_clock::now();
-      total_work_us += std::chrono::duration_cast<std::chrono::microseconds>(
-                           work_end - work_start)
-                           .count();
+      total_worktime_us +=
+        std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::steady_clock::now() - work_start)
+          .count();
+      ++commits;
+      ++total_commits;
     }
 #else
     if (id == 0) {
@@ -284,12 +398,11 @@ int main(int argc, char* argv[]) {
         ROMULUS_INFO("Failover start time was not set!");
       }
       auto failover_duration =
-          std::chrono::duration_cast<std::chrono::microseconds>(
-              failover_end_time - failover_start_time);
+        std::chrono::duration_cast<std::chrono::microseconds>(
+          failover_end_time - failover_start_time);
       ROMULUS_INFO("[FAILOVER]: {} us", failover_duration.count());
       goto stall_leader;
     }
-    ++iterations;
 #endif
     // busy_wait(sleep);
   }
@@ -300,25 +413,58 @@ stall_leader:
 
   if (is_leader.load()) {
     std::tuple<double, double, double, double> result;
+    // dump latencies
+    std::ofstream raw_lats_file("raw_lats_" + std::to_string(id) + ".txt");
+    for (size_t i = 0; i < latencies.size(); ++i) {
+      raw_lats_file << latencies[i];
+      if (i != latencies.size() - 1) {
+        raw_lats_file << ",";
+      }
+    }
+    raw_lats_file << std::endl;
+
+    // Collect the lat and thru stats
+    std::stringstream thru_ss;
+    for (size_t t = 0; t < thrus.size(); ++t) {
+      thru_ss << thrus[t];
+      if (t != thrus.size() - 1) {
+        thru_ss << ",";
+      }
+    }
+    thru_ss << std::endl;
+
+    std::stringstream lat_ss;
+    for (size_t t = 0; t < lats.size(); ++t) {
+      lat_ss << lats[t];
+      if (t != lats.size() - 1) {
+        lat_ss << ",";
+      }
+    }
+    lat_ss << std::endl;
+
+    ROMULUS_INFO("[THROUGHPUTS] {}", thru_ss.str());
+    ROMULUS_INFO("[LATENCIES] {}", lat_ss.str());
+
     calc(&result, latencies);
     std::stringstream ss;
-    ss << system_size << "," << total_work_us << "," << iterations << "," << 0
-       << "," << std::get<0>(result) << "," << std::get<1>(result) << ","
-       << std::get<2>(result) << "," << std::get<3>(result);
+    ss << system_size << "," << outstanding_reqs << "," << total_worktime_us
+       << "," << total_commits << "," << std::get<0>(result) << ","
+       << std::get<1>(result) << "," << std::get<2>(result) << ","
+       << std::get<3>(result);
     ss << std::endl;
     ROMULUS_INFO("[PARSE] {}", ss.str());
   }
 
   ROMULUS_INFO("Experiment is finished. Cleaning up...");
-  done();  // cleanup
+  done(); // cleanup
 #endif
 
 #ifdef USE_LEASE
 
   ROMULUS_INFO("Using Mu^2...");
-  auto* cas = dynamic_cast<paxos_st::CasPaxos*>(paxos.release());
+  auto *cas = dynamic_cast<paxos_st::CasPaxos *>(paxos.release());
   auto mu_squared =
-      std::make_unique<paxos_st::MuSquared>(std::move(*cas), proposals);
+    std::make_unique<paxos_st::MuSquared>(std::move(*cas), proposals);
 
   exec = LEASE_EXEC_LATENCY;
   done = LEASE_DONE;
@@ -333,15 +479,15 @@ stall_leader:
   auto lease_start = std::chrono::steady_clock::now();
   mu_squared->LeasePropose(proposals[0].first, proposals[0].second, true);
   auto lease_elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                           std::chrono::steady_clock::now() - lease_start)
-                           .count();
+                         std::chrono::steady_clock::now() - lease_start)
+                         .count();
   // mu_squared->StartCommitThreads();
   ROMULUS_INFO("Lease election latency: {} ns", lease_elapsed);
   uint64_t total_work_us = 0;
   uint64_t rounds = 0;
 
   auto testtime_us =
-      std::chrono::duration_cast<std::chrono::microseconds>(testtime);
+    std::chrono::duration_cast<std::chrono::microseconds>(testtime);
   ROMULUS_STOPWATCH_BEGIN();
   while (ROMULUS_STOPWATCH_RUNTIME(ROMULUS_MICROSECONDS) <
          static_cast<uint64_t>(testtime_us.count())) {
@@ -351,8 +497,8 @@ stall_leader:
     mu_squared->LeasePropose(proposals[i].first, proposals[i].second);
     auto work_end = std::chrono::high_resolution_clock::now();
     total_work_us += std::chrono::duration_cast<std::chrono::microseconds>(
-                         work_end - work_start)
-                         .count();
+                       work_end - work_start)
+                       .count();
     busy_wait(sleep);
     rounds++;
   }
@@ -382,21 +528,21 @@ stall_leader:
          << "," << std::get<3>(latency_stats);
   csv_ss << std::endl;
   ROMULUS_INFO(
-      "Work time (us): {}\tTotal ops: {}\nLease election latency (ns): {}\nAvg "
-      "latency (ns): {}\nP50 latency (ns): {}\nP99 latency (ns): {}\nP99.9 "
-      "latency (ns): {}",
-      total_work_us, total_ops, lease_elapsed, std::get<0>(latency_stats),
-      std::get<1>(latency_stats), std::get<2>(latency_stats),
-      std::get<3>(latency_stats));
+    "Work time (us): {}\tTotal ops: {}\nLease election latency (ns): {}\nAvg "
+    "latency (ns): {}\nP50 latency (ns): {}\nP99 latency (ns): {}\nP99.9 "
+    "latency (ns): {}",
+    total_work_us, total_ops, lease_elapsed, std::get<0>(latency_stats),
+    std::get<1>(latency_stats), std::get<2>(latency_stats),
+    std::get<3>(latency_stats));
   ROMULUS_INFO("[PARSE] {}", csv_ss.str());
 
   ROMULUS_INFO("Experiment is finished. Cleaning up...");
-  done();  // cleanup
+  done(); // cleanup
 
 #endif
 
   outfile.close();
-  for (auto& p : proposals) {
+  for (auto &p : proposals) {
     delete[] p.second;
   }
 

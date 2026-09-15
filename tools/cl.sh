@@ -475,9 +475,10 @@ elif [[ "$cmd" == "launch-experiment-velos" && "$count" -eq 2 ]]; then
 		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >>results/velos.csv
 	done
 elif [[ "$cmd" == "launch-experiment-mu" && "$count" -eq 2 ]]; then
-	echo 'lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' >results/mu.csv
+	echo 'system_size,total_work,iterations,lat_avg_us,lat_50p_us,lat_99p_us,lat_99_9p_us' >results/mu.csv
 	ORIG_MACHINES=("${MACHINES[@]}")
-	for i in $(seq 7 ${#ORIG_MACHINES[@]}); do
+	source tools/mu.sh
+	for i in $(seq 10 ${#ORIG_MACHINES[@]}); do
 		MACHINES=("${ORIG_MACHINES[@]:0:$i}")
 		load_cfg
 		echo "Resetting..."
@@ -485,6 +486,7 @@ elif [[ "$cmd" == "launch-experiment-mu" && "$count" -eq 2 ]]; then
 		sleep 5
 		echo "Launching experiment with ${#MACHINES[@]} nodes..."
 		run_mu "$2"
+		# system_size, total_work, iterations, lat_avg, lat_50p, lat_99p, lat_99_9p
 		grep -oP '\[PARSE\] \K.*' logs/log_0.txt >>results/mu.csv
 	done
 elif [[ "$cmd" == "launch-experiment-failure" && "$count" -eq 2 ]]; then

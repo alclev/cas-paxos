@@ -376,21 +376,21 @@ void MuSquared::FastCommit(uint32_t offset) {
 }
 
 
-void MuSquared::FastCommit(uint32_t offset) {
-  std::atomic<int> ack{0};
-  for (int i = 0; i < system_size_; ++i) {
-    auto& conn = cached_conns_[i];
+// void MuSquared::FastCommit(uint32_t offset) {
+//   std::atomic<int> ack{0};
+//   for (int i = 0; i < system_size_; ++i) {
+//     auto& conn = cached_conns_[i];
 
-    auto& raddr = cached_raddrs_[i];
-    raddr.addr_info.offset = (offset & (kRingSize - 1)) * kSlotSize;
+//     auto& raddr = cached_raddrs_[i];
+//     raddr.addr_info.offset = (offset & (kRingSize - 1)) * kSlotSize;
 
-    cached_write_.remote_addr(raddr)->wr_id(reinterpret_cast<uint64_t>(&ack));
-    ROMULUS_ASSERT(conn->Post(&cached_write_, 1), "Failed to post");
-  }
-  while(ack.load(std::memory_order_acquire) < system_size_) {
-    _mm_pause();
-  }
-}
+//     cached_write_.remote_addr(raddr)->wr_id(reinterpret_cast<uint64_t>(&ack));
+//     ROMULUS_ASSERT(conn->Post(&cached_write_, 1), "Failed to post");
+//   }
+//   while(ack.load(std::memory_order_acquire) < system_size_) {
+//     _mm_pause();
+//   }
+// }
 
 void MuSquared::Poller() {
   pin_thread_to_core(8);

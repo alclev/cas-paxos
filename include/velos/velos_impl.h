@@ -7,31 +7,33 @@ std::unique_ptr<Velos> velos;
 #define INIT_CONSENSUS(transport_flag, buf_sz, mach_map)                       \
   ROMULUS_INFO("Initializing Velos");                                          \
   auto registry =                                                              \
-      std::make_unique<romulus::ConnectionRegistry>("VelosTest", registry_ip); \
+    std::make_unique<romulus::ConnectionRegistry>("VelosTest", registry_ip);   \
   velos = std::make_unique<Velos>(args, remotes, transport_flag);              \
   velos->Init(dev_name, dev_port, std::move(registry), mach_map);
 
 std::vector<double> latencies;
 
-#define EXEC_LATENCY                                                          \
-  [&]() {                                                                     \
-    uint32_t i = latencies.size() % kNumProposals;                            \
-    auto start = std::chrono::steady_clock::now();                            \
-    velos->Promise(Value(*reinterpret_cast<uint32_t*>(proposals[i].second))); \
-    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(     \
-                       std::chrono::steady_clock::now() - start)              \
-                       .count();                                              \
-    double elapsed_us = static_cast<double>(elapsed);                         \
-    latencies.emplace_back(elapsed_us);                                       \
+#define EXEC_LATENCY                                                           \
+  [&]() {                                                                      \
+    uint32_t i = latencies.size() % kNumProposals;                             \
+    auto v = Value(*reinterpret_cast<uint32_t *>(proposals[i].second));        \
+    auto start = std::chrono::steady_clock::now();                             \
+    bool ok = velos->Promise_Pipe(v);                                          \
+    double elapsed_us = std::chrono::duration<double, std::micro>(             \
+                          std::chrono::steady_clock::now() - start)            \
+                          .count();                                            \
+    ROMULUS_ASSERT(ok, "Promise_Pipe failed for proposal {} with value {}", i, \
+                   v.raw());                                                   \
+    latencies.emplace_back(elapsed_us);                                        \
   };
 
 #define SYNC_NODES [&]() { velos->SyncNodes(); };
 
 #define DONE_LATENCY []() { velos->CleanUp(); };
 #define CALC_LAT                                                               \
-  [&](std::tuple<double, double, double, double>* result,                      \
-      std::vector<double>& latencies) {                                        \
-        /* remove the first 25% of latencies as warmup */                       \
+  [&](std::tuple<double, double, double, double> *result,                      \
+      std::vector<double> &latencies) {                                        \
+    /* remove the first 25% of latencies as warmup */                          \
     latencies.erase(latencies.begin(),                                         \
                     latencies.begin() + latencies.size() / 4);                 \
     double latency_avg = 0.0;                                                  \
@@ -51,42 +53,43 @@ std::vector<double> latencies;
       latency_stddev /= static_cast<double>(latencies.size());                 \
       latency_stddev = std::sqrt(latency_stddev);                              \
       latency_max_idx =                                                        \
-          std::distance(latencies.begin(),                                     \
-                        std::max_element(latencies.begin(), latencies.end())); \
+        std::distance(latencies.begin(),                                       \
+                      std::max_element(latencies.begin(), latencies.end()));   \
       latency_max = latencies[latency_max_idx];                                \
       std::sort(latencies.begin(), latencies.end());                           \
       latency_50p =                                                            \
-          latencies[static_cast<uint32_t>((latencies.size() * .50))];          \
+        latencies[static_cast<uint32_t>((latencies.size() * .50))];            \
       latency_99p =                                                            \
-          latencies[static_cast<uint32_t>((latencies.size() * .99))];          \
+        latencies[static_cast<uint32_t>((latencies.size() * .99))];            \
       latency_99_9p =                                                          \
-          latencies[static_cast<uint32_t>((latencies.size() * .999))];         \
-      *result = std::make_tuple(latency_avg, latency_50p, latency_99p,         \
-                                latency_99_9p);                                \
+        latencies[static_cast<uint32_t>((latencies.size() * .999))];           \
+      *result =                                                                \
+        std::make_tuple(latency_avg, latency_50p, latency_99p, latency_99_9p); \
     }                                                                          \
   }
 
-#define RESET           \
-  [&]() {               \
-    velos->Reset();     \
-    velos->SyncNodes(); \
+#define RESET                                                                  \
+  [&]() {                                                                      \
+    velos->Reset();                                                            \
+    velos->SyncNodes();                                                        \
   };
 
-#define CALC_THROUGHPUT                                             \
-  [&](std::ofstream& outfile) {                                     \
-    double total_latency =                                          \
-        std::accumulate(latencies.begin(), latencies.end(), 0.0);   \
-    double throughput = latencies.size() / total_latency * 1000000; \
-    outfile << throughput << std::endl;                             \
-    ROMULUS_INFO("!> [THRU] throughput={:4.2f}ops/us", throughput); \
+#define CALC_THROUGHPUT                                                        \
+  [&](std::ofstream &outfile) {                                                \
+    double total_latency =                                                     \
+      std::accumulate(latencies.begin(), latencies.end(), 0.0);                \
+    double throughput = latencies.size() / total_latency * 1000000;            \
+    outfile << throughput << std::endl;                                        \
+    ROMULUS_INFO("!> [THRU] throughput={:4.2f}ops/us", throughput);            \
   };
 
-#define DUMP_LATENCIES()                            \
-  {                                                 \
-    std::ostringstream oss;                         \
-    for (size_t i = 0; i < latencies.size(); ++i) { \
-      if (i > 0) oss << ",";                        \
-      oss << latencies[i];                          \
-    }                                               \
-    ROMULUS_INFO("Latencies: {}", oss.str());       \
+#define DUMP_LATENCIES()                                                       \
+  {                                                                            \
+    std::ostringstream oss;                                                    \
+    for (size_t i = 0; i < latencies.size(); ++i) {                            \
+      if (i > 0)                                                               \
+        oss << ",";                                                            \
+      oss << latencies[i];                                                     \
+    }                                                                          \
+    ROMULUS_INFO("Latencies: {}", oss.str());                                  \
   }

@@ -9,6 +9,11 @@ function make_screen {
 	echo 'hardstatus alwayslastline "%w"' >>$1
 }
 
+function reset_mu() {
+	reset-all
+	reset-memcached
+}
+
 function reset-memcached() {
 	# Reset the memcached server
 	ssh ${USER}@${MACHINES[0]}.${DOMAIN} "sudo pkill memcached"
